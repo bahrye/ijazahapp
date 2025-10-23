@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengolahan Nilai Ijazah</title>
+    <?!= include('style'); ?>
+  </head>
+  <body>
+    
+    <div id="loader" style="display: none;">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="container" id="auth-container">
+
+      <div class="app-header">
+        <h1>Nilai Ijazah</h1>
+        <p>Aplikasi Pengolahan Nilai Sekolah</p>
+      </div>
+
+      <div id="halaman-login" class="page">
+        <div class="form-group">
+          <input type="email" id="login-email" placeholder="Email Admin Sekolah">
+        </div>
+        <div class="form-group">
+          <input type="password" id="login-password" placeholder="Password">
+        </div>
+        <button id="btn-login">Masuk</button>
+        <p id="login-error" class="message error"></p>
+        <a id="link-ke-registrasi" class="nav-link">Belum punya akun? Daftar di sini</a>
+      </div>
+
+      <div id="halaman-registrasi" class="page" style="display: none;">
+        <div class="form-group">
+          <input type="text" id="reg-nama-sekolah" placeholder="Nama Sekolah">
+        </div>
+        <div class="form-group">
+          <select id="reg-jenjang">
+            <option value="">-- Pilih Jenjang --</option>
+            <option value="SD/MI">SD/MI</option>
+            <option value="SMP/MTS">SMP/MTS</option>
+            <option value="SMA/MA">SMA/MA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <input type="email" id="reg-email" placeholder="Email Admin">
+        </div>
+        <div class="form-group">
+          <input type="password" id="reg-password" placeholder="Buat Password">
+        </div>
+        <button id="btn-registrasi">Daftar</button>
+        <p id="reg-message" class="message"></p>
+        <a id="link-ke-login" class="nav-link">Sudah punya akun? Login</a>
+      </div>
+
+    </div> <div class="container" id="halaman-utama" style="display: none;">
+      <div class="page">
+        <h2 id="salam-sekolah">Selamat Datang, Admin</h2>
+        <p>Ini adalah dashboard utama. Di sini Anda bisa:</p>
+        <ul>
+          <li>Mengelola Data Siswa</li>
+          <li>Input Nilai Rapor</li>
+          <li>Input Nilai Ujian</li>
+          <li>Cetak Laporan Nilai Ijazah</li>
+        </ul>
+        <button id="btn-buka-mapel" style="background-color: #198754;">Kelola Mata Pelajaran</button>
+        <hr>
+        
+        <h3>Contoh Perhitungan</h3>
+        <p>Tes memanggil fungsi backend untuk Siswa 'S-001':</p>
+        <button id="btn-hitung">Hitung Nilai (Contoh)</button>
+        <div id="hasil-hitung" style="margin-top: 15px;"></div>
+        
+        <hr>
+        <button id="btn-logout">Logout</button>
+      </div>
+    </div>
+
+    <div class="container" id="halaman-mapel" style="display: none;">
+      <div class="page">
+        <div class="page-header">
+          <h2>Kelola Mapel</h2>
+          <div class="header-buttons">
+            <button id="btn-tambah-mapel-baru">+ Tambah Mapel</button>
+            <button id="btn-ambil-default">Ambil Mapel Default</button>
+            <button id="btn-hapus-semua">Hapus Semua Mapel</button>
+          </div>
+        </div>
+        
+        <p>Kelola mata pelajaran yang akan digunakan di sekolah Anda.</p>
+        
+        <div class="mapel-table-container" id="mapel-table-container">
+          <p>Memuat data mapel...</p>
+        </div>
+        
+        <hr>
+        <button id="btn-kembali-ke-dashboard">Kembali ke Dashboard</button>
+      </div>
+    </div>
+
+    <div id="mapel-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-title">Tambah Mapel Baru</h2>
+          <span class="close-button" id="btn-tutup-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="modal-mapel-mode" value="add">
+          
+          <div class="form-group">
+            <label for="modal-mapel-id">Kode Mapel (Unik)</label>
+            <input type="text" id="modal-mapel-id" placeholder="Contoh: MTK, BIN, FIS">
+          </div>
+          <div class="form-group">
+            <label for="modal-mapel-nama">Nama Mata Pelajaran</label>
+            <input type="text" id="modal-mapel-nama" placeholder="Contoh: Matematika">
+          </div>
+          <p id="modal-mapel-error" class="message error"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-batal-modal">Batal</button>
+          <button id="btn-simpan-mapel">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="confirmation-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="confirm-modal-title">Konfirmasi</h2>
+          <span class="close-button" id="btn-confirm-close">&times;</span>
+        </div>
+        <div class="modal-body" id="confirm-modal-body">
+          </div>
+        <div class="modal-footer">
+          <button id="btn-confirm-cancel">Batal</button>
+          <button id="btn-confirm-ok">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="info-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="info-modal-title">Informasi</h2>
+          <span class="close-button" id="btn-info-close">&times;</span>
+        </div>
+        <div class="modal-body" id="info-modal-body">
+          </div>
+        <div class="modal-footer">
+          <button id="btn-info-ok">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <?!= include('client'); ?>
+  </body>
+</html>
