@@ -1,0 +1,556 @@
+<script>
+  // ===========================================
+  // FUNGSI UTILITAS
+  // ===========================================
+  
+  /**
+   * Menampilkan atau menyembunyikan spinner loading.
+   */
+  function setLoading(isLoading) {
+    document.getElementById('loader').style.display = isLoading ? 'flex' : 'none';
+  }
+
+  /**
+   * Menampilkan pesan error atau sukses.
+   */
+  function showMessage(elementId, message, isError) {
+    if (typeof isError === 'undefined' || isError === null) {
+      isError = true;
+    }
+    
+    const el = document.getElementById(elementId);
+    el.innerText = message;
+    el.className = isError ? 'message error' : 'message success';
+    el.style.display = 'block';
+  }
+
+  /**
+   * Menyembunyikan pesan error/sukses.
+   */
+  function hideMessage(elementId) {
+    const el = document.getElementById(elementId);
+    if(el) {
+      el.style.display = 'none';
+      el.innerText = '';
+    }
+  }
+
+  /**
+   * Mengatur halaman mana yang terlihat (Single Page App).
+   */
+  function tampilHalaman(idHalaman) {
+    // Sembunyikan semua container utama
+    document.getElementById('auth-container').style.display = 'none';
+    document.getElementById('halaman-utama').style.display = 'none';
+    document.getElementById('halaman-mapel').style.display = 'none';
+
+    // Sembunyikan pesan error
+    hideMessage('login-error');
+    hideMessage('reg-message');
+
+    if (idHalaman === 'halaman-utama') {
+      document.getElementById('halaman-utama').style.display = 'block';
+    } 
+    else if (idHalaman === 'halaman-mapel') {
+      document.getElementById('halaman-mapel').style.display = 'block';
+    } 
+    else {
+      // Tampilkan container auth
+      document.getElementById('auth-container').style.display = 'block';
+      // Sembunyikan semua halaman di dalam auth-container
+      document.getElementById('halaman-login').style.display = 'none';
+      document.getElementById('halaman-registrasi').style.display = 'none';
+      // Tampilkan halaman yang dituju
+      document.getElementById(idHalaman).style.display = 'block';
+    }
+  }
+
+  /**
+   * Menampilkan modal konfirmasi kustom.
+   * @param {string} title Judul modal.
+   * @param {string} message Pesan (bisa berisi HTML seperti <br> atau <strong>).
+   * @param {function} onConfirmCallback Fungsi yang akan dijalankan jika "OK" diklik.
+   * @param {string} okButtonType Tipe tombol 'danger' (merah) atau 'primary' (biru).
+   */
+  function showConfirmationModal(title, message, onConfirmCallback, okButtonType = 'danger') {
+    const modal = document.getElementById('confirmation-modal');
+    document.getElementById('confirm-modal-title').innerText = title;
+    document.getElementById('confirm-modal-body').innerHTML = message; // innerHTML agar tag <strong> terbaca
+
+    const okButton = document.getElementById('btn-confirm-ok');
+    
+    // Atur warna tombol OK
+    if (okButtonType === 'danger') {
+      okButton.style.backgroundColor = 'var(--danger-color)';
+    } else {
+      okButton.style.backgroundColor = 'var(--primary-color)';
+    }
+    
+    // Simpan fungsi callback di elemen modal untuk dipanggil nanti
+    modal.onConfirm = onConfirmCallback;
+    
+    modal.style.display = 'block';
+  }
+
+  /**
+   * Menutup modal konfirmasi.
+   */
+  function hideConfirmationModal() {
+    const modal = document.getElementById('confirmation-modal');
+    modal.style.display = 'none';
+    modal.onConfirm = null; // Hapus callback setelah ditutup
+  }
+
+  /**
+   * Menampilkan modal info kustom (pengganti alert).
+   * @param {string} title Judul modal.
+   * @param {string} message Pesan.
+   * @param {boolean} isError Set ke true untuk teks merah.
+   */
+  function showInfoModal(title, message, isError) {
+    const modal = document.getElementById('info-modal');
+    document.getElementById('info-modal-title').innerText = title;
+    
+    const modalBody = document.getElementById('info-modal-body');
+    modalBody.innerText = message;
+    
+    if (isError) {
+      modalBody.classList.add('error');
+    } else {
+      modalBody.classList.remove('error');
+    }
+    
+    modal.style.display = 'block';
+  }
+
+  /**
+   * Menutup modal info.
+   */
+  function hideInfoModal() {
+    document.getElementById('info-modal').style.display = 'none';
+  }
+
+  // ===========================================
+  // EVENT LISTENERS
+  // ===========================================
+  
+  document.addEventListener('DOMContentLoaded', (event) => {
+  
+    // Listener Tombol Login
+    document.getElementById('btn-login').addEventListener('click', () => {
+      setLoading(true);
+      hideMessage('login-error');
+      const email = document.getElementById('login-email').value;
+      const pass = document.getElementById('login-password').value;
+      google.script.run
+        .withSuccessHandler(hasilLogin)
+        .withFailureHandler(onGagal)
+        .prosesLogin(email, pass);
+    });
+    
+    // Listener Tombol Registrasi
+    document.getElementById('btn-registrasi').addEventListener('click', () => {
+      setLoading(true);
+      hideMessage('reg-message');
+      
+      const namaSekolah = document.getElementById('reg-nama-sekolah').value;
+      const jenjang = document.getElementById('reg-jenjang').value;
+      const email = document.getElementById('reg-email').value;
+      const password = document.getElementById('reg-password').value;
+      
+      if (!namaSekolah || !jenjang || !email || !password) {
+        setLoading(false);
+        showMessage('reg-message', "Semua field wajib diisi.", true);
+        return;
+      }
+      
+      google.script.run
+        .withSuccessHandler(hasilRegistrasi)
+        .withFailureHandler(onGagal)
+        .prosesRegistrasi(namaSekolah, jenjang, email, password);
+    });
+
+    // Listener Tombol Contoh Hitung Nilai
+    document.getElementById('btn-hitung').addEventListener('click', () => {
+      setLoading(true);
+      document.getElementById('hasil-hitung').innerHTML = "Menghitung...";
+      google.script.run
+        .withSuccessHandler(hasilHitung)
+        .withFailureHandler(onGagal)
+        .hitungNilaiIjazahSiswa('S-001'); // Hardcode ID siswa untuk tes
+    });
+    
+    // Listener Tombol Logout
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      setLoading(true);
+      google.script.run
+        .withSuccessHandler(onLogout)
+        .withFailureHandler(onGagal)
+        .prosesLogout();
+    });
+    
+    // Listener untuk link "Daftar di sini"
+    document.getElementById('link-ke-registrasi').addEventListener('click', (e) => {
+      e.preventDefault(); 
+      tampilHalaman('halaman-registrasi');
+    });
+    
+    // Listener untuk link "Login"
+    document.getElementById('link-ke-login').addEventListener('click', (e) => {
+      e.preventDefault(); 
+      tampilHalaman('halaman-login');
+    });
+
+    // --- LISTENER FITUR MAPEL ---
+
+    // Listener untuk membuka halaman kelola mapel
+    document.getElementById('btn-buka-mapel').addEventListener('click', () => {
+      bukaHalamanMapel();
+    });
+
+    // === TAMBAHKAN DUA LISTENER BARU INI ===
+    document.getElementById('btn-ambil-default').addEventListener('click', () => {
+      const title = "Ambil Mapel Default";
+      const message = "Ini akan mengambil mapel default dari master dan menambahkan yang hilang. Lanjutkan?";
+      
+      const callback = function() {
+        setLoading(true);
+        google.script.run
+          .withSuccessHandler(onTableRefreshed)
+          .withFailureHandler(onGagal)
+          .syncDefaultMapel();
+      };
+      
+      showConfirmationModal(title, message, callback, 'primary'); // Tombol biru/primary
+    });
+
+    document.getElementById('btn-hapus-semua').addEventListener('click', () => {
+      const title = "PERINGATAN!";
+      const message = "Anda yakin ingin menghapus <strong>SEMUA</strong> mata pelajaran? Tindakan ini tidak bisa dibatalkan.";
+      
+      const callback = function() {
+        setLoading(true);
+        google.script.run
+          .withSuccessHandler(onTableRefreshed)
+          .withFailureHandler(onGagal)
+          .deleteAllMapel();
+      };
+      
+      showConfirmationModal(title, message, callback, 'danger'); // Tombol merah/danger
+    });
+    // === AKHIR TAMBAHAN ===
+
+    // Listener untuk kembali ke dashboard dari hal. mapel
+    document.getElementById('btn-kembali-ke-dashboard').addEventListener('click', () => {
+      tampilHalaman('halaman-utama');
+    });
+
+    // Listener untuk tombol 'Tambah Mapel Baru'
+    document.getElementById('btn-tambah-mapel-baru').addEventListener('click', () => {
+      showModalMapel('add');
+    });
+
+    // Listener untuk menutup modal
+    document.getElementById('btn-tutup-modal').addEventListener('click', tutupModalMapel);
+    document.getElementById('btn-batal-modal').addEventListener('click', tutupModalMapel);
+
+    // Listener untuk tombol simpan di modal
+    document.getElementById('btn-simpan-mapel').addEventListener('click', simpanMapel);
+
+    // Listener untuk tombol aksi (Edit/Delete) di tabel
+    document.getElementById('mapel-table-container').addEventListener('click', (e) => {
+      const target = e.target.closest('button'); // Cari tombol terdekat yg diklik
+      if (!target) return; // Klik di luar tombol
+
+      if (target.classList.contains('btn-edit')) {
+        const id = target.getAttribute('data-id');
+        const nama = target.getAttribute('data-nama');
+        showModalMapel('edit', id, nama);
+      }
+      else if (target.classList.contains('btn-delete')) {
+        const id = target.getAttribute('data-id');
+        hapusMapel(id);
+      }
+    });
+
+    // === TAMBAHKAN LISTENER MODAL KONFIRMASI (BARU) ===
+    document.getElementById('btn-confirm-cancel').addEventListener('click', hideConfirmationModal);
+    document.getElementById('btn-confirm-close').addEventListener('click', hideConfirmationModal);
+    
+    document.getElementById('btn-confirm-ok').addEventListener('click', () => {
+      const modal = document.getElementById('confirmation-modal');
+      // Periksa jika ada fungsi callback yang tersimpan
+      if (typeof modal.onConfirm === 'function') {
+        modal.onConfirm(); // Jalankan callback (mis. google.script.run)
+      }
+      hideConfirmationModal(); // Tutup modal
+    });
+    // === AKHIR LISTENER BARU ===
+
+    // === TAMBAHKAN LISTENER MODAL INFO (BARU) ===
+    document.getElementById('btn-info-close').addEventListener('click', hideInfoModal);
+    document.getElementById('btn-info-ok').addEventListener('click', hideInfoModal);
+    // === AKHIR LISTENER BARU ===
+    
+    // === PEMERIKSAAN TOKEN SAAT LOAD ===
+    const token = localStorage.getItem('sessionToken');
+    if (token) {
+      // Token ada, coba validasi ke server
+      setLoading(true);
+      google.script.run
+        .withSuccessHandler(onTokenCheck)
+        .withFailureHandler(onTokenCheck) // Tangani kegagalan juga
+        .checkToken(token);
+    } else {
+      // Tidak ada token, tampilkan halaman login
+      tampilHalaman('halaman-login');
+      setLoading(false); // Sembunyikan loader
+    }
+  });
+
+
+  // ===========================================
+  // HANDLER (Callback Functions)
+  // ===========================================
+  
+  /**
+   * [CALLBACK] Menangani hasil pemeriksaan token saat load.
+   */
+  function onTokenCheck(response) {
+    setLoading(false);
+    if (response.status === "sukses") {
+      // Token valid, set dashboard dan tampilkan
+      document.getElementById('salam-sekolah').innerText = `Selamat Datang, Admin ${response.namaSekolah}`;
+      tampilHalaman('halaman-utama');
+    } else {
+      // Token tidak valid atau kedaluwarsa
+      localStorage.removeItem('sessionToken'); // Hapus token buruk
+      tampilHalaman('halaman-login');
+      // Tampilkan pesan error jika ada
+      if(response.message) {
+        showMessage('login-error', response.message, true);
+      }
+    }
+  }
+  
+  function hasilLogin(response) {
+    setLoading(false);
+    if (response.status === "sukses") {
+      // SIMPAN TOKEN ke localStorage
+      localStorage.setItem('sessionToken', response.token);
+      
+      document.getElementById('salam-sekolah').innerText = `Selamat Datang, Admin ${response.namaSekolah}`;
+      tampilHalaman('halaman-utama');
+    } else {
+      showMessage('login-error', response.message, true);
+    }
+  }
+  
+  function hasilRegistrasi(response) {
+    setLoading(false);
+    if (response.status === "sukses") {
+      showMessage('reg-message', response.message, false); // false = sukses
+      
+      document.getElementById('reg-nama-sekolah').value = "";
+      document.getElementById('reg-jenjang').value = "";
+      document.getElementById('reg-email').value = "";
+      document.getElementById('reg-password').value = "";
+
+      setTimeout(() => {
+        tampilHalaman('halaman-login');
+      }, 2500);
+    } else {
+      showMessage('reg-message', response.message, true);
+    }
+  }
+  
+  function hasilHitung(response) {
+    setLoading(false);
+    let html = '';
+    if (response.status === "sukses") {
+      html = `
+        <div class="message success" style="text-align: left; padding: 15px; display: block;">
+          <p style="margin-top:0;"><strong>Mapel:</strong> ${response.mapel}</p>
+          <p><strong>Rata-rata Rapor:</strong> ${response.nilaiRataRataRapor}</p>
+          <p><strong>Rata-rata Ujian:</strong> ${response.nilaiRataRataUjian}</p>
+          <h4 style="margin-bottom:0;">Nilai Akhir: ${response.nilaiAkhirIjazah}</h4>
+        </div>
+      `;
+    } else {
+      html = `<div class="message error" style="display: block;">${response.message}</div>`;
+    }
+    document.getElementById('hasil-hitung').innerHTML = html;
+  }
+
+  function onLogout(response) {
+    setLoading(false);
+    localStorage.removeItem('sessionToken');
+    
+    if (response.status === "sukses") {
+      tampilHalaman('halaman-login');
+    } else {
+      showInfoModal("Gagal Logout", response.message, true); // <--- BARU
+    }
+  }
+
+  function onGagal(error) {
+    setLoading(false);
+    const errorMsg = error.message;
+
+    if (errorMsg.includes("Sesi") || errorMsg.includes("Token")) {
+      localStorage.removeItem('sessionToken');
+      tampilHalaman('halaman-login');
+      showMessage('login-error', errorMsg, true);
+    }
+    else if (document.getElementById('halaman-login').style.display !== 'none') {
+      showMessage('login-error', 'Error: ' + errorMsg, true);
+    } else if (document.getElementById('halaman-registrasi').style.display !== 'none') {
+      showMessage('reg-message', 'Error: ' + errorMsg, true);
+    } else if (document.getElementById('mapel-modal').style.display !== 'none') {
+      showMessage('modal-mapel-error', 'Error: ' + errorMsg, true);
+    } else {
+      // Fallback
+      showInfoModal('Terjadi Error', errorMsg, true); // <--- BARU
+    }
+  }
+  
+  // ===========================================
+  // FUNGSI & HANDLER MAPEL
+  // ===========================================
+
+  function bukaHalamanMapel() {
+    tampilHalaman('halaman-mapel');
+    setLoading(true);
+    document.getElementById('mapel-table-container').innerHTML = "<p>Memuat data mapel...</p>";
+    
+    google.script.run
+      .withSuccessHandler(onMapelLoaded)
+      .withFailureHandler(onGagal)
+      .getMapel();
+  }
+
+  function onMapelLoaded(response) {
+    setLoading(false);
+    const container = document.getElementById('mapel-table-container');
+    
+    if (response.status === "sukses") {
+      let html = '<table class="mapel-table">';
+      html += '<tr><th>Kode Mapel</th><th>Nama Mapel</th><th>Aksi</th></tr>';
+      
+      if (response.mapel.length === 0) {
+        html += '<tr><td colspan="3" style="text-align: center;">Belum ada data mapel.</td></tr>';
+      }
+      
+      response.mapel.forEach(mapel => {
+        html += `
+          <tr>
+            <td>${mapel.id}</td>
+            <td>${mapel.nama}</td>
+            <td>
+              <button class="btn-aksi btn-edit" data-id="${mapel.id}" data-nama="${mapel.nama}">Edit</button>
+              <button class="btn-aksi btn-delete" data-id="${mapel.id}">Hapus</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += '</table>';
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat mapel: ${response.message}</p>`;
+    }
+  }
+
+  function showModalMapel(mode, id = '', nama = '') {
+    document.getElementById('modal-mapel-mode').value = mode;
+    hideMessage('modal-mapel-error');
+    
+    const idInput = document.getElementById('modal-mapel-id');
+    
+    if (mode === 'add') {
+      document.getElementById('modal-title').innerText = "Tambah Mapel Baru";
+      idInput.value = "";
+      idInput.readOnly = false;
+      document.getElementById('modal-mapel-nama').value = "";
+    } 
+    else if (mode === 'edit') {
+      document.getElementById('modal-title').innerText = "Edit Mapel";
+      idInput.value = id;
+      idInput.readOnly = true;
+      document.getElementById('modal-mapel-nama').value = nama;
+    }
+    
+    document.getElementById('mapel-modal').style.display = 'block';
+  }
+
+  function tutupModalMapel() {
+    document.getElementById('mapel-modal').style.display = 'none';
+  }
+
+  function simpanMapel() {
+    setLoading(true);
+    hideMessage('modal-mapel-error');
+    
+    const mode = document.getElementById('modal-mapel-mode').value;
+    const id = document.getElementById('modal-mapel-id').value;
+    const nama = document.getElementById('modal-mapel-nama').value;
+    
+    // Ini adalah versi yang sudah diperbaiki (tidak ada error 'withSuccessHandler')
+    if (mode === 'add') {
+      google.script.run
+        .withSuccessHandler(onMapelSaved)
+        .withFailureHandler(onGagal)
+        .createMapel(id, nama);
+    } else { // Asumsi mode 'edit'
+      google.script.run
+        .withSuccessHandler(onMapelSaved)
+        .withFailureHandler(onGagal)
+        .updateMapel(id, nama);
+    }
+  }
+
+  function hapusMapel(id) {
+    // Ganti if(confirm(...)) dengan ini:
+    const title = "Konfirmasi Hapus";
+    const message = `Yakin ingin menghapus mapel dengan ID: <strong>${id}</strong>?<br><br><strong>PERINGATAN:</strong> Menghapus mapel yang sudah memiliki nilai dapat merusak data.`;
+    
+    const callback = function() {
+      setLoading(true);
+      google.script.run
+        .withSuccessHandler(onMapelSaved)
+        .withFailureHandler(onGagal)
+        .deleteMapel(id);
+    };
+    
+    // Panggil modal kustom
+    showConfirmationModal(title, message, callback, 'danger');
+  }
+
+  /**
+   * [CALLBACK] Dipanggil setelah sinkronisasi atau hapus semua.
+   * Menampilkan pesan dan memuat ulang tabel.
+   */
+  function onTableRefreshed(response) {
+    setLoading(false);
+    if (response.status === "sukses") {
+      if (response.message) {
+        showInfoModal("Sukses", response.message, false); // <--- BARU
+      }
+      bukaHalamanMapel();
+    } else {
+      showInfoModal("Error", response.message, true); // <--- BARU
+    }
+  }
+
+  function onMapelSaved(response) {
+    setLoading(false); 
+    
+    if (response.status === "sukses") {
+      tutupModalMapel();
+      bukaHalamanMapel(); // Muat ulang data tabel
+    } else {
+      showMessage('modal-mapel-error', response.message, true);
+    }
+  }
+
+</script>
