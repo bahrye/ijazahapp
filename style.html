@@ -1,0 +1,412 @@
+<style>
+  /* 1. Import Font Profesional (Roboto) */
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+  /* 2. Definisikan Palet Warna (CSS Variables) */
+  :root {
+    --primary-color: #0d6efd;
+    --primary-dark: #0b5ed7;
+    --secondary-color: #6c757d;
+    --bg-light: #f8f9fa;
+    --bg-white: #ffffff;
+    --text-dark: #212529;
+    --text-light: #6c757d;
+    --border-color: #dee2e6;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+  }
+
+  /* 3. Reset Dasar & Body */
+  body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding-top: 20px;
+    box-sizing: border-box;
+  }
+
+  /* 4. Layout "Card" Utama */
+  .container {
+    width: 100%;
+    max-width: 450px;
+    margin: 0 15px;
+    box-sizing: border-box;
+  }
+  
+  .page {
+    background-color: var(--bg-white);
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+  }
+  
+  /* 5. Header Aplikasi */
+  .app-header {
+    text-align: center;
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 20px;
+  }
+  .app-header h1 { margin: 0; color: var(--primary-color); font-size: 24px; font-weight: 700; }
+  .app-header p { margin: 5px 0 0; font-size: 14px; color: var(--text-light); }
+
+  /* 6. Form (Input & Button) */
+  .form-group { margin-bottom: 15px; }
+  .form-group label { 
+    display: block;
+    font-size: 14px; 
+    font-weight: 500; 
+    margin-bottom: 5px; 
+    color: var(--text-dark);
+  }
+  
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  select {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-sizing: border-box; /* Penting! */
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  }
+
+  button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  button:hover {
+    background-color: var(--primary-dark);
+  }
+  
+  /* 7. Link Navigasi (Login/Daftar) */
+  .nav-link {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--primary-color);
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .nav-link:hover {
+    text-decoration: underline;
+  }
+
+  /* 8. Pesan Error / Sukses */
+  .message {
+    font-size: 14px;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 15px;
+    text-align: center;
+    display: none; /* Sembunyi by default */
+  }
+  .error {
+    color: var(--danger-color);
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+  }
+  .success {
+    color: var(--success-color);
+    background-color: rgba(25, 135, 84, 0.1);
+    border: 1px solid rgba(25, 135, 84, 0.2);
+  }
+
+  /* 9. Spinner Loading Profesional */
+  #loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid var(--bg-light);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* 10. Dashboard (Halaman Utama) */
+  #halaman-utama h2 {
+    color: var(--text-dark);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+    margin-top: 0;
+  }
+  #halaman-utama ul { list-style-type: disc; padding-left: 20px; }
+  #halaman-utama li { margin-bottom: 10px; }
+  #btn-logout { background-color: var(--danger-color); margin-top: 15px; }
+  #btn-logout:hover { background-color: #b02a37; }
+  
+  /* 11. Halaman Mapel & Tabel */
+  #halaman-mapel .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  #halaman-mapel h2 { margin: 0; }
+  #btn-tambah-mapel-baru {
+    width: auto; /* Jangan full width */
+    padding: 10px 15px;
+    font-size: 14px;
+    background-color: var(--success-color);
+  }
+  #btn-tambah-mapel-baru:hover { background-color: #157347; }
+  #btn-kembali-ke-dashboard {
+    width: 100%;
+    background-color: var(--secondary-color);
+  }
+
+  .mapel-table-container { overflow-x: auto; }
+  .mapel-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  .mapel-table th, .mapel-table td {
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    text-align: left;
+  }
+  .mapel-table th {
+    background-color: var(--bg-light);
+    text-align: center; /* <-- TAMBAHKAN BARIS INI */
+  }
+  .mapel-table td:last-child { width: 100px; text-align: center; }
+
+  /* Tombol Aksi di Tabel */
+  .btn-aksi {
+    display: block;         /* Membuat tombol jadi 100% lebar kolom */
+    width: 100%;            /* Memastikan lebar penuh */
+    box-sizing: border-box; /* Agar padding tidak merusak lebar */
+    padding: 5px 8px;
+    font-size: 12px;
+    margin: 0;              /* Hapus margin samping */
+    margin-bottom: 5px;     /* Beri jarak 5px di bawah */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: white;
+    /* Hapus 'width: auto' jika ada */
+  }
+  .btn-aksi:last-child {
+    margin-bottom: 0;
+  }
+  .btn-edit { background-color: var(--primary-color); }
+  .btn-delete { background-color: var(--danger-color); }
+
+  /* 12. Modal (Popup Form) */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    padding-top: 60px;
+  }
+  .modal-content {
+    background-color: var(--bg-white);
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+  }
+  .modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header h2 { margin: 0; font-size: 20px; }
+  .close-button { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+  .close-button:hover, .close-button:focus { color: black; }
+  .modal-body { padding: 20px; }
+  .modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+  }
+  #btn-simpan-mapel, #btn-batal-modal {
+    width: auto;
+    margin-left: 10px;
+  }
+  #btn-batal-modal {
+    background-color: var(--secondary-color);
+  }
+
+  /* 13. Tampilan Desktop (Lebih Lebar) */
+  @media (min-width: 768px) {
+    /* Kita targetkan container halaman utama dan mapel
+      secara spesifik agar menjadi lebih lebar di desktop.
+    */
+    #halaman-utama,
+    #halaman-mapel {
+      max-width: 960px; /* Ubah lebar ini sesuai selera Anda (misal: 960px) */
+    }
+
+    /* PENTING: Kita TIDAK menargetkan #auth-container (login/reg), 
+      karena halaman login/registrasi tetap terlihat bagus
+      dengan lebar 450px.
+    */
+  }
+
+  /* 14. Penataan Tombol Header Mapel */
+  .header-buttons {
+    display: flex;
+    gap: 10px; /* Memberi jarak 10px antar tombol */
+  }
+
+  /* Mengatur ulang style tombol di header */
+  #btn-tambah-mapel-baru,
+  #btn-ambil-default,
+  #btn-hapus-semua {
+    width: auto; /* Lebar otomatis sesuai konten */
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+
+  /* Warna spesifik untuk tombol baru */
+  #btn-ambil-default {
+    background-color: var(--secondary-color);
+  }
+  #btn-ambil-default:hover {
+    background-color: #5a6268;
+  }
+
+  #btn-hapus-semua {
+    background-color: var(--danger-color);
+  }
+  #btn-hapus-semua:hover {
+    background-color: #b02a37;
+  }
+
+  /* Memastikan warna tombol tambah tetap hijau */
+  #btn-tambah-mapel-baru {
+    background-color: var(--success-color);
+  }
+  #btn-tambah-mapel-baru:hover {
+    background-color: #157347;
+  }
+
+  /* 15. Modal Konfirmasi Kustom */
+  #confirmation-modal .modal-content {
+    max-width: 450px; /* Modal konfirmasi tidak perlu terlalu lebar */
+  }
+
+  #confirm-modal-body {
+    font-size: 16px;
+    line-height: 1.5;
+    padding-top: 15px;
+    padding-bottom: 15px;
+  }
+
+  /* Style untuk teks PERINGATAN (jika kita gunakan tag <strong>) */
+  #confirm-modal-body strong {
+    color: var(--danger-color);
+    font-weight: 700;
+  }
+
+  #btn-confirm-ok {
+    width: auto;
+    /* Warna akan diatur oleh JavaScript */
+  }
+
+  #btn-confirm-cancel {
+    width: auto;
+    background-color: var(--secondary-color);
+  }
+  #btn-confirm-cancel:hover {
+    background-color: #5a6268;
+  }
+
+  /* Modal Form Mapel */
+  #btn-simpan-mapel {
+    margin-left: 10px;
+  }
+
+  /* Modal Konfirmasi */
+  #btn-confirm-ok {
+    margin-left: 10px;
+  }
+
+
+  /* 16. Modal Info (Alert) Kustom */
+  #info-modal .modal-content {
+    max-width: 450px;
+  }
+
+  #info-modal .modal-body {
+    font-size: 16px;
+    line-height: 1.5;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    /* Style default untuk teks */
+    color: var(--text-dark);
+    font-weight: 400;
+  }
+
+  /* Style khusus jika pesannya adalah error */
+  #info-modal .modal-body.error {
+    color: var(--danger-color);
+    font-weight: 500;
+  }
+
+  #btn-info-ok {
+    width: auto;
+    background-color: var(--primary-color);
+  }
+  #btn-info-ok:hover {
+    background-color: var(--primary-dark);
+  }
+</style>
