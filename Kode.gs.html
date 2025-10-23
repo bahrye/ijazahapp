@@ -1,0 +1,481 @@
+// ! ID MASTER SHEET ANDA
+// ! Ini adalah sheet yang berisi daftar sekolah (Email, Password, ID Sheet mereka)
+const MASTER_SHEET_ID = "191TzI0vRzK8xg7kGym8qUnvXz_edlCH_IJmmwMZMK_M"; 
+
+/**
+ * Fungsi utama untuk menampilkan halaman web.
+ */
+function doGet(e) {
+  return HtmlService.createTemplateFromFile('index')
+    .evaluate()
+    .setTitle('Pengolahan Nilai Ijazah')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+}
+
+/**
+ * Fungsi utility untuk menyisipkan file CSS atau JS ke dalam HTML.
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+// ===========================================
+// FUNGSI OTENTIKASI & SESI
+// ===========================================
+
+/**
+ * Memproses login pengguna.
+ * (DIPERBARUI: Membuat token & stempel waktu)
+ */
+function prosesLogin(email, password) {
+  try {
+    const masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
+    const sheetSekolah = masterSS.getSheetByName('Sheet_Sekolah');
+    if (!sheetSekolah) {
+      return { status: "gagal", message: "Database Master tidak dikonfigurasi. Hubungi Admin." };
+    }
+    const dataSekolah = sheetSekolah.getDataRange().getValues();
+
+    for (let i = 1; i < dataSekolah.length; i++) {
+      const row = dataSekolah[i];
+      const dbEmail = row[3];
+      const dbPassword = row[4];
+      
+      if (dbEmail === email && dbPassword === password) {
+        
+        // Buat token unik
+        const token = Utilities.getUuid();
+        const now = new Date().getTime(); // Stempel waktu
+        
+        const userProperties = PropertiesService.getUserProperties();
+        userProperties.setProperty('sessionToken', token);
+        userProperties.setProperty('lastActivity', now.toString()); // Simpan sebagai string
+        
+        // Simpan data lain seperti biasa
+        userProperties.setProperty('sekolahID', row[0]);
+        userProperties.setProperty('namaSekolah', row[1]);
+        userProperties.setProperty('jenjang', row[2]);
+        userProperties.setProperty('spreadsheetID', row[5]);
+        
+        return { 
+          status: "sukses", 
+          namaSekolah: row[1], 
+          jenjang: row[2],
+          token: token // Kirim token ke klien
+        };
+      }
+    }
+    
+    return { status: "gagal", message: "Email atau password salah." };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: "Terjadi error: " + e.message };
+  }
+}
+
+/**
+ * Memproses registrasi sekolah baru.
+ * (Membuat sheet secara manual, tanpa template)
+ */
+function prosesRegistrasi(namaSekolah, jenjang, email, password) {
+  let newSSID = null; // Variabel untuk menyimpan ID sheet baru jika terjadi error
+  try {
+    if (!namaSekolah || !jenjang || !email || !password) {
+      return { status: "gagal", message: "Semua data wajib diisi." };
+    }
+
+    const masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
+    let sheetSekolah = masterSS.getSheetByName('Sheet_Sekolah');
+    
+    if (!sheetSekolah) {
+       sheetSekolah = masterSS.insertSheet('Sheet_Sekolah');
+       sheetSekolah.appendRow(['SekolahID', 'NamaSekolah', 'Jenjang', 'EmailAdmin', 'Password', 'SpreadsheetID']);
+    }
+    
+    const dataSekolah = sheetSekolah.getDataRange().getValues();
+
+    for (let i = 1; i < dataSekolah.length; i++) {
+      if (dataSekolah[i][3] === email) {
+        return { status: "gagal", message: "Email ini sudah terdaftar." };
+      }
+    }
+
+    // Buat Spreadsheet Baru untuk Sekolah
+    const newSpreadsheet = SpreadsheetApp.create("Database Nilai - " + namaSekolah);
+    newSSID = newSpreadsheet.getId();
+    Logger.log("Spreadsheet baru dibuat (manual): " + newSSID);
+
+    const defaultSheet = newSpreadsheet.getSheets()[0];
+    
+    newSpreadsheet.insertSheet('Siswa')
+      .appendRow(['SiswaID', 'NamaSiswa', 'NISN', 'Kelas']);
+    
+    const sheetMapel = newSpreadsheet.insertSheet('Mapel');
+    sheetMapel.appendRow(['MapelID', 'NamaMapel']); // Header
+
+    const defaultMapel = getDynamicDefaultMapel(jenjang, masterSS);
+    if (defaultMapel.length > 0) {
+      sheetMapel.getRange(2, 1, defaultMapel.length, 2).setValues(defaultMapel);
+    }
+
+    newSpreadsheet.insertSheet('Nilai_Rapor')
+      .appendRow([
+        'SiswaID', 'MapelID', 
+        'Sem1_P', 'Sem1_K', 'Sem2_P', 'Sem2_K', 
+        'Sem3_P', 'Sem3_K', 'Sem4_P', 'Sem4_K', 'Sem5_P', 'Sem5_K'
+      ]);
+
+    newSpreadsheet.insertSheet('Nilai_Ujian')
+      .appendRow(['SiswaID', 'MapelID', 'UjianMadrasah', 'UjianPraktek']);
+    
+    const sheetSetting = newSpreadsheet.insertSheet('Pengaturan');
+    sheetSetting.appendRow(['Setting', 'Value']);
+    sheetSetting.appendRow(['Bobot_Rapor', 60]);
+    sheetSetting.appendRow(['Bobot_Ujian', 40]);
+
+    newSpreadsheet.deleteSheet(defaultSheet);
+    
+    const newSekolahID = "SKL-" + (sheetSekolah.getLastRow());
+    
+    sheetSekolah.appendRow([
+      newSekolahID, 
+      namaSekolah, 
+      jenjang, 
+      email, 
+      password, 
+      newSSID
+    ]);
+
+    return { status: "sukses", message: "Registrasi berhasil! Anda akan diarahkan ke halaman login." };
+    
+  } catch (e) {
+    Logger.log(e);
+    if (newSSID) {
+      DriveApp.getFileById(newSSID).setTrashed(true);
+    }
+    return { status: "gagal", message: "Terjadi error di server: " + e.message };
+  }
+}
+
+/**
+ * Menghapus sesi pengguna.
+ */
+function prosesLogout() {
+  try {
+    PropertiesService.getUserProperties().deleteAllProperties();
+    return { status: "sukses" };
+  } catch (e) {
+    return { status: "gagal", message: e.message };
+  }
+}
+
+/**
+ * [PENJAGA] Memvalidasi sesi & mereset timer 3 jam.
+ */
+function validateAndRefreshSession() {
+  const userProperties = PropertiesService.getUserProperties();
+  const lastActivityStr = userProperties.getProperty('lastActivity');
+  const storedToken = userProperties.getProperty('sessionToken');
+  
+  if (!storedToken || !lastActivityStr) {
+    throw new Error("Sesi tidak ditemukan. Silakan login ulang.");
+  }
+  
+  const lastActivity = parseInt(lastActivityStr, 10);
+  const now = new Date().getTime();
+  const threeHours = 3 * 60 * 60 * 1000;
+  
+  if (now - lastActivity > threeHours) {
+    userProperties.deleteAllProperties();
+    throw new Error("Sesi Anda telah berakhir (3 jam tidak aktif). Silakan login ulang.");
+  }
+  
+  userProperties.setProperty('lastActivity', now.toString());
+  return userProperties;
+}
+
+/**
+ * [CHECK AWAL] Memeriksa token saat halaman dimuat.
+ */
+function checkToken(tokenFromClient) {
+  try {
+    const userProperties = validateAndRefreshSession(); 
+    const storedToken = userProperties.getProperty('sessionToken');
+
+    if (tokenFromClient === storedToken) {
+      return { 
+        status: "sukses", 
+        namaSekolah: userProperties.getProperty('namaSekolah'), 
+        jenjang: userProperties.getProperty('jenjang')
+      };
+    } else {
+      userProperties.deleteAllProperties();
+      return { status: "gagal", message: "Token tidak cocok. Silakan login ulang." };
+    }
+    
+  } catch (e) {
+    // Tangkap error dari validateAndRefreshSession (mis. kedaluwarsa)
+    return { status: "gagal", message: e.message };
+  }
+}
+
+
+// ===========================================
+// FUNGSI PENGOLAHAN NILAI (CONTOH)
+// ===========================================
+
+function hitungNilaiIjazahSiswa(siswaID) {
+  try {
+    // Panggil 'penjaga' di awal
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheetSetting = ss.getSheetByName('Pengaturan');
+    
+    const bobotRapor = sheetSetting.getRange('B2').getValue(); 
+    const bobotUjian = sheetSetting.getRange('B3').getValue(); 
+    
+    if (siswaID === 'S-001') {
+      // Data dummy untuk tes
+      const dataRaporSiswa = { Sem1_P: 85, Sem1_K: 88, Sem2_P: 86, Sem2_K: 87, Sem3_P: 88, Sem3_K: 88, Sem4_P: 90, Sem4_K: 90, Sem5_P: 90, Sem5_K: 92 };
+      const dataUjianSiswa = { UjianMadrasah: 88, UjianPraktek: 90 };
+      
+      let nilaiUjian = 0;
+      if (dataUjianSiswa.UjianPraktek && dataUjianSiswa.UjianPraktek > 0) {
+        nilaiUjian = (dataUjianSiswa.UjianMadrasah + dataUjianSiswa.UjianPraktek) / 2;
+      } else {
+        nilaiUjian = dataUjianSiswa.UjianMadrasah;
+      }
+      
+      const nilaiRaporArray = Object.values(dataRaporSiswa);
+      const totalNilaiRapor = nilaiRaporArray.reduce((acc, val) => acc + val, 0);
+      const rataRataRapor = totalNilaiRapor / nilaiRaporArray.length;
+      
+      const nilaiAkhir = (rataRataRapor * bobotRapor / 100) + (nilaiUjian * bobotUjian / 100);
+      
+      return {
+        status: "sukses",
+        mapel: "Pendidikan Agama (Contoh)",
+        nilaiRataRataRapor: rataRataRapor.toFixed(2),
+        nilaiRataRataUjian: nilaiUjian.toFixed(2),
+        nilaiAkhirIjazah: nilaiAkhir.toFixed(2)
+      };
+    } else {
+      return { status: "error", message: "SiswaID 'S-001' tidak ditemukan untuk demo." };
+    }
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: e.message };
+  }
+}
+
+// ===========================================
+// FUNGSI HELPER MAPEL DEFAULT (DINAMIS)
+// ===========================================
+
+/**
+ * Mengambil daftar mapel default dari Master Sheet berdasarkan jenjang.
+ */
+function getDynamicDefaultMapel(jenjang, masterSpreadsheet) {
+  try {
+    const mapelSheet = masterSpreadsheet.getSheetByName('Data_Mapel_Default');
+    if (!mapelSheet) {
+      Logger.log("Peringatan: Sheet 'Data_Mapel_Default' tidak ditemukan di Master Sheet.");
+      return []; // Kembalikan array kosong jika sheet tidak ada
+    }
+    
+    const data = mapelSheet.getDataRange().getValues();
+    data.shift(); // Hapus baris header
+
+    const defaultMapel = [];
+    
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const jenjangData = row[0]; // Kolom Jenjang
+      const mapelID = row[1];     // Kolom MapelID
+      const namaMapel = row[2];   // Kolom NamaMapel
+
+      // Filter: jika jenjangnya cocok ATAU jenjangnya "UMUM"
+      if (jenjangData === jenjang || jenjangData === 'UMUM') {
+        if (mapelID && namaMapel) { // Pastikan data tidak kosong
+          defaultMapel.push([mapelID, namaMapel]);
+        }
+      }
+    }
+    
+    return defaultMapel;
+
+  } catch (e) {
+    Logger.log("Error saat mengambil mapel dinamis: " + e.message);
+    return []; // Kembalikan array kosong jika terjadi error
+  }
+}
+
+// ===========================================
+// FUNGSI CRUD MATA PELAJARAN
+// ===========================================
+
+function getMapelSheet() {
+  // Panggil 'penjaga' di awal
+  const userProperties = validateAndRefreshSession();
+  const spreadsheetID = userProperties.getProperty('spreadsheetID');
+  
+  const ss = SpreadsheetApp.openById(spreadsheetID);
+  const sheetMapel = ss.getSheetByName('Mapel');
+  if (!sheetMapel) throw new Error("Sheet 'Mapel' tidak ditemukan.");
+  
+  return sheetMapel;
+}
+
+function getMapel() {
+  try {
+    const sheetMapel = getMapelSheet();
+    const data = sheetMapel.getDataRange().getValues();
+    data.shift(); // Hapus header
+    
+    const mapel = data.map(row => ({ id: row[0], nama: row[1] }))
+                      .filter(row => row.id); // Filter baris kosong
+    
+    return { status: "sukses", mapel: mapel };
+  } catch (e) {
+    return { status: "gagal", message: e.message };
+  }
+}
+
+function createMapel(mapelID, namaMapel) {
+  try {
+    if (!mapelID || !namaMapel) {
+      return { status: "gagal", message: "ID Mapel dan Nama Mapel wajib diisi." };
+    }
+    
+    const sheetMapel = getMapelSheet(); // Otomatis memvalidasi sesi
+    const data = sheetMapel.getDataRange().getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] && data[i][0].toUpperCase() === mapelID.toUpperCase()) {
+        return { status: "gagal", message: "MapelID '" + mapelID + "' sudah ada." };
+      }
+    }
+    
+    sheetMapel.appendRow([mapelID, namaMapel]);
+    return { status: "sukses" };
+    
+  } catch (e) {
+    return { status: "gagal", message: e.message };
+  }
+}
+
+function updateMapel(mapelID, namaMapel) {
+  try {
+    if (!mapelID || !namaMapel) {
+      return { status: "gagal", message: "ID Mapel dan Nama Mapel wajib diisi." };
+    }
+    
+    const sheetMapel = getMapelSheet(); // Otomatis memvalidasi sesi
+    const data = sheetMapel.getDataRange().getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === mapelID) {
+        sheetMapel.getRange(i + 1, 2).setValue(namaMapel);
+        return { status: "sukses" };
+      }
+    }
+    return { status: "gagal", message: "MapelID tidak ditemukan." };
+    
+  } catch (e) {
+    return { status: "gagal", message: e.message };
+  }
+}
+
+function deleteMapel(mapelID) {
+  try {
+    const sheetMapel = getMapelSheet(); // Otomatis memvalidasi sesi
+    const data = sheetMapel.getDataRange().getValues();
+    
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (data[i][0] === mapelID) {
+        sheetMapel.deleteRow(i + 1);
+        return { status: "sukses" };
+      }
+    }
+    return { status: "gagal", message: "MapelID tidak ditemukan." };
+    
+  } catch (e) {
+    return { status: "gagal", message: e.message };
+  }
+}
+
+// ===========================================
+// FUNGSI KELOLA MAPEL (BULK)
+// ===========================================
+
+/**
+ * [SINKRONISASI] Menambahkan mapel default yang hilang ke sheet Mapel sekolah.
+ */
+function syncDefaultMapel() {
+  try {
+    const userProperties = validateAndRefreshSession();
+    const jenjang = userProperties.getProperty('jenjang');
+    
+    // 1. Ambil daftar mapel default dari Master Sheet
+    const masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
+    const defaultMapelList = getDynamicDefaultMapel(jenjang, masterSS); // Array [ [ID, Nama], [ID, Nama] ]
+    
+    // 2. Ambil daftar mapel yang ada di sheet sekolah
+    const sheetMapel = getMapelSheet(); // Ini sudah memvalidasi sesi
+    const dataMapel = sheetMapel.getDataRange().getValues();
+    dataMapel.shift(); // Hapus header
+    
+    // Buat Set (untuk pencarian cepat) dari MapelID yang sudah ada
+    const existingMapelIDs = new Set();
+    dataMapel.forEach(row => {
+      if (row[0]) {
+        existingMapelIDs.add(row[0].toUpperCase()); // Simpan dalam huruf besar
+      }
+    });
+
+    // 3. Filter mapel default yang BELUM ADA
+    const mapelToAdd = [];
+    defaultMapelList.forEach(mapel => {
+      const mapelID = mapel[0];
+      if (!existingMapelIDs.has(mapelID.toUpperCase())) {
+        mapelToAdd.push(mapel); // Tambahkan [ID, Nama]
+      }
+    });
+    
+    // 4. Tambahkan mapel yang hilang ke sheet
+    if (mapelToAdd.length > 0) {
+      sheetMapel.getRange(sheetMapel.getLastRow() + 1, 1, mapelToAdd.length, 2)
+                .setValues(mapelToAdd);
+      return { status: "sukses", message: `Berhasil menambahkan ${mapelToAdd.length} mapel default yang hilang.` };
+    } else {
+      return { status: "sukses", message: "Data mapel Anda sudah sinkron. Tidak ada yang ditambahkan." };
+    }
+    
+  } catch (e) {
+    return { status: "gagal", message: e.message };
+  }
+}
+
+/**
+ * [HAPUS SEMUA] Menghapus semua mapel dari sheet sekolah.
+ */
+function deleteAllMapel() {
+  try {
+    const sheetMapel = getMapelSheet(); // Ini sudah memvalidasi sesi
+    const lastRow = sheetMapel.getLastRow();
+    
+    // Hapus semua baris KECUALI baris header (baris 1)
+    if (lastRow > 1) {
+      sheetMapel.deleteRows(2, lastRow - 1);
+    }
+    
+    return { status: "sukses", message: "Semua mapel telah dihapus." };
+    
+  } catch (e) {
+    return { status: "gagal", message: e.message };
+  }
+}
