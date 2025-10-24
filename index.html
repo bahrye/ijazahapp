@@ -74,9 +74,11 @@
           <li>Input Nilai Ujian</li>
           <li>Cetak Laporan Nilai Ijazah</li>
         </ul>
-        <button id="btn-buka-data-sekolah">Kelola Data Sekolah</button>
+        <button id="btn-buka-data-sekolah" style="margin-top: 10px;">Kelola Data Sekolah</button>
+        <button id="btn-buka-siswa" style="margin-top: 10px;">Kelola Data Siswa</button>
         <button id="btn-buka-mapel" style="background-color: #198754; margin-top: 10px;">Kelola Mata Pelajaran</button>
         <button id="btn-buka-bobot" style="margin-top: 10px;">Kelola Bobot Nilai Ijazah</button>
+        <button id="btn-buka-kelas" style="margin-top: 10px;">Kelola Kelas</button>
         
         <hr>
         
@@ -219,6 +221,50 @@
         </form>
       </div>
     </div>
+
+    <div class="container" id="halaman-kelas" style="display: none;">
+      <div class="page">
+        <h2>Kelola Kelas</h2>
+        <p>Masukkan nama-nama kelas yang ada di sekolah Anda. Klik tombol (+) untuk menambah baris baru.</p>
+        
+        <form id="form-kelas">
+          
+          <div id="kelas-list-container">
+            <p>Memuat data kelas...</p>
+          </div>
+          
+          <p id="kelas-message" class="message" style="display: none;"></p>
+
+          <hr>
+          <div class="form-actions">
+              <button type="button" id="btn-kembali-ke-dashboard-4">Kembali ke Dashboard</button>
+              <button type="submit" id="btn-simpan-kelas">Simpan Perubahan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+
+    <div class="container" id="halaman-siswa" style="display: none;">
+      <div class="page">
+        <div class="page-header">
+          <h2>Kelola Data Siswa</h2>
+          <div class="header-buttons">
+            <button id="btn-tambah-siswa-baru">+ Tambah Siswa</button>
+            <button id="btn-hapus-semua-siswa">Hapus Semua Siswa</button>
+          </div>
+        </div>
+        
+        <p>Kelola data siswa di sekolah Anda. Data ini akan digunakan untuk input nilai.</p>
+        
+        <div class="siswa-table-container" id="siswa-table-container">
+          <p>Memuat data siswa...</p>
+        </div>
+        
+        <hr>
+        <button id="btn-kembali-ke-dashboard-5">Kembali ke Dashboard</button>
+      </div>
+    </div>
     <div class="container" id="halaman-mapel" style="display: none;">
       <div class="page">
         <div class="page-header">
@@ -241,6 +287,60 @@
       </div>
     </div>
 
+    <div id="siswa-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-siswa-title">Tambah Siswa Baru</h2>
+          <span class="close-button" id="btn-tutup-modal-siswa">&times;</span>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="modal-siswa-mode" value="add">
+          <input type="hidden" id="modal-siswa-id" value="">
+          
+          <div class_message="form-group">
+            <label for="modal-siswa-nama">Nama Lengkap Siswa (Wajib)</label>
+            <input type="text" id="modal-siswa-nama" placeholder="Masukkan nama lengkap">
+          </div>
+          <div class="form-group">
+            <label for="modal-siswa-nisn">NISN Siswa (Wajib)</label>
+            <input type="text" id="modal-siswa-nisn" placeholder="Masukkan NISN">
+          </div>
+          <div class="form-group">
+            <label for="modal-siswa-nis-lokal">NIS Lokal (Opsional)</label>
+            <input type="text" id="modal-siswa-nis-lokal" placeholder="Misal: 240001">
+            <small class="helper-text">Format: 2 digit tahun masuk, 4 digit no. urut</small>
+          </div>
+          <div class="form-group">
+            <label for="modal-siswa-jk">Jenis Kelamin (Wajib)</label>
+            <select id="modal-siswa-jk">
+              <option value="">-- Pilih Jenis Kelamin --</option>
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="modal-siswa-tempat-lahir">Tempat Lahir (Opsional)</label>
+            <input type="text" id="modal-siswa-tempat-lahir" placeholder="Misal: Jakarta">
+          </div>
+          <div class="form-group">
+            <label for="modal-siswa-tgl-lahir">Tanggal Lahir (Opsional)</label>
+            <input type="date" id="modal-siswa-tgl-lahir">
+          </div>
+          <div class_message="form-group">
+            <label for="modal-siswa-kelas">Kelas (Wajib)</label>
+            <select id="modal-siswa-kelas">
+              <option value="">-- Memuat kelas... --</option>
+            </select>
+          </div>
+          
+          <p id="modal-siswa-error" class="message error"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-batal-modal-siswa">Batal</button>
+          <button id="btn-simpan-siswa">Simpan</button>
+        </div>
+      </div>
+    </div>
     <div id="mapel-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
