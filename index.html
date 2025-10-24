@@ -94,7 +94,14 @@
 
     <div class="container" id="halaman-data-sekolah" style="display: none;">
       <div class="page">
-        <h2>Kelola Data Sekolah</h2>
+        <div class="page-top-nav">
+          <button type="button" id="btn-kembali-ke-dashboard-2">Kembali ke Dasbor</button>
+        </div>
+        
+        <div class="page-header">
+          <h2>Kelola Data Sekolah</h2>
+        </div>
+        
         <p>Lengkapi data identitas sekolah Anda. Data ini akan digunakan pada dokumen dan laporan.</p>
         
         <form id="form-data-sekolah">
@@ -187,7 +194,6 @@
 
           <hr>
           <div class="form-actions">
-              <button type="button" id="btn-kembali-ke-dashboard-2">Kembali ke Dashboard</button>
               <button type="submit" id="btn-simpan-data-sekolah">Simpan Perubahan</button>
           </div>
         </form>
@@ -196,7 +202,14 @@
 
     <div class="container" id="halaman-bobot" style="display: none;">
       <div class="page">
-        <h2>Kelola Bobot Nilai Ijazah</h2>
+        <div class="page-top-nav">
+          <button type="button" id="btn-kembali-ke-dashboard-3">Kembali ke Dasbor</button>
+        </div>
+        
+        <div class="page-header">
+          <h2>Kelola Bobot Nilai Ijazah</h2>
+        </div>
+
         <p>Atur persentase bobot untuk nilai rapor dan nilai ujian. Total keduanya harus 100%. Bobot default adalah 60% Rapor dan 40% Ujian.</p>
         
         <form id="form-bobot">
@@ -215,7 +228,6 @@
 
           <hr>
           <div class="form-actions">
-              <button type="button" id="btn-kembali-ke-dashboard-3">Kembali ke Dashboard</button>
               <button type="submit" id="btn-simpan-bobot">Simpan Perubahan</button>
           </div>
         </form>
@@ -224,7 +236,14 @@
 
     <div class="container" id="halaman-kelas" style="display: none;">
       <div class="page">
-        <h2>Kelola Kelas</h2>
+        <div class="page-top-nav">
+          <button type="button" id="btn-kembali-ke-dashboard-4">Kembali ke Dasbor</button>
+        </div>
+        
+        <div class="page-header">
+          <h2>Kelola Kelas</h2>
+        </div>
+
         <p>Masukkan nama-nama kelas yang ada di sekolah Anda. Klik tombol (+) untuk menambah baris baru.</p>
         
         <form id="form-kelas">
@@ -237,7 +256,6 @@
 
           <hr>
           <div class="form-actions">
-              <button type="button" id="btn-kembali-ke-dashboard-4">Kembali ke Dashboard</button>
               <button type="submit" id="btn-simpan-kelas">Simpan Perubahan</button>
           </div>
         </form>
@@ -247,12 +265,16 @@
 
     <div class="container" id="halaman-siswa" style="display: none;">
       <div class="page">
+        <div class="page-top-nav">
+            <button id="btn-kembali-ke-dashboard-5">Kembali ke Dasbor</button>
+        </div>
+      
         <div class="page-header">
           <h2>Kelola Data Siswa</h2>
           <div class="header-buttons">
             <button id="btn-tambah-siswa-baru">+ Tambah Siswa</button>
             <button id="btn-hapus-semua-siswa">Hapus Semua Siswa</button>
-          </div>
+            </div>
         </div>
         
         <p>Kelola data siswa di sekolah Anda. Data ini akan digunakan untuk input nilai.</p>
@@ -260,20 +282,22 @@
         <div class="siswa-table-container" id="siswa-table-container">
           <p>Memuat data siswa...</p>
         </div>
-        
-        <hr>
-        <button id="btn-kembali-ke-dashboard-5">Kembali ke Dashboard</button>
       </div>
     </div>
+
     <div class="container" id="halaman-mapel" style="display: none;">
       <div class="page">
+        <div class="page-top-nav">
+          <button id="btn-kembali-ke-dashboard">Kembali ke Dasbor</button>
+        </div>
+        
         <div class="page-header">
           <h2>Kelola Mapel</h2>
           <div class="header-buttons">
             <button id="btn-tambah-mapel-baru">+ Tambah Mapel</button>
             <button id="btn-ambil-default">Ambil Mapel Default</button>
             <button id="btn-hapus-semua">Hapus Semua Mapel</button>
-          </div>
+            </div>
         </div>
         
         <p>Kelola mata pelajaran yang akan digunakan di sekolah Anda.</p>
@@ -281,9 +305,6 @@
         <div class="mapel-table-container" id="mapel-table-container">
           <p>Memuat data mapel...</p>
         </div>
-        
-        <hr>
-        <button id="btn-kembali-ke-dashboard">Kembali ke Dashboard</button>
       </div>
     </div>
 
@@ -297,7 +318,7 @@
           <input type="hidden" id="modal-siswa-mode" value="add">
           <input type="hidden" id="modal-siswa-id" value="">
           
-          <div class_message="form-group">
+          <div class="form-group">
             <label for="modal-siswa-nama">Nama Lengkap Siswa (Wajib)</label>
             <input type="text" id="modal-siswa-nama" placeholder="Masukkan nama lengkap">
           </div>
@@ -326,7 +347,7 @@
             <label for="modal-siswa-tgl-lahir">Tanggal Lahir (Opsional)</label>
             <input type="date" id="modal-siswa-tgl-lahir">
           </div>
-          <div class_message="form-group">
+          <div class="form-group">
             <label for="modal-siswa-kelas">Kelas (Wajib)</label>
             <select id="modal-siswa-kelas">
               <option value="">-- Memuat kelas... --</option>
