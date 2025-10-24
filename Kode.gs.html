@@ -8,6 +8,15 @@ const TARGET_FOLDER_ID = "1Xu9vSZQKAxVCNDuAXI8W5l-3xb58cQm9";
 // [BARU] PASTE ID TEMPLATE GOOGLE SHEET ANDA DI SINI
 const TEMPLATE_SISWA_SHEET_ID = "1EWfAFmXD4OtbOTKmq0WFtbaRaVG_NAjHH5IjIgM92FY";
 
+// ===========================================
+// [BARU] KONSTANTA TEMPLATE STATIS
+// ===========================================
+// GANTI "..." DENGAN STRING BASE64 DARI LANGKAH 1
+const TEMPLATE_SISWA_BASE64 = "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";
+const TEMPLATE_SISWA_FILENAME = "template_import_siswa.xlsx";
+const TEMPLATE_SISWA_MIMETYPE = MimeType.MICROSOFT_EXCEL;
+// ===========================================
+
 /**
  * Fungsi utama untuk menampilkan halaman web.
  */
@@ -1038,84 +1047,30 @@ function saveKelas(kelasList) {
 // ===========================================
 
 /**
- * [DIUBAH TOTAL] Membuat dan mengirim template siswa dinamis
- * dengan validasi data (dropdown) untuk kelas.
+ * [VERSI INSTAN] Mengirim template siswa statis (Base64)
+ * yang sudah disimpan di konstanta global.
  */
 function getSiswaTemplateUrl() {
-  let tempCopyId = null; // Variabel untuk ID file sementara (untuk cleanup)
   try {
-    // 1. Validasi sesi dan dapatkan properti pengguna
-    const userProperties = validateAndRefreshSession();
-    const spreadsheetID = userProperties.getProperty('spreadsheetID'); // ID sheet data sekolah
-    
-    if (!TEMPLATE_SISWA_SHEET_ID) {
-      throw new Error("ID Template Sheet (TEMPLATE_SISWA_SHEET_ID) belum diatur di Kode.gs");
+    // 1. Validasi sesi (tetap penting)
+    validateAndRefreshSession();
+
+    // 2. Cek apakah konstanta ada
+    if (!TEMPLATE_SISWA_BASE64 || TEMPLATE_SISWA_BASE64.length < 1000) {
+      throw new Error("TEMPLATE_SISWA_BASE64 belum diatur di Kode.gs atau string-nya rusak/terlalu pendek.");
     }
 
-    // 2. Ambil daftar kelas dari sheet 'Kelas' milik pengguna
-    const userSS = SpreadsheetApp.openById(spreadsheetID);
-    const sheetKelas = getKelasSheet(userSS); // Helper yang sudah ada
-    const dataKelas = sheetKelas.getRange('A2:A' + sheetKelas.getLastRow()).getValues()
-                        .map(row => row[0]) // Ambil nilai
-                        .filter(kelas => kelas); // Filter baris kosong (e.g., ['VI A', 'VI B'])
-    
-    // 3. Buat salinan sementara (temporary copy) dari master template
-    const templateFile = DriveApp.getFileById(TEMPLATE_SISWA_SHEET_ID);
-    const tempCopy = templateFile.makeCopy(`[TEMP] Template Siswa - ${userProperties.getProperty('sekolahID')}`);
-    tempCopyId = tempCopy.getId(); // Simpan ID untuk dihapus nanti
-
-    // 4. Buka salinan sementara dan terapkan Data Validation
-    const tempSS = SpreadsheetApp.openById(tempCopyId);
-    const firstSheet = tempSS.getSheets()[0];
-
-    // Hanya tambahkan validasi jika ada daftar kelas
-    if (dataKelas.length > 0) {
-      // Buat aturan validasi
-      const validationRule = SpreadsheetApp.newDataValidation()
-                              .requireValueInList(dataKelas) // Ini adalah daftar dropdown
-                              .setAllowInvalid(false) // Tolak input jika tidak ada di daftar
-                              .setHelpText("Pilih kelas dari daftar yang tersedia.")
-                              .build();
-                              
-      // Terapkan aturan ke Kolom G (Kelas), mulai dari baris 2 s/d 1000
-      firstSheet.getRange('G2:G1000').setDataValidation(validationRule);
-      SpreadsheetApp.flush(); // Pastikan perubahan disimpan
-    }
-
-    // 5. Buat URL ekspor untuk file SEMENTARA ini
-    const exportUrl = `https://docs.google.com/spreadsheets/d/${tempCopyId}/export?format=xlsx`;
-
-    // 6. Unduh file .xlsx (oleh server) menggunakan token otorisasi script
-    const response = UrlFetchApp.fetch(exportUrl, {
-      headers: {
-        Authorization: 'Bearer ' + ScriptApp.getOAuthToken()
-      }
-    });
-    
-    const fileBlob = response.getBlob();
-    
-    // 7. Ubah file .xlsx (blob) menjadi string Base64 untuk dikirim ke client
-    const base64Data = Utilities.base64Encode(fileBlob.getBytes());
-    
-    // 8. HAPUS FILE SEMENTARA setelah selesai (PENTING!)
-    DriveApp.getFileById(tempCopyId).setTrashed(true);
-    tempCopyId = null; // Kosongkan ID setelah dihapus
-
-    // 9. Kirim data Base64 ke client
+    // 3. Langsung kirim data statis (super cepat!)
     return { 
       status: "sukses", 
-      base64: base64Data, 
-      mimeType: MimeType.MICROSOFT_EXCEL, // MimeType untuk .xlsx
-      fileName: "template_import_siswa.xlsx" // Nama file saat diunduh
+      base64: TEMPLATE_SISWA_BASE64, 
+      mimeType: TEMPLATE_SISWA_MIMETYPE,
+      fileName: TEMPLATE_SISWA_FILENAME
     };
 
   } catch (e) {
     Logger.log(e);
-    // Jika terjadi error, pastikan file sementara tetap dihapus
-    if (tempCopyId) {
-      DriveApp.getFileById(tempCopyId).setTrashed(true);
-    }
-    return { status: "gagal", message: "Gagal membuat template dinamis: " + e.message };
+    return { status: "gagal", message: "Gagal memuat template: " + e.message };
   }
 }
 
