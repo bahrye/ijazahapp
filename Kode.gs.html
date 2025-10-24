@@ -1519,3 +1519,194 @@ function saveSiswaUrutanBatch(urutanData) {
     return { status: "gagal", message: e.message };
   }
 }
+
+// ===========================================
+// [BARU] FUNGSI INPUT NILAI (GRID)
+// ===========================================
+
+/**
+ * [HELPER] Membuka sheet Nilai_Ujian, atau membuatnya jika belum ada.
+ */
+function getNilaiUjianSheet(ss) {
+  let sheet = ss.getSheetByName('Nilai_Ujian');
+  if (!sheet) {
+    // Buat sheet jika tidak ada (untuk kompatibilitas)
+    sheet = ss.insertSheet('Nilai_Ujian');
+    sheet.appendRow(['SiswaID', 'MapelID', 'UjianMadrasah', 'UjianPraktek']);
+    SpreadsheetApp.flush();
+  }
+  return sheet;
+}
+
+/**
+ * [BARU] Mengambil semua data yang diperlukan untuk menampilkan grid input nilai.
+ * @param {string} tipeUjian - 'UM' (Ujian Madrasah/Sekolah) atau 'Praktek'.
+ */
+function getNilaiUjianGridData(tipeUjian) {
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    
+    // 1. Ambil Daftar Siswa (sudah terurut)
+    // Kita panggil fungsi getSiswa() yang sudah ada, tapi ambil data mentahnya
+    const siswaData = getSiswa(); // Ini memanggil fungsi di atas
+    if (siswaData.status !== 'sukses') {
+      throw new Error("Gagal mengambil data siswa: " + siswaData.message);
+    }
+    // Ekstrak hanya data yang perlu ditampilkan di tabel
+    const siswaList = siswaData.siswa.map(s => ({
+      id: s.id,
+      nama: s.nama,
+      nisn: s.nisn,
+      kelas: s.kelas
+    }));
+    
+    // 2. Ambil Daftar Mapel (sesuai tipe ujian)
+    const mapelData = getMapel(); // Ini memanggil fungsi cache/sheet
+    if (mapelData.status !== 'sukses') {
+      throw new Error("Gagal mengambil data mapel: " + mapelData.message);
+    }
+    
+    let filteredMapel = [];
+    if (tipeUjian === 'UM') {
+      filteredMapel = mapelData.mapel.filter(m => m.isUS === true);
+    } else { // 'Praktek'
+      filteredMapel = mapelData.mapel.filter(m => m.isUP === true);
+    }
+    // Ekstrak hanya ID dan Nama
+    const mapelList = filteredMapel.map(m => ({ id: m.id, nama: m.nama }));
+    
+    // 3. Ambil Nilai yang Sudah Ada
+    const sheetNilai = getNilaiUjianSheet(ss);
+    const dataNilai = sheetNilai.getDataRange().getValues();
+    dataNilai.shift(); // Hapus header
+    
+    // Buat Peta (Map) untuk pencarian nilai cepat
+    // Kunci: "SiswaID_MapelID", Nilai: { um: 70, up: 80 }
+    const nilaiMap = new Map();
+    dataNilai.forEach(row => {
+      const siswaId = row[0];
+      const mapelId = row[1];
+      const nilaiUM = row[2];
+      const nilaiUP = row[3];
+      const key = `${siswaId}_${mapelId}`;
+      nilaiMap.set(key, { um: nilaiUM, up: nilaiUP });
+    });
+    
+    // 4. Susun Nilai yang relevan dalam format { "SiswaID_MapelID": nilai }
+    const nilaiData = {};
+    siswaList.forEach(siswa => {
+      mapelList.forEach(mapel => {
+        const key = `${siswa.id}_${mapel.id}`;
+        const storedNilai = nilaiMap.get(key);
+        
+        if (storedNilai) {
+          if (tipeUjian === 'UM') {
+            nilaiData[key] = storedNilai.um;
+          } else {
+            nilaiData[key] = storedNilai.up;
+          }
+        }
+        // Jika tidak ada, biarkan kosong (tidak perlu diisi)
+      });
+    });
+
+    // 5. Kembalikan paket data lengkap
+    return { 
+      status: "sukses", 
+      data: {
+        siswaList: siswaList,
+        mapelList: mapelList,
+        nilaiData: nilaiData 
+      }
+    };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
+}
+
+
+/**
+ * [BARU] Menyimpan batch nilai dari grid Ujian.
+ * Menerima array: [{ siswaId, mapelId, tipeUjian, nilai }, ...]
+ */
+function saveNilaiUjianBatch(dataToSave) {
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheet = getNilaiUjianSheet(ss);
+    
+    const dataRange = sheet.getDataRange();
+    const data = dataRange.getValues(); // [SiswaID, MapelID, UjianMadrasah, UjianPraktek]
+    
+    // Buat Peta (Map) dari data sheet yang ada untuk pencarian super cepat
+    // Kunci: "SiswaID_MapelID", Nilai: { rowIndex: 1, data: [...] }
+    const dataMap = new Map();
+    for (let i = 1; i < data.length; i++) { // Mulai dari 1 (skip header)
+      const key = `${data[i][0]}_${data[i][1]}`;
+      dataMap.set(key, { 
+        rowIndex: i, // Index di dalam array 'data'
+        dataRow: data[i] 
+      });
+    }
+    
+    let changesMade = false;
+    const rowsToAppend = []; // Untuk nilai yg belum ada
+    
+    // Loop data baru dari klien
+    dataToSave.forEach(item => {
+      const key = `${item.siswaId}_${item.mapelId}`;
+      const nilaiBaru = item.nilai || null; // Ubah "" jadi null
+      const existingEntry = dataMap.get(key);
+      
+      if (existingEntry) {
+        // Data sudah ada, UPDATE di array 'data'
+        const rowIndex = existingEntry.rowIndex;
+        if (item.tipeUjian === 'UM') {
+          if (data[rowIndex][2] != nilaiBaru) {
+            data[rowIndex][2] = nilaiBaru;
+            changesMade = true;
+          }
+        } else { // 'Praktek'
+          if (data[rowIndex][3] != nilaiBaru) {
+            data[rowIndex][3] = nilaiBaru;
+            changesMade = true;
+          }
+        }
+      } else {
+        // Data belum ada, TAMBAHKAN ke 'rowsToAppend'
+        let newRow = [item.siswaId, item.mapelId, null, null];
+        if (item.tipeUjian === 'UM') {
+          newRow[2] = nilaiBaru;
+        } else {
+          newRow[3] = nilaiBaru;
+        }
+        rowsToAppend.push(newRow);
+        
+        // Juga tambahkan ke dataMap agar tidak duplikat jika ada di dataToSave
+        dataMap.set(key, {}); 
+      }
+    });
+    
+    // 1. Tulis ulang semua data yang ada (jika ada perubahan)
+    if (changesMade) {
+      dataRange.setValues(data);
+    }
+    
+    // 2. Tambahkan baris baru (jika ada)
+    if (rowsToAppend.length > 0) {
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 4)
+           .setValues(rowsToAppend);
+    }
+    
+    return { status: "sukses", message: "Data nilai berhasil disimpan!" };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
+}
