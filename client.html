@@ -107,7 +107,7 @@
    * @param {string} message Pesan.
    * @param {boolean} isError Set ke true untuk teks merah.
    */
-  function showInfoModal(title, message, isError) {
+  function showInfoModal(title, message, isError, onOkCallback) {
     const modal = document.getElementById('info-modal');
     document.getElementById('info-modal-title').innerText = title;
     
@@ -119,6 +119,9 @@
     } else {
       modalBody.classList.remove('error');
     }
+
+    // Simpan callback di elemen modal
+    modal.onOk = onOkCallback || null;
     
     modal.style.display = 'block';
   }
@@ -127,7 +130,14 @@
    * Menutup modal info.
    */
   function hideInfoModal() {
-    document.getElementById('info-modal').style.display = 'none';
+    const modal = document.getElementById('info-modal');
+    modal.style.display = 'none';
+
+    // Periksa dan jalankan callback JIKA ADA
+    if (typeof modal.onOk === 'function') {
+      modal.onOk(); // Jalankan callback
+    }
+    modal.onOk = null; // Hapus callback setelah dijalankan
   }
 
   // ===========================================
@@ -531,14 +541,21 @@
    * Menampilkan pesan dan memuat ulang tabel.
    */
   function onTableRefreshed(response) {
-    setLoading(false);
+    setLoading(false); // Loader dari proses "hapus" hilang
+    
     if (response.status === "sukses") {
       if (response.message) {
-        showInfoModal("Sukses", response.message, false); // <--- BARU
+        // Tampilkan modal Sukses.
+        // Umpankan 'bukaHalamanMapel' sebagai callback.
+        // 'bukaHalamanMapel' baru akan jalan SETELAH user menekan "OK"
+        showInfoModal("Sukses", response.message, false, bukaHalamanMapel);
+      } else {
+        // Jika tidak ada pesan, langsung muat ulang tabel
+        bukaHalamanMapel();
       }
-      bukaHalamanMapel();
     } else {
-      showInfoModal("Error", response.message, true); // <--- BARU
+      // Jika error, tampilkan pesan, tapi jangan lakukan apa-apa saat "OK" diklik
+      showInfoModal("Error", response.message, true, null);
     }
   }
 
