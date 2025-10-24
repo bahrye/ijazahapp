@@ -373,11 +373,13 @@
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
+    gap: 10px; /* [BARU] Memberi jarak antar tombol */
   }
   #btn-simpan-mapel, #btn-batal-modal,
-  #btn-simpan-siswa, #btn-batal-modal-siswa {
+  #btn-simpan-siswa, #btn-batal-modal-siswa,
+  #btn-proses-import-siswa, #btn-batal-modal-import-siswa { /* [DIUBAH] Tambahkan tombol import */
     width: auto;
-    margin-left: 10px;
+    margin: 0; /* [DIUBAH] Hapus margin, kita pakai "gap" di footer */
   }
   #btn-batal-modal,
   #btn-batal-modal-siswa {
@@ -787,5 +789,214 @@
     opacity: 0.65;
     cursor: not-allowed;
     pointer-events: none;
+  }
+
+  /* 25. Style Halaman Import Siswa */
+  #btn-import-siswa {
+    background-color: var(--secondary-color);
+  }
+  #btn-import-siswa:hover {
+    background-color: #5a6268;
+  }
+
+  #btn-download-template-siswa {
+    width: auto;
+    background-color: var(--success-color);
+    padding: 10px 18px; /* [BARU] Dibuat lebih besar */
+    font-size: 15px; /* [BARU] Dibuat lebih besar */
+    font-weight: 700;
+  }
+  #btn-download-template-siswa:hover {
+    background-color: #157347;
+  }
+
+  /* Header untuk langkah-langkah di modal */
+  .import-step-header {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-top: 15px;
+    margin-bottom: 5px;
+  }
+
+  /* Style untuk input file */
+  input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    box-sizing: border-box;
+    background-color: var(--bg-light);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  input[type="file"]:hover {
+    background-color: #e9ecef;
+    border-color: var(--primary-color);
+  }
+  
+  /* Tombol proses di modal import */
+  #btn-proses-import-siswa {
+    background-color: var(--success-color); /* [DIUBAH] Ganti jadi hijau */
+  }
+  #btn-proses-import-siswa:hover {
+    background-color: #157347; /* [DIUBAH] Ganti jadi hijau tua */
+  }
+  #btn-proses-import-siswa:disabled {
+     background-color: var(--secondary-color) !important;
+  }
+  #btn-batal-modal-import-siswa {
+    background-color: var(--secondary-color);
+  }
+
+  /* Area Hasil Import */
+  #import-siswa-results {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-light);
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  #import-siswa-results h4 {
+    margin-top: 0;
+    color: var(--text-dark);
+  }
+  .import-gagal-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .import-gagal-table th,
+  .import-gagal-table td {
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    text-align: left;
+  }
+  .import-gagal-table th {
+    background-color: #e9ecef;
+  }
+
+  /* 26. Perbaikan Modal Import Profesional */
+  #import-siswa-modal .modal-content {
+    max-width: 480px; /* [DIUBAH] Dibuat lebih ramping */
+  }
+
+  #import-siswa-modal .modal-body {
+    background-color: var(--bg-light); /* Latar belakang body modal sedikit abu-abu */
+    padding: 20px 25px;
+  }
+
+  /* Box untuk setiap langkah */
+  .import-step-box {
+    display: flex;
+    gap: 20px;
+    background-color: var(--bg-white);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    align-items: flex-start;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  /* Nomor langkah (Lingkaran) */
+  .import-step-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.3);
+  }
+
+  .import-step-content {
+    flex-grow: 1;
+  }
+  
+  /* Mengubah style header langkah */
+  .import-step-header {
+    font-size: 18px; /* Sedikit lebih besar */
+    font-weight: 700;
+    color: var(--text-dark); /* Ganti jadi hitam, bukan biru */
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+  
+  .import-step-content p {
+    font-size: 14px;
+    color: var(--text-light);
+    margin-top: 0;
+    margin-bottom: 15px;
+  }
+
+  /* Custom File Upload Zone (Drag & Drop) */
+  .file-upload-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 30px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    background-color: var(--bg-white);
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.2s, border-color 0.2s;
+    box-sizing: border-box; /* [BARU] Ini akan memperbaiki masalah lebar */
+  }
+  
+  .file-upload-zone:hover,
+  .file-upload-zone.drag-over { /* State saat file diseret di atasnya */
+    background-color: #e9ecef;
+    border-color: var(--primary-color);
+  }
+
+  .file-upload-zone i {
+    font-size: 36px;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+  }
+  
+  .file-upload-zone span {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-light);
+    line-height: 1.4;
+  }
+  /* Style teks saat file sudah dipilih */
+  .file-upload-zone span.file-chosen {
+    color: var(--success-color);
+    font-weight: 700;
+  }
+
+  /* Sembunyikan input file asli */
+  #file-upload-siswa {
+    display: none;
+  }
+  
+  /* Hapus style lama agar tidak konflik */
+  input[type="file"] {
+    display: none !important;
+    border: none !important;
+    padding: 0 !important;
+    background-color: transparent !important;
+  }
+
+  /* 27. Perbaikan Jarak Pesan Download Template */
+  .import-step-content p#template-message {
+    margin-top: 15px; /* Beri jarak 15px dari tombol di atasnya */
+    margin-bottom: 0; /* Hapus margin bawah agar rapi */
   }
 </style>
