@@ -60,7 +60,8 @@
   function tampilHalaman(idHalaman) {
     const allPages = [
       'auth-container', 'halaman-utama', 'halaman-mapel',
-      'halaman-data-sekolah', 'halaman-bobot', 'halaman-kelas', 'halaman-siswa'
+      'halaman-data-sekolah', 'halaman-bobot', 'halaman-kelas', 'halaman-siswa',
+      'halaman-input-ujian', 'halaman-input-nilai-detail'
     ];
     const authSubPages = ['halaman-login', 'halaman-registrasi'];
 
@@ -75,6 +76,7 @@
     hideMessage('bobot-message');
     hideMessage('kelas-message');
     hideMessage('siswa-message');
+    hideMessage('input-nilai-message');
 
     // Tentukan halaman yang akan ditampilkan
     const targetElement = document.getElementById(idHalaman);
@@ -220,6 +222,13 @@
           case 'halaman-siswa':
               bukaHalamanSiswa();
               break;
+          case 'halaman-input-ujian':
+              bukaHalamanInputUjian();
+              break;
+          case 'halaman-input-nilai-detail':
+              // Jika di-refresh, kembalikan ke menu input, bukan halaman detail
+              bukaHalamanInputUjian(); 
+              break;
           default:
               console.warn("ID halaman tersimpan tidak valid:", pageId, ". Menampilkan dashboard.");
               tampilHalaman('halaman-utama'); // Fallback ke dashboard
@@ -347,6 +356,44 @@
     document.getElementById('btn-kembali-ke-dashboard-5').addEventListener('click', () => {
       tampilHalaman('halaman-utama');
     });
+
+    // [BARU] Listener untuk Halaman Input Nilai
+    document.getElementById('btn-buka-input-ujian').addEventListener('click', () => {
+      bukaHalamanInputUjian();
+    });
+    document.getElementById('btn-kembali-ke-dashboard-6').addEventListener('click', () => {
+      tampilHalaman('halaman-utama');
+    });
+    document.getElementById('btn-kembali-ke-input-ujian').addEventListener('click', () => {
+      bukaHalamanInputUjian();
+    });
+
+    // [BARU] Listener untuk 2 kartu di halaman input ujian
+    document.getElementById('btn-buka-input-um').addEventListener('click', () => {
+      // 'UM' = Ujian Madrasah/Sekolah
+      bukaHalamanInputNilaiDetail('UM'); 
+    });
+    document.getElementById('btn-buka-input-praktek').addEventListener('click', () => {
+      // 'Praktek' = Ujian Praktek
+      bukaHalamanInputNilaiDetail('Praktek'); 
+    });
+
+    // [BARU] Listener untuk simpan nilai & ganti mapel
+    document.getElementById('input-nilai-pilih-mapel').addEventListener('change', (e) => {
+      const mapelId = e.target.value;
+      // Ambil tipe ujian dari elemen tersembunyi
+      const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
+      if(mapelId && tipeUjian) {
+        // Fungsi ini akan kita buat di bawah (masih RANGKA)
+        loadSiswaUntukInputNilai(mapelId, tipeUjian);
+      } else {
+        document.getElementById('input-nilai-table-container').innerHTML = '<p>Pilih mata pelajaran untuk menampilkan daftar siswa.</p>';
+        document.getElementById('btn-simpan-input-nilai').disabled = true;
+      }
+    });
+
+    // [BARU] Listener untuk tombol simpan nilai (akan kita buat fungsinya di bawah)
+    document.getElementById('btn-simpan-input-nilai').addEventListener('click', simpanInputNilai);
 
     // Listener untuk tombol 'Kelola Mapel'
     document.getElementById('btn-buka-mapel').addEventListener('click', () => {
@@ -557,6 +604,7 @@
       // Token valid, cukup perbarui nama sekolah.
       // Halaman sudah ditampilkan oleh logika DOMContentLoaded.
       document.getElementById('salam-sekolah').innerText = `Selamat Datang, Admin ${response.namaSekolah}`;
+      jenjangBaseCache = response.jenjang;
       
     } else {
       // Token tidak valid atau kedaluwarsa
@@ -577,6 +625,7 @@
     if (response.status === "sukses") {
       // SIMPAN TOKEN ke localStorage
       localStorage.setItem('sessionToken', response.token);
+      jenjangBaseCache = response.jenjang;
 
       document.getElementById('salam-sekolah').innerText = `Selamat Datang, Admin ${response.namaSekolah}`;
       tampilHalaman('halaman-utama'); // tampilHalaman akan menyimpan 'halaman-utama'
@@ -1507,6 +1556,217 @@
     // Reset input file agar bisa upload file yang sama lagi
     document.getElementById('file-upload-siswa').value = null;
     document.getElementById('btn-proses-import-siswa').disabled = true;
+  }
+
+  // ===========================================
+  // [BARU] FUNGSI & HANDLER INPUT NILAI UJIAN
+  // ===========================================
+
+  /**
+   * Membuka halaman menu Input Nilai.
+   * Mengatur label tombol 'Ujian Madrasah/Sekolah' secara dinamis.
+   */
+  function bukaHalamanInputUjian() {
+    tampilHalaman('halaman-input-ujian'); // tampilHalaman akan menyimpan ID
+    
+    const labelUjianUtama = document.getElementById('label-ujian-utama');
+    
+    // Gunakan jenjangBaseCache yang disimpan saat login/token check
+    if (jenjangBaseCache === 'MI' || jenjangBaseCache === 'MTS' || jenjangBaseCache === 'MA') {
+      labelUjianUtama.innerText = 'Ujian Madrasah';
+    } else {
+      labelUjianUtama.innerText = 'Ujian Sekolah';
+    }
+  }
+
+  /**
+   * Membuka halaman detail untuk input nilai (tabel).
+   * @param {string} tipeUjian - 'UM' (Utama) atau 'Praktek'.
+   */
+  function bukaHalamanInputNilaiDetail(tipeUjian) {
+    tampilHalaman('halaman-input-nilai-detail'); // tampilHalaman akan menyimpan ID
+    hideMessage('input-nilai-message');
+    
+    const judulHalaman = document.getElementById('judul-halaman-input-nilai');
+    const selectMapel = document.getElementById('input-nilai-pilih-mapel');
+    const tableContainer = document.getElementById('input-nilai-table-container');
+    const btnSimpan = document.getElementById('btn-simpan-input-nilai');
+
+    // 1. Reset tampilan
+    tableContainer.innerHTML = '<p>Pilih mata pelajaran untuk menampilkan daftar siswa.</p>';
+    selectMapel.innerHTML = '<option value="">-- Memuat mapel... --</option>';
+    selectMapel.disabled = true;
+    btnSimpan.disabled = true;
+
+    // 2. Atur Judul Halaman dan simpan tipe ujian di 'data-' attribute
+    if (tipeUjian === 'UM') {
+      const label = (jenjangBaseCache === 'MI' || jenjangBaseCache === 'MTS' || jenjangBaseCache === 'MA') ? 'Ujian Madrasah' : 'Ujian Sekolah';
+      judulHalaman.innerText = `Input Nilai ${label}`;
+      judulHalaman.dataset.tipeUjian = 'UM';
+    } else {
+      judulHalaman.innerText = 'Input Nilai Ujian Praktek';
+      judulHalaman.dataset.tipeUjian = 'Praktek';
+    }
+
+    // 3. Muat daftar Mapel
+    google.script.run
+      .withSuccessHandler(onMapelLoadedForInput)
+      .withFailureHandler(onGagal) // onGagal akan tampil di 'input-nilai-message'
+      .getMapel();
+  }
+
+  /**
+   * Callback setelah daftar mapel berhasil dimuat untuk halaman input nilai.
+   */
+  function onMapelLoadedForInput(response) {
+    const selectMapel = document.getElementById('input-nilai-pilih-mapel');
+    if (response.status === 'sukses' && response.mapel.length > 0) {
+      selectMapel.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
+      response.mapel.forEach(mapel => {
+        selectMapel.innerHTML += `<option value="${mapel.id}">${mapel.nama} (${mapel.id})</option>`;
+      });
+      selectMapel.disabled = false;
+    } else if (response.status !== 'sukses') {
+      selectMapel.innerHTML = '<option value="">-- Gagal muat mapel --</option>';
+      showMessage('input-nilai-message', response.message, true);
+    } else {
+      selectMapel.innerHTML = '<option value="">-- Data mapel kosong --</option>';
+      showMessage('input-nilai-message', 'Tidak ada data Mata Pelajaran. Harap isi di menu "Kelola Mapel" terlebih dahulu.', true);
+    }
+  }
+
+  /**
+   * Memuat tabel siswa + nilai yang ada untuk mapel dan tipe ujian tertentu.
+   * (RANGKA - Butuh fungsi baru di Kode.gs)
+   */
+  function loadSiswaUntukInputNilai(mapelId, tipeUjian) {
+    setLoading(true);
+    hideMessage('input-nilai-message');
+    document.getElementById('input-nilai-table-container').innerHTML = '<p>Memuat data siswa dan nilai...</p>';
+    document.getElementById('btn-simpan-input-nilai').disabled = true;
+
+    // !! PENTING: Anda perlu membuat fungsi 'getSiswaWithNilaiUjian' di Kode.gs
+    // Untuk saat ini, kita gunakan SIMULASI DATA
+    
+    // HAPUS SIMULASI INI NANTI
+    setLoading(false);
+    const simulasiSiswa = [
+      { id: "SIS-1", nama: "ANDI", nisn: "001", kelas: "VI A", nilai: 75 },
+      { id: "SIS-2", nama: "BUDI", nisn: "002", kelas: "VI A", nilai: 0 },
+      { id: "SIS-3", nama: "CACA", nisn: "003", kelas: "VI B", nilai: 90 }
+    ];
+    const response = { status: "sukses", data: simulasiSiswa };
+    onSiswaNilaiLoaded(response, mapelId, tipeUjian);
+    // HAPUS SAMPAI SINI
+    
+    /*
+    // --- KODE ASLI (GUNAKAN INI NANTI) ---
+    google.script.run
+      .withSuccessHandler((res) => onSiswaNilaiLoaded(res, mapelId, tipeUjian))
+      .withFailureHandler(onGagal)
+      .getSiswaWithNilaiUjian(mapelId, tipeUjian); // <-- BUAT FUNGSI INI DI KODE.GS
+    */
+  }
+
+  /**
+   * Menampilkan tabel siswa + nilai setelah data diterima.
+   * (RANGKA - Sesuai permintaan)
+   */
+  function onSiswaNilaiLoaded(response, mapelId, tipeUjian) {
+    setLoading(false);
+    const container = document.getElementById('input-nilai-table-container');
+
+    if (response.status !== 'sukses') {
+      container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat siswa: ${response.message}</p>`;
+      document.getElementById('btn-simpan-input-nilai').disabled = true;
+      return;
+    }
+
+    if (!response.data || response.data.length === 0) {
+      container.innerHTML = '<p style="text-align: center; padding: 20px;">Belum ada data siswa. Harap isi di menu "Kelola Data Siswa".</p>';
+      document.getElementById('btn-simpan-input-nilai').disabled = true;
+      return;
+    }
+    
+    let html = '<table class="input-nilai-table">';
+    html += '<tr><th>Nama Siswa</th><th>NISN</th><th>Kelas</th><th>Nilai (0-100)</th></tr>';
+    
+    response.data.forEach(siswa => {
+      html += `
+        <tr>
+          <td>${siswa.nama}</td>
+          <td>${siswa.nisn}</td>
+          <td>${siswa.kelas}</td>
+          <td>
+            <input 
+              type="number" 
+              class="input-nilai" 
+              min="0" 
+              max="100" 
+              placeholder="0"
+              value="${siswa.nilai || ''}"
+              data-siswa-id="${siswa.id}" 
+              data-mapel-id="${mapelId}"
+              data-tipe-ujian="${tipeUjian}"
+            >
+          </td>
+        </tr>
+      `;
+    });
+
+    html += '</table>';
+    container.innerHTML = html;
+    document.getElementById('btn-simpan-input-nilai').disabled = false;
+  }
+
+  /**
+   * Mengumpulkan dan menyimpan semua nilai dari tabel.
+   * (RANGKA - Butuh fungsi baru di Kode.gs)
+   */
+  function simpanInputNilai() {
+    setLoading(true);
+    hideMessage('input-nilai-message');
+    
+    const inputs = document.querySelectorAll('#input-nilai-table-container .input-nilai');
+    const dataToSave = [];
+    
+    inputs.forEach(input => {
+      dataToSave.push({
+        siswaId: input.dataset.siswaId,
+        mapelId: input.dataset.mapelId,
+        tipeUjian: input.dataset.tipeUjian,
+        nilai: input.value
+      });
+    });
+
+    // !! PENTING: Anda perlu membuat fungsi 'saveNilaiUjianBatch' di Kode.gs
+    
+    // HAPUS SIMULASI INI NANTI
+    setTimeout(() => {
+      onNilaiUjianSaved({ status: "sukses", message: "Data nilai berhasil disimpan!" });
+    }, 500);
+    // HAPUS SAMPAI SINI
+
+    /*
+    // --- KODE ASLI (GUNAKAN INI NANTI) ---
+    google.script.run
+      .withSuccessHandler(onNilaiUjianSaved)
+      .withFailureHandler(onGagal)
+      .saveNilaiUjianBatch(dataToSave); // <-- BUAT FUNGSI INI DI KODE.GS
+    */
+  }
+
+  /**
+   * Callback setelah nilai berhasil disimpan.
+   * (RANGKA)
+   */
+  function onNilaiUjianSaved(response) {
+    setLoading(false);
+    if (response.status === 'sukses') {
+      showMessage('input-nilai-message', response.message, false); // false = sukses
+    } else {
+      showMessage('input-nilai-message', response.message, true);
+    }
   }
 
 </script>
