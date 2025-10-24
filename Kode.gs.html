@@ -5,6 +5,9 @@ const MAPEL_CACHE_KEY = 'mapel_data';
 // [BARU] ID Folder Google Drive target Anda
 const TARGET_FOLDER_ID = "1Xu9vSZQKAxVCNDuAXI8W5l-3xb58cQm9";
 
+// [BARU] PASTE ID TEMPLATE GOOGLE SHEET ANDA DI SINI
+const TEMPLATE_SISWA_SHEET_ID = "1EWfAFmXD4OtbOTKmq0WFtbaRaVG_NAjHH5IjIgM92FY";
+
 /**
  * Fungsi utama untuk menampilkan halaman web.
  */
@@ -1027,5 +1030,236 @@ function saveKelas(kelasList) {
   } catch (e) {
     Logger.log(e);
     return { status: "gagal", message: e.message };
+  }
+}
+
+// ===========================================
+// [BARU] FUNGSI IMPORT SISWA (VERSI EXCEL)
+// ===========================================
+
+/**
+ * [DIUBAH TOTAL] Membuat dan mengirim template siswa dinamis
+ * dengan validasi data (dropdown) untuk kelas.
+ */
+function getSiswaTemplateUrl() {
+  let tempCopyId = null; // Variabel untuk ID file sementara (untuk cleanup)
+  try {
+    // 1. Validasi sesi dan dapatkan properti pengguna
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID'); // ID sheet data sekolah
+    
+    if (!TEMPLATE_SISWA_SHEET_ID) {
+      throw new Error("ID Template Sheet (TEMPLATE_SISWA_SHEET_ID) belum diatur di Kode.gs");
+    }
+
+    // 2. Ambil daftar kelas dari sheet 'Kelas' milik pengguna
+    const userSS = SpreadsheetApp.openById(spreadsheetID);
+    const sheetKelas = getKelasSheet(userSS); // Helper yang sudah ada
+    const dataKelas = sheetKelas.getRange('A2:A' + sheetKelas.getLastRow()).getValues()
+                        .map(row => row[0]) // Ambil nilai
+                        .filter(kelas => kelas); // Filter baris kosong (e.g., ['VI A', 'VI B'])
+    
+    // 3. Buat salinan sementara (temporary copy) dari master template
+    const templateFile = DriveApp.getFileById(TEMPLATE_SISWA_SHEET_ID);
+    const tempCopy = templateFile.makeCopy(`[TEMP] Template Siswa - ${userProperties.getProperty('sekolahID')}`);
+    tempCopyId = tempCopy.getId(); // Simpan ID untuk dihapus nanti
+
+    // 4. Buka salinan sementara dan terapkan Data Validation
+    const tempSS = SpreadsheetApp.openById(tempCopyId);
+    const firstSheet = tempSS.getSheets()[0];
+
+    // Hanya tambahkan validasi jika ada daftar kelas
+    if (dataKelas.length > 0) {
+      // Buat aturan validasi
+      const validationRule = SpreadsheetApp.newDataValidation()
+                              .requireValueInList(dataKelas) // Ini adalah daftar dropdown
+                              .setAllowInvalid(false) // Tolak input jika tidak ada di daftar
+                              .setHelpText("Pilih kelas dari daftar yang tersedia.")
+                              .build();
+                              
+      // Terapkan aturan ke Kolom G (Kelas), mulai dari baris 2 s/d 1000
+      firstSheet.getRange('G2:G1000').setDataValidation(validationRule);
+      SpreadsheetApp.flush(); // Pastikan perubahan disimpan
+    }
+
+    // 5. Buat URL ekspor untuk file SEMENTARA ini
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${tempCopyId}/export?format=xlsx`;
+
+    // 6. Unduh file .xlsx (oleh server) menggunakan token otorisasi script
+    const response = UrlFetchApp.fetch(exportUrl, {
+      headers: {
+        Authorization: 'Bearer ' + ScriptApp.getOAuthToken()
+      }
+    });
+    
+    const fileBlob = response.getBlob();
+    
+    // 7. Ubah file .xlsx (blob) menjadi string Base64 untuk dikirim ke client
+    const base64Data = Utilities.base64Encode(fileBlob.getBytes());
+    
+    // 8. HAPUS FILE SEMENTARA setelah selesai (PENTING!)
+    DriveApp.getFileById(tempCopyId).setTrashed(true);
+    tempCopyId = null; // Kosongkan ID setelah dihapus
+
+    // 9. Kirim data Base64 ke client
+    return { 
+      status: "sukses", 
+      base64: base64Data, 
+      mimeType: MimeType.MICROSOFT_EXCEL, // MimeType untuk .xlsx
+      fileName: "template_import_siswa.xlsx" // Nama file saat diunduh
+    };
+
+  } catch (e) {
+    Logger.log(e);
+    // Jika terjadi error, pastikan file sementara tetap dihapus
+    if (tempCopyId) {
+      DriveApp.getFileById(tempCopyId).setTrashed(true);
+    }
+    return { status: "gagal", message: "Gagal membuat template dinamis: " + e.message };
+  }
+}
+
+
+/**
+ * [SERVER] Memproses import siswa dari file EXCEL (Base64).
+ * Ini menggunakan Drive API (Advanced Service).
+ */
+function prosesImportExcelSiswa(fileData) {
+  let tempExcelFileId = null;
+  let tempConvertedSheetId = null;
+
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheetSiswa = getSiswaSheet(ss);
+    const sheetKelas = getKelasSheet(ss);
+
+    // 1. Decode Base64 dan buat file Excel sementara
+    const { base64, mimeType, fileName } = fileData;
+    const decodedData = Utilities.base64Decode(base64.split(',')[1]);
+    const blob = Utilities.newBlob(decodedData, mimeType, fileName);
+    
+    // Simpan file Excel sementara ke Drive
+    const tempExcelFile = DriveApp.createFile(blob);
+    tempExcelFileId = tempExcelFile.getId();
+
+    // 2. Konversi file Excel ke Google Sheet sementara
+    // Ini memerlukan "Drive API" (Layanan Lanjutan)
+    const conversionResource = {
+      title: `[TEMP] Konversi - ${fileName}`,
+      mimeType: MimeType.GOOGLE_SHEETS
+    };
+    const convertedFile = Drive.Files.copy(conversionResource, tempExcelFileId, {
+      convert: true
+    });
+    tempConvertedSheetId = convertedFile.id;
+    
+    // 3. Buka dan Baca Google Sheet sementara
+    const tempSheet = SpreadsheetApp.openById(tempConvertedSheetId);
+    const dataSheet = tempSheet.getSheets()[0]; // Ambil sheet pertama
+    const excelData = dataSheet.getDataRange().getValues();
+
+    if (excelData.length <= 1) {
+      throw new Error("File Excel kosong atau hanya berisi header.");
+    }
+    const header = excelData.shift(); // Hapus baris header
+
+    // 4. Dapatkan data existing (NISN & Kelas) - LOGIKA INI SAMA DENGAN SEBELUMNYA
+    const dataNisn = sheetSiswa.getRange('C2:C' + sheetSiswa.getLastRow()).getValues()
+                       .map(row => String(row[0]).trim()) // Paksa jadi string dan trim
+                       .filter(nisn => nisn);
+    const existingNisnSet = new Set(dataNisn);
+
+    const dataKelas = sheetKelas.getRange('A2:A' + sheetKelas.getLastRow()).getValues()
+                        .map(row => String(row[0]).trim()) // Paksa jadi string dan trim
+                        .filter(kelas => kelas);
+    const existingKelasSet = new Set(dataKelas);
+
+    // 5. Siapkan variabel loop
+    const gagalList = [];
+    const rowsToAppend = [];
+    const lastRowIndex = sheetSiswa.getLastRow();
+
+    // 6. Loop dan validasi setiap baris dari data Excel
+    for (let i = 0; i < excelData.length; i++) {
+      const row = excelData[i];
+      const barisKe = i + 2; // +1 (karena 0-index) +1 (karena header)
+
+      // Pastikan urutan ini sama dengan template
+      const nama = (row[0] ? String(row[0]) : '').trim();
+      const nisn = (row[1] ? String(row[1]) : '').trim();
+      const nisLokal = (row[2] ? String(row[2]) : '').trim();
+      const jk = (row[3] ? String(row[3]) : '').trim().toUpperCase();
+      const tempatLahir = (row[4] ? String(row[4]) : '').trim();
+      // Tangani tanggal dari Excel (bisa jadi objek Date)
+      let tglLahir = (row[5] ? row[5] : '');
+      if (tglLahir instanceof Date) {
+        tglLahir = Utilities.formatDate(tglLahir, Session.getScriptTimeZone(), "yyyy-MM-dd");
+      } else {
+        tglLahir = String(tglLahir).trim();
+      }
+      const kelas = (row[6] ? String(row[6]) : '').trim();
+
+      // Validasi 1: Data Wajib
+      if (!nama || !nisn || !jk || !kelas) {
+        gagalList.push({ baris: barisKe, nama: nama, nisn: nisn, alasan: "Data wajib (Nama, NISN, JK, Kelas) tidak lengkap." });
+        continue;
+      }
+      
+      // Validasi 2: Duplikat NISN
+      if (existingNisnSet.has(nisn)) {
+        gagalList.push({ baris: barisKe, nama: nama, nisn: nisn, alasan: "NISN sudah terdaftar." });
+        continue;
+      }
+
+      // Validasi 3: Jenis Kelamin (L/P)
+      if (jk !== 'L' && jk !== 'P') {
+        gagalList.push({ baris: barisKe, nama: nama, nisn: nisn, alasan: "Jenis Kelamin harus 'L' atau 'P'." });
+        continue;
+      }
+
+      // Validasi 4: Kelas
+      if (!existingKelasSet.has(kelas)) {
+        gagalList.push({ baris: barisKe, nama: nama, nisn: nisn, alasan: `Kelas '${kelas}' tidak ditemukan di Data Kelas.` });
+        continue;
+      }
+
+      // [VALIDASI LOLOS]
+      const newSiswaID = "SIS-" + (lastRowIndex + rowsToAppend.length + 1);
+      const newRow = [
+        newSiswaID, nama, nisn, nisLokal, jk, 
+        tempatLahir, (tglLahir || null), kelas
+      ];
+      
+      rowsToAppend.push(newRow);
+      existingNisnSet.add(nisn);
+    }
+
+    // 7. Simpan data baru (Batch Append)
+    if (rowsToAppend.length > 0) {
+      sheetSiswa.getRange(sheetSiswa.getLastRow() + 1, 1, rowsToAppend.length, rowsToAppend[0].length)
+                .setValues(rowsToAppend);
+    }
+
+    // 8. Hapus file sementara
+    DriveApp.getFileById(tempExcelFileId).setTrashed(true);
+    DriveApp.getFileById(tempConvertedSheetId).setTrashed(true);
+
+    // 9. Kembalikan Laporan
+    return { 
+      status: "sukses", 
+      totalDiProses: excelData.length, 
+      berhasilDiUpload: rowsToAppend.length, 
+      gagalDiUpload: gagalList.length, 
+      dataGagal: gagalList 
+    };
+
+  } catch (e) {
+    Logger.log(e);
+    // Hapus file sementara jika terjadi error
+    if (tempExcelFileId) { DriveApp.getFileById(tempExcelFileId).setTrashed(true); }
+    if (tempConvertedSheetId) { DriveApp.getFileById(tempConvertedSheetId).setTrashed(true); }
+    return { status: "gagal", message: "Terjadi error di server: " + e.message };
   }
 }
