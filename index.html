@@ -67,25 +67,30 @@
     <div class="container" id="halaman-utama" style="display: none;">
       <div class="page">
         <h2 id="salam-sekolah">Selamat Datang, Admin</h2>
-        <p>Ini adalah dashboard utama. Di sini Anda bisa:</p>
-        <ul>
-          <li>Mengelola Data Siswa</li>
-          <li>Input Nilai Rapor</li>
-          <li>Input Nilai Ujian</li>
-          <li>Cetak Laporan Nilai Ijazah</li>
-        </ul>
-        <button id="btn-buka-data-sekolah" style="margin-top: 10px;">Kelola Data Sekolah</button>
-        <button id="btn-buka-siswa" style="margin-top: 10px;">Kelola Data Siswa</button>
-        <button id="btn-buka-mapel" style="background-color: #198754; margin-top: 10px;">Kelola Mata Pelajaran</button>
-        <button id="btn-buka-bobot" style="margin-top: 10px;">Kelola Bobot Nilai Ijazah</button>
-        <button id="btn-buka-kelas" style="margin-top: 10px;">Kelola Kelas</button>
+        <p>Ini adalah dashboard utama. Silakan pilih menu di bawah ini:</p>
         
-        <hr>
-        
-        <h3>Contoh Perhitungan</h3>
-        <p>Tes memanggil fungsi backend untuk Siswa 'S-001':</p>
-        <button id="btn-hitung">Hitung Nilai (Contoh)</button>
-        <div id="hasil-hitung" style="margin-top: 15px;"></div>
+        <div class="dashboard-menu-grid">
+          <button class="dashboard-card" id="btn-buka-data-sekolah">
+            <i class="fas fa-school"></i>
+            <span>Kelola Data Sekolah</span>
+          </button>
+          <button class="dashboard-card" id="btn-buka-siswa">
+            <i class="fas fa-users"></i>
+            <span>Kelola Data Siswa</span>
+          </button>
+          <button class="dashboard-card" id="btn-buka-mapel">
+            <i class="fas fa-book-open"></i>
+            <span>Kelola Mata Pelajaran</span>
+          </button>
+          <button class="dashboard-card" id="btn-buka-bobot">
+            <i class="fas fa-balance-scale"></i>
+            <span>Kelola Bobot Nilai</span>
+          </button>
+          <button class="dashboard-card" id="btn-buka-kelas">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <span>Kelola Kelas</span>
+          </button>
+          </div>
         
         <hr>
         <button id="btn-logout">Logout</button>
