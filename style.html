@@ -67,11 +67,13 @@
     color: var(--text-dark);
   }
   
+  /* [UPDATE] Menambahkan input[type="date"] */
   input[type="text"],
   input[type="email"],
   input[type="password"],
   input[type="tel"],
   input[type="url"],
+  input[type="date"],
   select {
     width: 100%;
     padding: 14px;
@@ -82,10 +84,21 @@
     transition: border-color 0.2s, box-shadow 0.2s;
   }
   
-  input:focus, select:focus {
+  /* [UPDATE] Menambahkan input[type="date"] */
+  input:focus, 
+  input[type="date"]:focus,
+  select:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  }
+
+  /* [BARU] Teks bantuan di bawah input */
+  .helper-text {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 4px;
+    display: block;
   }
 
   button {
@@ -180,7 +193,9 @@
   #btn-logout:hover { background-color: #b02a37; }
   
   /* 11. Halaman Mapel & Tabel */
-  #halaman-mapel .page-header {
+  /* [UPDATE] Terapkan juga ke halaman-siswa */
+  #halaman-mapel .page-header,
+  #halaman-siswa .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -188,35 +203,55 @@
     padding-bottom: 10px;
     margin-bottom: 20px;
   }
-  #halaman-mapel h2 { margin: 0; }
-  #btn-tambah-mapel-baru {
+  #halaman-mapel h2,
+  #halaman-siswa h2 { 
+    margin: 0; 
+  }
+  #btn-tambah-mapel-baru,
+  #btn-tambah-siswa-baru { /* [UPDATE] */
     width: auto; /* Jangan full width */
     padding: 10px 15px;
     font-size: 14px;
     background-color: var(--success-color);
   }
-  #btn-tambah-mapel-baru:hover { background-color: #157347; }
-  #btn-kembali-ke-dashboard {
+  #btn-tambah-mapel-baru:hover,
+  #btn-tambah-siswa-baru:hover { /* [UPDATE] */
+    background-color: #157347; 
+  }
+  #btn-kembali-ke-dashboard,
+  #btn-kembali-ke-dashboard-5 { /* [UPDATE] */
     width: 100%;
     background-color: var(--secondary-color);
   }
 
-  .mapel-table-container { overflow-x: auto; }
-  .mapel-table {
+  .mapel-table-container,
+  .siswa-table-container { /* [UPDATE] */
+    overflow-x: auto; 
+  }
+  .mapel-table,
+  .siswa-table { /* [UPDATE] */
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
   }
-  .mapel-table th, .mapel-table td {
+  .mapel-table th, .mapel-table td,
+  .siswa-table th, .siswa-table td { /* [UPDATE] */
     border: 1px solid var(--border-color);
     padding: 10px;
     text-align: left;
+    font-size: 14px; /* [BARU] Perkecil font tabel agar muat */
   }
-  .mapel-table th {
+  .mapel-table th,
+  .siswa-table th { /* [UPDATE] */
     background-color: var(--bg-light);
     text-align: center;
+    font-size: 14px;
   }
-  .mapel-table td:last-child { width: 100px; text-align: center; }
+  .mapel-table td:last-child,
+  .siswa-table td:last-child { /* [UPDATE] */
+    width: 100px; 
+    text-align: center; 
+  }
 
   /* Tombol Aksi di Tabel */
   .btn-aksi {
@@ -271,30 +306,38 @@
   .modal-header h2 { margin: 0; font-size: 20px; }
   .close-button { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
   .close-button:hover, .close-button:focus { color: black; }
-  .modal-body { padding: 20px; }
+  .modal-body { 
+    padding: 20px; 
+    max-height: 60vh; /* [BARU] Batasi tinggi modal body */
+    overflow-y: auto; /* [BARU] Tambah scroll jika form panjang */
+  }
   .modal-footer {
     padding: 15px 20px;
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
   }
-  #btn-simpan-mapel, #btn-batal-modal {
+  #btn-simpan-mapel, #btn-batal-modal,
+  #btn-simpan-siswa, #btn-batal-modal-siswa { /* [UPDATE] */
     width: auto;
     margin-left: 10px;
   }
-  #btn-batal-modal {
+  #btn-batal-modal,
+  #btn-batal-modal-siswa { /* [UPDATE] */
     background-color: var(--secondary-color);
   }
 
   /* 13. Tampilan Desktop (Lebih Lebar) */
   @media (min-width: 768px) {
     #halaman-utama,
-    #halaman-mapel {
+    #halaman-mapel,
+    #halaman-siswa { /* [UPDATE] */
       max-width: 960px; 
     }
   }
 
   /* 14. Penataan Tombol Header Mapel */
+  /* [UPDATE] Terapkan juga ke halaman-siswa */
   .header-buttons {
     display: flex;
     gap: 10px; 
@@ -302,7 +345,9 @@
 
   #btn-tambah-mapel-baru,
   #btn-ambil-default,
-  #btn-hapus-semua {
+  #btn-hapus-semua,
+  #btn-tambah-siswa-baru,
+  #btn-hapus-semua-siswa { /* [UPDATE] */
     width: auto; 
     padding: 10px 15px;
     font-size: 14px;
@@ -315,17 +360,21 @@
     background-color: #5a6268;
   }
 
-  #btn-hapus-semua {
+  #btn-hapus-semua,
+  #btn-hapus-semua-siswa { /* [UPDATE] */
     background-color: var(--danger-color);
   }
-  #btn-hapus-semua:hover {
+  #btn-hapus-semua:hover,
+  #btn-hapus-semua-siswa:hover { /* [UPDATE] */
     background-color: #b02a37;
   }
 
-  #btn-tambah-mapel-baru {
+  #btn-tambah-mapel-baru,
+  #btn-tambah-siswa-baru { /* [UPDATE] */
     background-color: var(--success-color);
   }
-  #btn-tambah-mapel-baru:hover {
+  #btn-tambah-mapel-baru:hover,
+  #btn-tambah-siswa-baru:hover { /* [UPDATE] */
     background-color: #157347;
   }
 
@@ -427,7 +476,9 @@
   /* Targetkan agar lebar di desktop */
   @media (min-width: 768px) {
     #halaman-data-sekolah,
-    #halaman-bobot { /* [UPDATE] Terapkan juga di halaman bobot */
+    #halaman-bobot,
+    #halaman-kelas,
+    #halaman-siswa { /* [UPDATE] */
       max-width: 960px; 
     }
   }
@@ -503,11 +554,15 @@
   }
   
   #btn-kembali-ke-dashboard-2,
-  #btn-kembali-ke-dashboard-3 { /* [UPDATE] Terapkan juga di tombol kembali hal. bobot */
+  #btn-kembali-ke-dashboard-3,
+  #btn-kembali-ke-dashboard-4,
+  #btn-kembali-ke-dashboard-5 { /* [UPDATE] */
     background-color: var(--secondary-color);
   }
   #btn-kembali-ke-dashboard-2:hover,
-  #btn-kembali-ke-dashboard-3:hover { /* [UPDATE] */
+  #btn-kembali-ke-dashboard-3:hover,
+  #btn-kembali-ke-dashboard-4:hover,
+  #btn-kembali-ke-dashboard-5:hover { /* [UPDATE] */
     background-color: #5a6268;
   }
   #btn-simpan-data-sekolah {
@@ -525,9 +580,8 @@
     text-transform: uppercase;
   }
 
-  /* [BARU] 20. Style Tombol Bobot & Halaman Bobot */
+  /* 20. Style Tombol Bobot & Halaman Bobot */
   
-  /* Beri warna oranye pada tombol di dashboard */
   #btn-buka-bobot {
     background-color: #fd7e14; /* Oranye */
   }
@@ -535,7 +589,6 @@
     background-color: #e67312; 
   }
 
-  /* Pastikan input[type="number"] memiliki style yang sama */
   input[type="number"] {
     width: 100%;
     padding: 14px;
@@ -552,11 +605,80 @@
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
   }
 
-  /* Beri warna hijau pada tombol simpan di halaman bobot */
   #btn-simpan-bobot {
     background-color: var(--success-color);
   }
   #btn-simpan-bobot:hover {
+    background-color: #157347;
+  }
+
+  /* 21. Style Halaman Kelola Kelas */
+  
+  #btn-buka-kelas {
+    background-color: #0dcaf0; /* Teal */
+  }
+  #btn-buka-kelas:hover {
+    background-color: #0baccc;
+  }
+
+  #btn-simpan-kelas {
+    background-color: var(--success-color);
+  }
+  #btn-simpan-kelas:hover {
+    background-color: #157347;
+  }
+
+  /* Styling baris input dinamis */
+  .kelas-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+  }
+  .kelas-input-row input {
+    flex-grow: 1; /* Input mengambil sisa ruang */
+    margin: 0;
+  }
+  
+  /* Styling tombol (+) dan (x) */
+  .btn-aksi-kelas {
+    width: 40px; /* Lebar tetap */
+    padding: 10px 0;
+    font-size: 18px;
+    font-weight: 700;
+    flex-shrink: 0; /* Mencegah tombol menyusut */
+    line-height: 1.2; /* Pusatkan teks tombol */
+    height: 48px; /* Samakan tinggi dengan input */
+  }
+  
+  .btn-add-kelas {
+    background-color: var(--success-color);
+  }
+  .btn-add-kelas:hover {
+    background-color: #157347;
+  }
+  
+  .btn-remove-kelas {
+    background-color: var(--danger-color);
+  }
+  .btn-remove-kelas:hover {
+    background-color: #b02a37;
+  }
+  
+  /* [BARU] 22. Style Halaman Siswa */
+  
+  #btn-buka-siswa {
+    background-color: #6f42c1; /* Ungu */
+  }
+  #btn-buka-siswa:hover {
+    background-color: #59369a;
+  }
+  
+  #btn-simpan-siswa {
+     /* Tombol simpan di modal siswa */
+     background-color: var(--success-color);
+  }
+  #btn-simpan-siswa:hover {
     background-color: #157347;
   }
 
