@@ -3,6 +3,8 @@
   let jenjangBaseCache = '';
   const LAST_PAGE_KEY = 'lastVisitedPageId'; // Kunci untuk localStorage
   let siswaTelahDiImport = false; // [BARU] Flag untuk refresh tabel setelah import
+  let globalSiswaList = []; // [BARU] Cache untuk daftar siswa
+  let isSiswaOrderDirty = false; // [BARU] Flag jika ada urutan yg diubah
 
   // ===========================================
   // FUNGSI UTILITAS
@@ -449,18 +451,80 @@
      document.getElementById('btn-tutup-modal-siswa').addEventListener('click', tutupModalSiswa);
      document.getElementById('btn-batal-modal-siswa').addEventListener('click', tutupModalSiswa);
      document.getElementById('siswa-table-container').addEventListener('click', (e) => {
-        const target = e.target.closest('button');
-        if (!target) return;
-        if (target.classList.contains('btn-edit-siswa')) {
-            const dataset = target.dataset;
-            const siswaData = { id: dataset.id, nama: dataset.nama, nisn: dataset.nisn, nisLokal: dataset.nisLokal, jk: dataset.jk, tempatLahir: dataset.tempatLahir, tglLahir: dataset.tglLahir, kelas: dataset.kelas };
-            showModalSiswa('edit', siswaData);
-        } else if (target.classList.contains('btn-delete-siswa')) {
-            const id = target.getAttribute('data-id');
-            const nama = target.getAttribute('data-nama');
-            hapusSiswa(id, nama);
-        }
-     });
+      const target = e.target.closest('button');
+      if (!target) return;
+
+      if (target.classList.contains('btn-edit-siswa')) {
+          const dataset = target.dataset;
+          const siswaData = { id: dataset.id, nama: dataset.nama, nisn: dataset.nisn, nisLokal: dataset.nisLokal, jk: dataset.jk, tempatLahir: dataset.tempatLahir, tglLahir: dataset.tglLahir, kelas: dataset.kelas };
+          showModalSiswa('edit', siswaData);
+      
+      } else if (target.classList.contains('btn-delete-siswa')) {
+          const id = target.getAttribute('data-id');
+          const nama = target.getAttribute('data-nama');
+          hapusSiswa(id, nama);
+      
+      } 
+      // [LOGIKA BARU - INSTAN]
+      else if (target.classList.contains('btn-move-up') || target.classList.contains('btn-move-down')) {
+          
+          const siswaID = target.dataset.id;
+          const direction = target.classList.contains('btn-move-up') ? 'up' : 'down';
+
+          // 1. Cari siswa yang diklik di data global
+          const targetSiswa = globalSiswaList.find(s => s.id === siswaID);
+          if (!targetSiswa) return;
+
+          // 2. Dapatkan "teman sekelas" dia, urutkan sesuai urutan saat ini
+          const classmates = globalSiswaList
+                              .filter(s => s.kelas === targetSiswa.kelas)
+                              .sort((a,b) => a.urutan - b.urutan);
+          
+          // 3. Cari posisinya di dalam kelas
+          const targetIndexInClass = classmates.findIndex(s => s.id === siswaID);
+
+          // 4. Tentukan siswa yang akan ditukar
+          let swapSiswa = null;
+          if (direction === 'up' && targetIndexInClass > 0) {
+            swapSiswa = classmates[targetIndexInClass - 1];
+          } else if (direction === 'down' && targetIndexInClass < classmates.length - 1) {
+            swapSiswa = classmates[targetIndexInClass + 1];
+          }
+
+          // 5. Lakukan penukaran (swap) nilai 'urutan'
+          if (swapSiswa) {
+            const tempUrutan = targetSiswa.urutan;
+            targetSiswa.urutan = swapSiswa.urutan;
+            swapSiswa.urutan = tempUrutan;
+            
+            // 6. Set status "dirty"
+            setSiswaOrderDirty(true);
+            
+            // 7. Render ulang tabel (instan!)
+            applySiswaFiltersAndRender();
+          }
+      }
+    });
+
+    // [BARU] Listener untuk filter/sort siswa
+    document.getElementById('siswa-filter-kelas').addEventListener('change', applySiswaFiltersAndRender);
+    document.getElementById('siswa-sort-by').addEventListener('change', applySiswaFiltersAndRender);
+
+    // [BARU] Listener untuk simpan urutan siswa
+    document.getElementById('btn-simpan-urutan-siswa').addEventListener('click', () => {
+      setLoading(true);
+      hideMessage('siswa-message');
+      
+      // Buat array 'ringan' berisi {id, urutan} dari data global
+      const urutanData = globalSiswaList.map(siswa => {
+        return { id: siswa.id, urutan: siswa.urutan };
+      });
+      
+      google.script.run
+        .withSuccessHandler(onSiswaUrutanSaved)
+        .withFailureHandler(onGagal)
+        .saveSiswaUrutanBatch(urutanData); // Panggil fungsi batch baru
+    });
 
     // Listener fitur mapel
     document.getElementById('btn-ambil-default').addEventListener('click', () => {
@@ -1177,37 +1241,187 @@
   }
 
   function onSiswaLoaded(response) {
+      setSiswaOrderDirty(false); // [BARU] Reset dirty flag
       const container = document.getElementById('siswa-table-container');
 
       if (response.status === "sukses") {
-        let html = '<table class="siswa-table">';
-        html += '<tr><th>Nama Siswa</th><th>NISN</th><th>Kelas</th><th>Aksi</th></tr>';
-
-        if (response.siswa.length === 0) {
-          html += '<tr><td colspan="4" style="text-align: center;">Belum ada data siswa.</td></tr>';
-        }
-
-        response.siswa.forEach(siswa => {
-          html += `
-            <tr>
-              <td>${siswa.nama}</td>
-              <td>${siswa.nisn}</td>
-              <td>${siswa.kelas}</td>
-              <td>
-                <button class="btn-aksi btn-edit btn-edit-siswa"
-                  data-id="${siswa.id}" data-nama="${siswa.nama}" data-nisn="${siswa.nisn}" data-nis-lokal="${siswa.nisLokal}" data-jk="${siswa.jk}" data-tempat-lahir="${siswa.tempatLahir}" data-tgl-lahir="${siswa.tglLahir}" data-kelas="${siswa.kelas}"
-                ><i class="fas fa-pencil-alt"></i>Edit</button>
-                <button class="btn-aksi btn-delete btn-delete-siswa" data-id="${siswa.id}" data-nama="${siswa.nama}"><i class="fas fa-trash-alt"></i>Hapus</button>
-              </td>
-            </tr>
-          `;
-        });
-
-        html += '</table>';
-        container.innerHTML = html;
+        // 1. Simpan data asli ke cache global
+        globalSiswaList = response.siswa;
+  
+        // 2. [BARU] Isi filter dropdown
+        populateSiswaFilters();
+  
+        // 3. [BARU] Terapkan filter/sort default dan render tabel
+        applySiswaFiltersAndRender();
+  
       } else {
+        // Jika gagal, reset cache dan tampilkan error
+        globalSiswaList = [];
         container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat siswa: ${response.message}</p>`;
       }
+  }
+
+  /**
+   * [BARU] Mengatur status "dirty" dan mengaktifkan/menonaktifkan tombol simpan
+   */
+  function setSiswaOrderDirty(isDirty) {
+    isSiswaOrderDirty = isDirty;
+    const btnSimpan = document.getElementById('btn-simpan-urutan-siswa');
+    if (btnSimpan) {
+      btnSimpan.disabled = !isDirty;
+    }
+  }
+
+  /**
+   * [BARU] Callback setelah urutan siswa berhasil disimpan
+   */
+  function onSiswaUrutanSaved(response) {
+    setLoading(false);
+    if (response.status === 'sukses') {
+      setSiswaOrderDirty(false); // Nonaktifkan tombol
+      showMessage('siswa-message', 'Urutan siswa berhasil disimpan!', false);
+    } else {
+      // Biarkan tombol aktif agar user bisa mencoba lagi
+      showMessage('siswa-message', response.message, true);
+    }
+  }
+
+  /**
+   * [BARU] Mengisi dropdown filter kelas berdasarkan data di globalSiswaList
+   */
+  function populateSiswaFilters() {
+    const selectKelas = document.getElementById('siswa-filter-kelas');
+    // Simpan value yang sedang dipilih (jika ada, misal saat refresh data)
+    const selectedValue = selectKelas.value;
+    
+    // Kumpulkan semua nama kelas unik
+    const kelasSet = new Set(globalSiswaList.map(siswa => siswa.kelas));
+    const kelasList = Array.from(kelasSet).sort(); // Urutkan nama kelas A-Z
+  
+    // Buat HTML untuk opsi
+    let optionsHtml = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
+    kelasList.forEach(kelas => {
+      optionsHtml += `<option value="${kelas}">${kelas}</option>`;
+    });
+  
+    selectKelas.innerHTML = optionsHtml;
+    
+    // Setel kembali value yang tadi dipilih (jika masih ada)
+    selectKelas.value = selectedValue || 'semua';
+  }
+  
+  /**
+   * [BARU] Menerapkan filter & sorting, lalu memanggil renderSiswaTable
+   */
+  function applySiswaFiltersAndRender() {
+    const selectedKelas = document.getElementById('siswa-filter-kelas').value;
+    const selectedSort = document.getElementById('siswa-sort-by').value;
+  
+    // Mulai dengan data lengkap dari cache
+    let processedSiswa = [...globalSiswaList];
+  
+    // 1. Terapkan Filter
+    if (selectedKelas !== 'semua') {
+      processedSiswa = processedSiswa.filter(siswa => siswa.kelas === selectedKelas);
+    }
+  
+    // 2. Terapkan Sorting
+    switch (selectedSort) {
+      case 'nama-az':
+        processedSiswa.sort((a, b) => a.nama.localeCompare(b.nama));
+        break;
+      case 'nama-za':
+        processedSiswa.sort((a, b) => b.nama.localeCompare(a.nama));
+        break;
+      case 'nisn-asc':
+        // localeCompare dengan numeric: true agar '10' > '2'
+        processedSiswa.sort((a, b) => a.nisn.localeCompare(b.nisn, undefined, { numeric: true }));
+        break;
+      case 'nisn-desc':
+        processedSiswa.sort((a, b) => b.nisn.localeCompare(a.nisn, undefined, { numeric: true }));
+        break;
+      case 'default':
+      default:
+        // TIDAK MELAKUKAN APA-APA
+        // Biarkan urutan dari server (yang sudah diurutkan per Kelas, lalu ID)
+        break;
+    }
+  
+    // 3. Render tabel dengan data yang sudah diproses
+    renderSiswaTable(processedSiswa);
+  }
+  
+  /**
+   * [DIUBAH] Merender HTML tabel siswa ke dalam kontainer
+   * Memindahkan tombol Naik/Turun ke kolom Aksi
+   */
+  function renderSiswaTable(siswaList) {
+    const container = document.getElementById('siswa-table-container');
+    
+    let html = '<table class="siswa-table">';
+    // [DIUBAH] Header kembali normal (4 kolom)
+    html += '<tr><th>Nama Siswa</th><th>NISN</th><th>Kelas</th><th>Aksi</th></tr>';
+  
+    if (siswaList.length === 0) {
+      // [DIUBAH] Colspan jadi 4
+      html += '<tr><td colspan="4" style="text-align: center;">Tidak ada data siswa yang sesuai dengan filter.</td></tr>';
+    }
+  
+    let currentKelas = null; // Untuk melacak grup kelas
+    const selectedSort = document.getElementById('siswa-sort-by').value;
+    // [PENTING] Hanya aktifkan tombol panah jika urutan "default" dipilih
+    const isDefaultSort = (selectedSort === 'default');
+
+    siswaList.forEach((siswa, index) => {
+      
+      // [LOGIKA LAMA] untuk tombol disabled
+      const isFirstOfClass = (siswa.kelas !== currentKelas);
+      currentKelas = siswa.kelas;
+      
+      const nextSiswa = siswaList[index + 1];
+      const isLastOfClass = (!nextSiswa || nextSiswa.kelas !== siswa.kelas);
+      
+      // [BARU] Buat tombol Naik/Turun
+      // Tombol panah hanya muncul JIKA urutan default aktif
+      let moveButtonsHtml = '';
+      if (isDefaultSort) {
+        moveButtonsHtml = `
+          <button 
+            class="btn-aksi btn-move-up" 
+            data-id="${siswa.id}" 
+            ${isFirstOfClass ? 'disabled' : ''}
+            title="Naikkan posisi">
+              <i class="fas fa-arrow-up"></i>
+          </button>
+          <button 
+            class="btn-aksi btn-move-down" 
+            data-id="${siswa.id}" 
+            ${isLastOfClass ? 'disabled' : ''}
+            title="Turunkan posisi">
+                <i class="fas fa-arrow-down"></i>
+          </button>
+        `;
+      }
+      
+      // [DIUBAH] Gabungkan semua tombol di kolom "Aksi"
+      html += `
+        <tr>
+          <td>${siswa.nama}</td>
+          <td>${siswa.nisn}</td>
+          <td>${siswa.kelas}</td>
+          <td>
+            ${moveButtonsHtml}
+            <button class="btn-aksi btn-edit btn-edit-siswa"
+              data-id="${siswa.id}" data-nama="${siswa.nama}" data-nisn="${siswa.nisn}" data-nis-lokal="${siswa.nisLokal}" data-jk="${siswa.jk}" data-tempat-lahir="${siswa.tempatLahir}" data-tgl-lahir="${siswa.tglLahir}" data-kelas="${siswa.kelas}"
+            ><i class="fas fa-pencil-alt"></i>Edit</button>
+            <button class="btn-aksi btn-delete btn-delete-siswa" data-id="${siswa.id}" data-nama="${siswa.nama}"><i class="fas fa-trash-alt"></i>Hapus</button>
+          </td>
+        </tr>
+      `;
+    });
+  
+    html += '</table>';
+    container.innerHTML = html;
   }
 
   function tutupModalSiswa() {
@@ -1320,6 +1534,7 @@
   }
 
   function onSiswaSaved(response) {
+      setSiswaOrderDirty(false); // [BARU] Reset dirty flag
       setLoading(false);
 
       if (response.status === "sukses") {
