@@ -2,6 +2,7 @@
   // Variabel global
   let jenjangBaseCache = '';
   const LAST_PAGE_KEY = 'lastVisitedPageId'; // Kunci untuk localStorage
+  let siswaTelahDiImport = false; // [BARU] Flag untuk refresh tabel setelah import
 
   // ===========================================
   // FUNGSI UTILITAS
@@ -23,9 +24,22 @@
     }
 
     const el = document.getElementById(elementId);
+    if (!el) return; // [BARU] Pengaman jika elemen tidak ada
+
     el.innerText = message;
     el.className = isError ? 'message error' : 'message success';
     el.style.display = 'block';
+
+    // [BARU] Sembunyikan pesan sukses/info secara otomatis setelah 3 detik
+    if (!isError) {
+      setTimeout(() => {
+        // Cek lagi jika elemen masih ada sebelum disembunyikan
+        const currentEl = document.getElementById(elementId);
+        if (currentEl) {
+           hideMessage(elementId);
+        }
+      }, 3000); // 3000ms = 3 detik
+    }
   }
 
   /**
@@ -381,6 +395,7 @@
     });
 
     // Listener fitur siswa
+     document.getElementById('btn-import-siswa').addEventListener('click', bukaModalImportSiswa); // [BARU]
      document.getElementById('btn-tambah-siswa-baru').addEventListener('click', () => { showModalSiswa('add', {}); });
      document.getElementById('btn-hapus-semua-siswa').addEventListener('click', hapusSemuaSiswa);
      document.getElementById('btn-simpan-siswa').addEventListener('click', simpanSiswa);
@@ -441,19 +456,88 @@
     document.getElementById('btn-info-close').addEventListener('click', hideInfoModal);
     document.getElementById('btn-info-ok').addEventListener('click', hideInfoModal);
 
+    // [BARU] Listener untuk modal import siswa
+    document.getElementById('btn-tutup-modal-import-siswa').addEventListener('click', tutupModalImportSiswa);
+    document.getElementById('btn-batal-modal-import-siswa').addEventListener('click', tutupModalImportSiswa);
+    document.getElementById('btn-download-template-siswa').addEventListener('click', downloadTemplateSiswa);
+    document.getElementById('btn-proses-import-siswa').addEventListener('click', prosesImportFileSiswa);
+
+    // [BARU] Listener canggih untuk File Upload Zone
+    const fileUploadZone = document.getElementById('file-upload-zone');
+    const fileUploadInput = document.getElementById('file-upload-siswa');
+    const fileUploadText = document.getElementById('file-upload-text');
+    const btnProsesImport = document.getElementById('btn-proses-import-siswa');
+
+    // 1. Saat file dipilih (baik diklik atau di-drag)
+    fileUploadInput.addEventListener('change', (e) => {
+        const fileInput = e.target;
+        if (fileInput.files.length > 0) {
+            const fileName = fileInput.files[0].name;
+            if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                fileUploadText.innerText = `File dipilih: ${fileName}`;
+                fileUploadText.classList.add('file-chosen');
+                btnProsesImport.disabled = false;
+                hideMessage('template-message');
+            } else {
+                fileUploadText.innerText = 'File harus berekstensi .xlsx atau .xls';
+                fileUploadText.classList.remove('file-chosen');
+                btnProsesImport.disabled = true;
+            }
+        } else {
+            fileUploadText.innerText = 'Klik untuk memilih file atau seret & letakkan di sini.';
+            fileUploadText.classList.remove('file-chosen');
+            btnProsesImport.disabled = true;
+        }
+    });
+
+    // 2. Efek visual Drag & Drop
+    fileUploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault(); // Wajib untuk mengizinkan 'drop'
+        fileUploadZone.classList.add('drag-over');
+    });
+
+    fileUploadZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        fileUploadZone.classList.remove('drag-over');
+    });
+
+    fileUploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileUploadZone.classList.remove('drag-over');
+        
+        // Ambil file dari event drop dan masukkan ke input
+        if (e.dataTransfer.files.length > 0) {
+          fileUploadInput.files = e.dataTransfer.files;
+          // Picu event 'change' secara manual agar logika di atas berjalan
+          const changeEvent = new Event('change');
+          fileUploadInput.dispatchEvent(changeEvent);
+        }
+    });
 
     // === PEMERIKSAAN TOKEN & HALAMAN TERAKHIR SAAT LOAD ===
     const token = localStorage.getItem('sessionToken');
+    const lastPageId = localStorage.getItem(LAST_PAGE_KEY);
+
     if (token) {
-      setLoading(true);
+      // 1. Langsung tampilkan halaman terakhir (agar "instant")
+      // Kita "percaya" token di localStorage untuk sementara.
+      if (lastPageId) {
+        bukaHalamanTersimpan(lastPageId);
+      } else {
+        tampilHalaman('halaman-utama'); // Default ke dashboard
+      }
+      
+      // 2. Validasi token di background (tanpa loading spinner)
+      // onTokenCheck akan me-refresh nama sekolah (jika sukses)
+      // atau me-logout paksa (jika gagal/kedaluwarsa).
       google.script.run
-        .withSuccessHandler(onTokenCheck) // Fungsi onTokenCheck akan menangani navigasi
-        .withFailureHandler(onTokenCheck) // Tangani kegagalan juga
+        .withSuccessHandler(onTokenCheck) 
+        .withFailureHandler(onTokenCheck) 
         .checkToken(token);
+        
     } else {
-      // Tidak ada token, tampilkan halaman login
+      // Tidak ada token, tampilkan halaman login (ini sudah benar)
       tampilHalaman('halaman-login');
-      // setLoading(false); // Tidak perlu karena tampilHalaman sudah menghapus loader
     }
   });
 
@@ -467,23 +551,20 @@
    * Akan navigasi ke halaman terakhir jika valid.
    */
   function onTokenCheck(response) {
-    setLoading(false);
-    if (response.status === "sukses") {
-      // Token valid, set nama sekolah
-      document.getElementById('salam-sekolah').innerText = `Selamat Datang, Admin ${response.namaSekolah}`;
+    // setLoading(false); // Kita tidak menyalakan loading, jadi tidak perlu dimatikan.
 
-      // Coba buka halaman terakhir yang disimpan
-      const lastPageId = localStorage.getItem(LAST_PAGE_KEY);
-      if (lastPageId) {
-        bukaHalamanTersimpan(lastPageId); // Gunakan helper baru
-      } else {
-        tampilHalaman('halaman-utama'); // Default ke dashboard jika tidak ada
-      }
+    if (response.status === "sukses") {
+      // Token valid, cukup perbarui nama sekolah.
+      // Halaman sudah ditampilkan oleh logika DOMContentLoaded.
+      document.getElementById('salam-sekolah').innerText = `Selamat Datang, Admin ${response.namaSekolah}`;
+      
     } else {
       // Token tidak valid atau kedaluwarsa
+      // Ini akan "menendang" pengguna kembali ke halaman login.
       localStorage.removeItem('sessionToken');
       localStorage.removeItem(LAST_PAGE_KEY); // Hapus juga halaman terakhir
       tampilHalaman('halaman-login');
+      
       // Tampilkan pesan error jika ada
       if(response.message) {
         showMessage('login-error', response.message, true);
@@ -1239,5 +1320,193 @@
       }
   }
 
+  // ===========================================
+  // [DIUBAH] FUNGSI & HANDLER IMPORT SISWA (VERSI EXCEL)
+  // ===========================================
+
+  /**
+   * Membuka modal import dan mereset tampilannya.
+   */
+  function bukaModalImportSiswa() {
+    // Reset modal
+    document.getElementById('file-upload-siswa').value = null;
+    document.getElementById('btn-proses-import-siswa').disabled = true;
+    document.getElementById('import-siswa-results').style.display = 'none';
+    document.getElementById('import-siswa-results').innerHTML = '';
+    hideMessage('template-message');
+    
+    // [BARU] Reset teks file upload zone
+    const fileUploadText = document.getElementById('file-upload-text');
+    fileUploadText.innerText = 'Klik untuk memilih file atau seret & letakkan di sini.';
+    fileUploadText.classList.remove('file-chosen');
+    document.getElementById('file-upload-zone').classList.remove('drag-over');
+
+    // Reset flag
+    siswaTelahDiImport = false;
+    
+    // Tampilkan modal
+    document.getElementById('import-siswa-modal').style.display = 'block';
+  }
+
+  /**
+   * Menutup modal import.
+   * Akan me-refresh tabel siswa jika ada data baru yang berhasil di-import.
+   */
+  function tutupModalImportSiswa() {
+    document.getElementById('import-siswa-modal').style.display = 'none';
+    if (siswaTelahDiImport) {
+      siswaTelahDiImport = false; // Reset flag
+      bukaHalamanSiswa(); // Muat ulang tabel siswa
+    }
+  }
+
+  /**
+   * [DIUBAH] Memanggil server untuk mendapatkan URL download template Excel.
+   */
+  function downloadTemplateSiswa() {
+    setLoading(true);
+    hideMessage('template-message');
+    google.script.run
+      .withSuccessHandler(onTemplateUrlReceived)
+      .withFailureHandler(onGagal) // onGagal akan menampilkan error di 'template-message' jika modal terbuka
+      .getSiswaTemplateUrl();
+  }
+  
+  /**
+   * [DIUBAH] Callback setelah data template diterima dari server (dalam format Base64).
+   * Fungsi ini akan membuat file dari Base64 dan memicu download di sisi klien.
+   */
+  function onTemplateUrlReceived(response) {
+    setLoading(false);
+    
+    if (response.status === 'sukses') {
+      showMessage('template-message', 'Template berhasil dibuat. Mengunduh...', false);
+
+      // Logika baru untuk mengunduh file dari data Base64
+      try {
+        // 1. Buat "data URL" dari Base64
+        const dataUrl = `data:${response.mimeType};base64,${response.base64}`;
+        
+        // 2. Buat elemen link 'a' palsu
+        const link = document.createElement('a');
+        link.setAttribute('href', dataUrl);
+        link.setAttribute('download', response.fileName); // Atur nama file
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        
+        // 3. Klik link tersebut secara programatik
+        link.click();
+        
+        // 4. Hapus link palsu dari DOM
+        document.body.removeChild(link);
+
+      } catch (e) {
+        // Tangani jika browser gagal memproses data URL (jarang terjadi)
+        showMessage('template-message', 'Gagal memproses unduhan di browser: ' + e.message, true);
+      }
+
+    } else {
+      // Menampilkan pesan error dari server (misal: "Gagal membuat template dinamis: ...")
+      showMessage('template-message', response.message, true);
+    }
+  }
+
+
+  /**
+   * [DIUBAH] Membaca file Excel sebagai DataURL (Base64) dan mengirimkannya ke server.
+   */
+  function prosesImportFileSiswa() {
+    setLoading(true);
+    document.getElementById('import-siswa-results').style.display = 'none';
+    hideMessage('template-message');
+
+    const fileInput = document.getElementById('file-upload-siswa');
+    const file = fileInput.files[0];
+
+    if (!file) {
+      setLoading(false);
+      showMessage('template-message', 'Pilih file Excel terlebih dahulu.', true);
+      return;
+    }
+
+    const reader = new FileReader();
+
+    // Callback ketika file selesai dibaca
+    reader.onload = (e) => {
+      const fileData = {
+        base64: e.target.result,
+        mimeType: file.type,
+        fileName: file.name
+      };
+      
+      // Kirim objek fileData (mengandung base64) ke server
+      google.script.run
+        .withSuccessHandler(onImportSiswaFinished)
+        .withFailureHandler(onGagal)
+        .prosesImportExcelSiswa(fileData);
+    };
+
+    // Callback jika gagal baca file
+    reader.onerror = (e) => {
+      setLoading(false);
+      showMessage('template-message', 'Gagal membaca file: ' + e.target.error.name, true);
+    };
+
+    // Mulai baca file sebagai DataURL (Base64)
+    reader.readAsDataURL(file);
+  }
+
+  /**
+   * [SAMA] Menampilkan hasil import yang dikembalikan oleh server.
+   * (Fungsi ini tidak perlu diubah, hanya disalin ulang)
+   */
+  function onImportSiswaFinished(response) {
+    setLoading(false);
+    const resultsContainer = document.getElementById('import-siswa-results');
+
+    if (response.status !== 'sukses') {
+      // Ini adalah error server, bukan error validasi data
+      showMessage('template-message', response.message, true);
+      resultsContainer.style.display = 'none';
+      return;
+    }
+
+    // Set flag agar tabel di-refresh saat modal ditutup
+    if (response.berhasilDiUpload > 0) {
+      siswaTelahDiImport = true;
+    }
+
+    // Bangun HTML untuk laporan
+    let html = '<h4><i class="fas fa-check-circle"></i>Proses Import Selesai</h4>';
+    html += `<p>Total data diproses: <strong>${response.totalDiProses}</strong></p>`;
+    html += `<p style="color: var(--success-color);">Berhasil ditambah: <strong>${response.berhasilDiUpload}</strong></p>`;
+    html += `<p style="color: var(--danger-color);">Gagal/Dilewati: <strong>${response.gagalDiUpload}</strong></p>`;
+
+    // Jika ada data yang gagal, tampilkan tabel
+    if (response.dataGagal && response.dataGagal.length > 0) {
+      html += `<hr><p><strong>Detail Data yang Gagal:</strong></p>`;
+      html += '<table class="import-gagal-table">';
+      html += '<tr><th>Baris</th><th>Nama</th><th>NISN</th><th>Alasan Gagal</th></tr>';
+      
+      response.dataGagal.forEach(item => {
+        html += `
+          <tr>
+            <td>${item.baris}</td>
+            <td>${item.nama || '(Kosong)'}</td>
+            <td>${item.nisn || '(Kosong)'}</td>
+            <td>${item.alasan}</td>
+          </tr>
+        `;
+      });
+      html += '</table>';
+    }
+
+    resultsContainer.innerHTML = html;
+    resultsContainer.style.display = 'block';
+
+    // Reset input file agar bisa upload file yang sama lagi
+    document.getElementById('file-upload-siswa').value = null;
+    document.getElementById('btn-proses-import-siswa').disabled = true;
+  }
 
 </script>
