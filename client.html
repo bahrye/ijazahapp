@@ -20,6 +20,15 @@
   }
 
   /**
+   * [BARU] Mengubah string menjadi Proper Case (Title Case).
+   * Contoh: "SYAMSUL BAHRI" menjadi "Syamsul Bahri".
+   */
+  function toProperCase(str) {
+    if (!str) return '';
+    return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+  }
+
+  /**
    * Menampilkan pesan error atau sukses.
    */
   function showMessage(elementId, message, isError) {
@@ -176,7 +185,7 @@
     document.getElementById('info-modal-title').innerText = title;
 
     const modalBody = document.getElementById('info-modal-body');
-    modalBody.innerText = message;
+    modalBody.innerHTML = message; // [DIUBAH] Gunakan innerHTML agar tag <strong> terbaca
 
     if (isError) {
       modalBody.classList.add('error');
@@ -394,22 +403,39 @@
       bukaHalamanInputNilaiDetail('Praktek'); 
     });
 
-    // [BARU] Listener untuk simpan nilai & ganti mapel
-    document.getElementById('input-nilai-pilih-mapel').addEventListener('change', (e) => {
-      const mapelId = e.target.value;
-      // Ambil tipe ujian dari elemen tersembunyi
-      const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
-      if(mapelId && tipeUjian) {
-        // Fungsi ini akan kita buat di bawah (masih RANGKA)
-        loadSiswaUntukInputNilai(mapelId, tipeUjian);
-      } else {
-        document.getElementById('input-nilai-table-container').innerHTML = '<p>Pilih mata pelajaran untuk menampilkan daftar siswa.</p>';
-        document.getElementById('btn-simpan-input-nilai').disabled = true;
+    // [BARU] Listener untuk tombol simpan nilai (akan kita buat fungsinya di bawah)
+    document.getElementById('btn-simpan-input-nilai').addEventListener('click', simpanInputNilai);
+
+    // [BARU] Listener untuk menghitung Jumlah/Rata-rata secara real-time
+    document.getElementById('halaman-input-nilai-detail').addEventListener('input', (e) => {
+      // Jika yang di-input adalah kotak .input-nilai
+      if (e.target.classList.contains('input-nilai')) {
+        const siswaId = e.target.dataset.siswaId;
+        const table = e.target.closest('.input-nilai-table');
+        
+        // Hitung jumlah mapel dari header tabel
+        const mapelCount = table.querySelectorAll('th.col-mapel').length;
+        
+        // Panggil fungsi kalkulasi
+        updateRowTotals(siswaId, mapelCount);
       }
     });
 
-    // [BARU] Listener untuk tombol simpan nilai (akan kita buat fungsinya di bawah)
-    document.getElementById('btn-simpan-input-nilai').addEventListener('click', simpanInputNilai);
+    // [BARU] Listener untuk klik nama siswa (menampilkan NISN)
+    document.getElementById('halaman-input-nilai-detail').addEventListener('click', (e) => {
+      // Cek apakah yang diklik adalah elemen nama
+      const targetNama = e.target.closest('.clickable-nama-siswa');
+      if (targetNama) {
+        const nisn = targetNama.dataset.nisn;
+        const namaLengkap = targetNama.dataset.namaLengkap; 
+        
+        const title = `Info Siswa: ${toProperCase(namaLengkap)}`;
+        const message = `NISN untuk siswa ini adalah:\n<strong>${nisn}</strong>`;
+        
+        // Panggil modal info yang sudah ada
+        showInfoModal(title, message, false, null); // false = bukan error
+      }
+    });
 
     // Listener untuk tombol 'Kelola Mapel'
     document.getElementById('btn-buka-mapel').addEventListener('click', () => {
@@ -1909,7 +1935,7 @@
   }
 
   /**
-   * Membuka halaman detail untuk input nilai (tabel).
+   * [DIUBAH] Membuka halaman detail untuk input nilai (tabel).
    * @param {string} tipeUjian - 'UM' (Utama) atau 'Praktek'.
    */
   function bukaHalamanInputNilaiDetail(tipeUjian) {
@@ -1917,19 +1943,15 @@
     hideMessage('input-nilai-message');
     
     const judulHalaman = document.getElementById('judul-halaman-input-nilai');
-    const selectMapel = document.getElementById('input-nilai-pilih-mapel');
     const tableContainer = document.getElementById('input-nilai-table-container');
     const btnSimpan = document.getElementById('btn-simpan-input-nilai');
 
     // 1. Reset tampilan
-    tableContainer.innerHTML = '<p>Pilih mata pelajaran untuk menampilkan daftar siswa.</p>';
-    selectMapel.innerHTML = '<option value="">-- Memuat mapel... --</option>';
-    selectMapel.disabled = true;
+    tableContainer.innerHTML = '<p>Memuat data siswa dan mata pelajaran...</p>';
     btnSimpan.disabled = true;
 
     // 2. Atur Judul Halaman dan simpan tipe ujian di 'data-' attribute
     if (tipeUjian === 'UM') {
-      // [DIUBAH] Gunakan jenjangPilihanCache
       const jenjangPilihan = jenjangPilihanCache;
       const label = (jenjangPilihan === 'MI' || jenjangPilihan === 'MTS' || jenjangPilihan === 'MA') ? 'Ujian Madrasah' : 'Ujian Sekolah';
       judulHalaman.innerText = `Input Nilai ${label}`;
@@ -1939,148 +1961,160 @@
       judulHalaman.dataset.tipeUjian = 'Praktek';
     }
 
-    // 3. Muat daftar Mapel
-    google.script.run
-      .withSuccessHandler(onMapelLoadedForInput)
-      .withFailureHandler(onGagal) // onGagal akan tampil di 'input-nilai-message'
-      .getMapel();
-  }
-
-  /**
-   * Callback setelah daftar mapel berhasil dimuat untuk halaman input nilai.
-   * [DIUBAH] Sekarang mem-filter mapel berdasarkan tipe ujian.
-   */
-  function onMapelLoadedForInput(response) {
-    const selectMapel = document.getElementById('input-nilai-pilih-mapel');
-    const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian; // 'UM' or 'Praktek'
-    
-    if (response.status === 'sukses') {
-      
-      // [BARU] Filter mapel berdasarkan tipe ujian
-      let filteredMapel = [];
-      if (tipeUjian === 'UM') {
-          // Ambil mapel yang dicentang 'isUS' (Ujian Sekolah/Madrasah)
-          filteredMapel = response.mapel.filter(m => m.isUS === true);
-      } else { // Asumsi 'Praktek'
-          // Ambil mapel yang dicentang 'isUP' (Ujian Praktek)
-          filteredMapel = response.mapel.filter(m => m.isUP === true);
-      }
-      
-      // [DIUBAH] Cek hasil filter
-      if (filteredMapel.length > 0) {
-        selectMapel.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
-        filteredMapel.forEach(mapel => {
-          selectMapel.innerHTML += `<option value="${mapel.id}">${mapel.nama} (${mapel.id})</option>`;
-        });
-        selectMapel.disabled = false;
-      } else {
-        // [DIUBAH] Pesan error lebih spesifik
-        selectMapel.innerHTML = '<option value="">-- Tidak ada mapel --</option>';
-        let pesan = 'Tidak ada data Mata Pelajaran. Harap isi di menu "Kelola Mapel".';
-        if (response.mapel.length > 0) {
-          // Jika mapel ada tapi tidak ada yg dicentang
-          pesan = `Tidak ada mapel yang diatur untuk ${tipeUjian === 'UM' ? 'Ujian Sekolah/Madrasah' : 'Ujian Praktek'}. Harap centang di menu "Kelola Mapel".`;
-        }
-        showMessage('input-nilai-message', pesan, true);
-      }
-      
-    } else if (response.status !== 'sukses') {
-      selectMapel.innerHTML = '<option value="">-- Gagal muat mapel --</option>';
-      showMessage('input-nilai-message', response.message, true);
-    }
-  }
-
-  /**
-   * Memuat tabel siswa + nilai yang ada untuk mapel dan tipe ujian tertentu.
-   * (RANGKA - Butuh fungsi baru di Kode.gs)
-   */
-  function loadSiswaUntukInputNilai(mapelId, tipeUjian) {
+    // 3. Muat semua data grid (siswa, mapel, nilai)
     setLoading(true);
-    hideMessage('input-nilai-message');
-    document.getElementById('input-nilai-table-container').innerHTML = '<p>Memuat data siswa dan nilai...</p>';
-    document.getElementById('btn-simpan-input-nilai').disabled = true;
-
-    // !! PENTING: Anda perlu membuat fungsi 'getSiswaWithNilaiUjian' di Kode.gs
-    // Untuk saat ini, kita gunakan SIMULASI DATA
-    
-    // HAPUS SIMULASI INI NANTI
-    setLoading(false);
-    const simulasiSiswa = [
-      { id: "SIS-1", nama: "ANDI", nisn: "001", kelas: "VI A", nilai: 75 },
-      { id: "SIS-2", nama: "BUDI", nisn: "002", kelas: "VI A", nilai: 0 },
-      { id: "SIS-3", nama: "CACA", nisn: "003", kelas: "VI B", nilai: 90 }
-    ];
-    const response = { status: "sukses", data: simulasiSiswa };
-    onSiswaNilaiLoaded(response, mapelId, tipeUjian);
-    // HAPUS SAMPAI SINI
-    
-    /*
-    // --- KODE ASLI (GUNAKAN INI NANTI) ---
     google.script.run
-      .withSuccessHandler((res) => onSiswaNilaiLoaded(res, mapelId, tipeUjian))
-      .withFailureHandler(onGagal)
-      .getSiswaWithNilaiUjian(mapelId, tipeUjian); // <-- BUAT FUNGSI INI DI KODE.GS
-    */
+      .withSuccessHandler(onNilaiGridLoaded) // Fungsi rendering baru
+      .withFailureHandler(onGagal) 
+      .getNilaiUjianGridData(tipeUjian); // Fungsi backend baru
   }
 
   /**
-   * Menampilkan tabel siswa + nilai setelah data diterima.
-   * (RANGKA - Sesuai permintaan)
+   * [DIUBAH] Menampilkan tabel grid nilai.
+   * Menghapus kolom NISN, memformat nama, dan membuat nama bisa diklik.
    */
-  function onSiswaNilaiLoaded(response, mapelId, tipeUjian) {
+  function onNilaiGridLoaded(response) {
     setLoading(false);
     const container = document.getElementById('input-nilai-table-container');
-
+    const btnSimpan = document.getElementById('btn-simpan-input-nilai');
+    
     if (response.status !== 'sukses') {
-      container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat siswa: ${response.message}</p>`;
-      document.getElementById('btn-simpan-input-nilai').disabled = true;
+      container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat data: ${response.message}</p>`;
+      btnSimpan.disabled = true;
       return;
     }
 
-    if (!response.data || response.data.length === 0) {
+    const { siswaList, mapelList, nilaiData } = response.data;
+    
+    // Validasi data
+    if (!siswaList || siswaList.length === 0) {
       container.innerHTML = '<p style="text-align: center; padding: 20px;">Belum ada data siswa. Harap isi di menu "Kelola Data Siswa".</p>';
-      document.getElementById('btn-simpan-input-nilai').disabled = true;
+      btnSimpan.disabled = true;
       return;
     }
     
-    let html = '<table class="input-nilai-table">';
-    html += '<tr><th>Nama Siswa</th><th>NISN</th><th>Kelas</th><th>Nilai (0-100)</th></tr>';
+    if (!mapelList || mapelList.length === 0) {
+      const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
+      const pesan = `Tidak ada mapel yang diatur untuk ${tipeUjian === 'UM' ? 'Ujian Sekolah/Madrasah' : 'Ujian Praktek'}. Harap centang di menu "Kelola Mapel".`;
+      container.innerHTML = `<p style="text-align: center; padding: 20px;">${pesan}</p>`;
+      btnSimpan.disabled = true;
+      return;
+    }
     
-    response.data.forEach(siswa => {
+    // Mulai bangun tabel
+    let html = '<table class="input-nilai-table">';
+    
+    // 1. Buat Header
+    html += '<thead><tr>';
+    html += '<th>Nama Siswa</th>';
+    // HAPUS: html += '<th>NISN</th>';
+    mapelList.forEach(mapel => {
+      html += `<th class="col-mapel" title="${mapel.nama}">${mapel.id}</th>`;
+    });
+    html += '<th class="th-total th-total-jumlah">Jumlah</th>';
+    html += '<th class="th-total th-total-rata">Rata-Rata</th>';
+    html += '</tr></thead>';
+    
+    // 2. Buat Body
+    html += '<tbody>';
+    siswaList.forEach(siswa => {
+      html += '<tr>';
+      
+      // [DIUBAH] Kolom Info Siswa (Nama Saja)
+      const namaProper = toProperCase(siswa.nama); // Format nama
       html += `
-        <tr>
-          <td>${siswa.nama}</td>
-          <td>${siswa.nisn}</td>
-          <td>${siswa.kelas}</td>
-          <td>
+        <td>
+          <span 
+            class="clickable-nama-siswa" 
+            data-nisn="${siswa.nisn}" 
+            data-nama-lengkap="${siswa.nama}"
+            title="Klik untuk lihat NISN"
+          >
+            ${namaProper}
+          </span>
+        </td>`;
+      // HAPUS: html += `<td>${siswa.nisn}</td>`;
+      
+      // Kolom Input Nilai Mapel
+      mapelList.forEach(mapel => {
+        const key = `${siswa.id}_${mapel.id}`;
+        const nilai = nilaiData[key] || '';
+        
+        html += `<td class="col-mapel">
             <input 
               type="number" 
               class="input-nilai" 
               min="0" 
               max="100" 
               placeholder="0"
-              value="${siswa.nilai || ''}"
+              value="${nilai}"
               data-siswa-id="${siswa.id}" 
-              data-mapel-id="${mapelId}"
-              data-tipe-ujian="${tipeUjian}"
+              data-mapel-id="${mapel.id}"
             >
-          </td>
-        </tr>
-      `;
+          </td>`;
+      });
+      // Kolom Jumlah & Rata-Rata
+      html += `<td class="col-total col-total-jumlah" id="jumlah_${siswa.id}">0</td>`;
+      html += `<td class="col-total col-total-rata" id="rata_${siswa.id}">0.00</td>`;
+      html += '</tr>';
     });
+    html += '</tbody></table>';
 
-    html += '</table>';
     container.innerHTML = html;
-    document.getElementById('btn-simpan-input-nilai').disabled = false;
+    btnSimpan.disabled = false;
+
+    // Hitung total awal untuk semua baris setelah tabel dirender
+    const mapelCount = mapelList.length;
+    if (mapelCount > 0) {
+      siswaList.forEach(siswa => {
+        updateRowTotals(siswa.id, mapelCount);
+      });
+    }
   }
 
   /**
-   * Mengumpulkan dan menyimpan semua nilai dari tabel.
-   * (RANGKA - Butuh fungsi baru di Kode.gs)
+   * [BARU] Menghitung dan memperbarui sel Jumlah & Rata-Rata untuk satu baris siswa.
+   * @param {string} siswaId - ID siswa (misal: "SIS-1")
+   * @param {number} mapelCount - Jumlah total mapel untuk perhitungan rata-rata
+   */
+  function updateRowTotals(siswaId, mapelCount) {
+    // 1. Temukan sel target
+    const jumlahCell = document.getElementById(`jumlah_${siswaId}`);
+    const rataCell = document.getElementById(`rata_${siswaId}`);
+    
+    // Jika sel tidak ditemukan, keluar (pengaman)
+    if (!jumlahCell || !rataCell) return;
+
+    // 2. Temukan semua input nilai HANYA untuk baris siswa ini
+    const rowInputs = document.querySelectorAll(`.input-nilai[data-siswa-id="${siswaId}"]`);
+    
+    let sum = 0;
+    
+    // 3. Loop melalui input, validasi, dan jumlahkan
+    rowInputs.forEach(input => {
+      const value = parseFloat(input.value);
+      if (!isNaN(value) && value >= 0 && value <= 100) {
+        sum += value;
+      }
+    });
+
+    // 4. Hitung rata-rata (pastikan tidak dibagi 0)
+    const average = (mapelCount > 0) ? (sum / mapelCount) : 0;
+    
+    // 5. Tampilkan hasilnya di tabel
+    jumlahCell.innerText = sum;
+    rataCell.innerText = average.toFixed(2); // Tampilkan 2 angka desimal
+  }
+
+  /**
+   * [DIUBAH] Mengumpulkan dan menyimpan semua nilai dari tabel grid.
    */
   function simpanInputNilai() {
     setLoading(true);
     hideMessage('input-nilai-message');
+    
+    // 1. Ambil tipe ujian dari judul halaman
+    const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
     
     const inputs = document.querySelectorAll('#input-nilai-table-container .input-nilai');
     const dataToSave = [];
@@ -2089,26 +2123,16 @@
       dataToSave.push({
         siswaId: input.dataset.siswaId,
         mapelId: input.dataset.mapelId,
-        tipeUjian: input.dataset.tipeUjian,
+        tipeUjian: tipeUjian, // Ambil dari variabel di atas
         nilai: input.value
       });
     });
 
-    // !! PENTING: Anda perlu membuat fungsi 'saveNilaiUjianBatch' di Kode.gs
-    
-    // HAPUS SIMULASI INI NANTI
-    setTimeout(() => {
-      onNilaiUjianSaved({ status: "sukses", message: "Data nilai berhasil disimpan!" });
-    }, 500);
-    // HAPUS SAMPAI SINI
-
-    /*
-    // --- KODE ASLI (GUNAKAN INI NANTI) ---
+    // 2. Kirim data ke fungsi backend baru
     google.script.run
       .withSuccessHandler(onNilaiUjianSaved)
       .withFailureHandler(onGagal)
-      .saveNilaiUjianBatch(dataToSave); // <-- BUAT FUNGSI INI DI KODE.GS
-    */
+      .saveNilaiUjianBatch(dataToSave); // <-- Ini sekarang fungsi asli
   }
 
   /**
