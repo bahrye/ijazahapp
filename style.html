@@ -70,6 +70,8 @@
   input[type="text"],
   input[type="email"],
   input[type="password"],
+  input[type="tel"],
+  input[type="url"],
   select {
     width: 100%;
     padding: 14px;
@@ -212,24 +214,23 @@
   }
   .mapel-table th {
     background-color: var(--bg-light);
-    text-align: center; /* <-- TAMBAHKAN BARIS INI */
+    text-align: center;
   }
   .mapel-table td:last-child { width: 100px; text-align: center; }
 
   /* Tombol Aksi di Tabel */
   .btn-aksi {
-    display: block;         /* Membuat tombol jadi 100% lebar kolom */
-    width: 100%;            /* Memastikan lebar penuh */
-    box-sizing: border-box; /* Agar padding tidak merusak lebar */
+    display: block;         
+    width: 100%;            
+    box-sizing: border-box; 
     padding: 5px 8px;
     font-size: 12px;
-    margin: 0;              /* Hapus margin samping */
-    margin-bottom: 5px;     /* Beri jarak 5px di bawah */
+    margin: 0;              
+    margin-bottom: 5px;     
     border: none;
     border-radius: 5px;
     cursor: pointer;
     color: white;
-    /* Hapus 'width: auto' jika ada */
   }
   .btn-aksi:last-child {
     margin-bottom: 0;
@@ -287,36 +288,26 @@
 
   /* 13. Tampilan Desktop (Lebih Lebar) */
   @media (min-width: 768px) {
-    /* Kita targetkan container halaman utama dan mapel
-      secara spesifik agar menjadi lebih lebar di desktop.
-    */
     #halaman-utama,
     #halaman-mapel {
-      max-width: 960px; /* Ubah lebar ini sesuai selera Anda (misal: 960px) */
+      max-width: 960px; 
     }
-
-    /* PENTING: Kita TIDAK menargetkan #auth-container (login/reg), 
-      karena halaman login/registrasi tetap terlihat bagus
-      dengan lebar 450px.
-    */
   }
 
   /* 14. Penataan Tombol Header Mapel */
   .header-buttons {
     display: flex;
-    gap: 10px; /* Memberi jarak 10px antar tombol */
+    gap: 10px; 
   }
 
-  /* Mengatur ulang style tombol di header */
   #btn-tambah-mapel-baru,
   #btn-ambil-default,
   #btn-hapus-semua {
-    width: auto; /* Lebar otomatis sesuai konten */
+    width: auto; 
     padding: 10px 15px;
     font-size: 14px;
   }
 
-  /* Warna spesifik untuk tombol baru */
   #btn-ambil-default {
     background-color: var(--secondary-color);
   }
@@ -331,7 +322,6 @@
     background-color: #b02a37;
   }
 
-  /* Memastikan warna tombol tambah tetap hijau */
   #btn-tambah-mapel-baru {
     background-color: var(--success-color);
   }
@@ -341,7 +331,7 @@
 
   /* 15. Modal Konfirmasi Kustom */
   #confirmation-modal .modal-content {
-    max-width: 450px; /* Modal konfirmasi tidak perlu terlalu lebar */
+    max-width: 450px; 
   }
 
   #confirm-modal-body {
@@ -351,7 +341,6 @@
     padding-bottom: 15px;
   }
 
-  /* Style untuk teks PERINGATAN (jika kita gunakan tag <strong>) */
   #confirm-modal-body strong {
     color: var(--danger-color);
     font-weight: 700;
@@ -359,7 +348,6 @@
 
   #btn-confirm-ok {
     width: auto;
-    /* Warna akan diatur oleh JavaScript */
   }
 
   #btn-confirm-cancel {
@@ -370,12 +358,10 @@
     background-color: #5a6268;
   }
 
-  /* Modal Form Mapel */
   #btn-simpan-mapel {
     margin-left: 10px;
   }
 
-  /* Modal Konfirmasi */
   #btn-confirm-ok {
     margin-left: 10px;
   }
@@ -391,12 +377,10 @@
     line-height: 1.5;
     padding-top: 15px;
     padding-bottom: 15px;
-    /* Style default untuk teks */
     color: var(--text-dark);
     font-weight: 400;
   }
 
-  /* Style khusus jika pesannya adalah error */
   #info-modal .modal-body.error {
     color: var(--danger-color);
     font-weight: 500;
@@ -409,4 +393,133 @@
   #btn-info-ok:hover {
     background-color: var(--primary-dark);
   }
+
+  /* 17. Fitur Toggle Password (Font Awesome) */
+  .form-group-password {
+    position: relative;
+  }
+  
+  #login-password,
+  #reg-password {
+    padding-right: 45px; 
+  }
+
+  .toggle-password-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    user-select: none; 
+    font-size: 18px; 
+    color: var(--secondary-color);
+    transition: color 0.2s;
+    width: 20px;
+    text-align: center;
+  }
+  
+  .toggle-password-icon:hover {
+    color: var(--primary-color);
+  }
+  
+  /* [BARU] 18. Halaman Kelola Data Sekolah */
+  
+  /* Targetkan agar lebar di desktop */
+  @media (min-width: 768px) {
+    #halaman-data-sekolah {
+      max-width: 960px; 
+    }
+  }
+  
+  /* Header pemisah antar grup form */
+  .form-section-header {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+    margin-top: 30px;
+    margin-bottom: 20px;
+  }
+  .form-section-header:first-of-type {
+    margin-top: 10px;
+  }
+
+  /* Style untuk input yang nonaktif */
+  input:disabled, input:read-only {
+    background-color: var(--bg-light);
+    color: var(--text-light);
+    cursor: not-allowed;
+  }
+  
+  /* Style untuk textarea */
+  textarea {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-sizing: border-box; 
+    font-family: 'Roboto', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: vertical; /* Izinkan resize vertikal */
+    min-height: 80px;
+  }
+  
+  textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  }
+  
+  /* Grup form inline (Kab/Kota, Kel/Desa) */
+  .form-group-inline {
+    display: flex;
+    flex-wrap: wrap; /* Agar responsif di HP */
+    gap: 15px;
+    align-items: flex-end; /* Sejajarkan bagian bawah */
+  }
+  .form-group-inline .form-group {
+    margin-bottom: 15px; /* Tetap pertahankan margin bawah */
+    flex-grow: 1;
+  }
+  .form-group-inline .form-group:last-child {
+    min-width: 150px; /* Lebar minimum untuk dropdown */
+    flex-grow: 0;
+  }
+  
+  /* Tombol Aksi di Form (Simpan, Batal) */
+  .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+  }
+  .form-actions button {
+    width: auto;
+    padding: 12px 20px;
+  }
+  
+  #btn-kembali-ke-dashboard-2 {
+    background-color: var(--secondary-color);
+  }
+  #btn-kembali-ke-dashboard-2:hover {
+    background-color: #5a6268;
+  }
+  #btn-simpan-data-sekolah {
+    background-color: var(--success-color);
+  }
+  #btn-simpan-data-sekolah:hover {
+    background-color: #157347;
+  }
+
+  /* [BARU] 19. Format Tampilan Uppercase */
+  #reg-nama-sekolah,  /* Input registrasi */
+  #salam-sekolah,     /* Salam di dashboard */
+  #data-nama-sekolah  /* Input di form data sekolah */
+  {
+    text-transform: uppercase;
+  }
+
 </style>
