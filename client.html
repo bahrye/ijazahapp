@@ -204,16 +204,8 @@
         .prosesRegistrasi(namaSekolah, jenjang, email, password);
     });
 
-    // Listener Tombol Contoh Hitung Nilai
-    document.getElementById('btn-hitung').addEventListener('click', () => {
-      setLoading(true);
-      document.getElementById('hasil-hitung').innerHTML = "Menghitung...";
-      google.script.run
-        .withSuccessHandler(hasilHitung)
-        .withFailureHandler(onGagal)
-        .hitungNilaiIjazahSiswa('S-001'); // Hardcode ID siswa untuk tes
-    });
-    
+    // [PERUBAHAN] Listener Tombol Contoh Hitung Nilai dihapus
+
     // Listener Tombol Logout
     document.getElementById('btn-logout').addEventListener('click', () => {
       setLoading(true);
@@ -575,23 +567,7 @@
     }
   }
   
-  function hasilHitung(response) {
-    setLoading(false);
-    let html = '';
-    if (response.status === "sukses") {
-      html = `
-        <div class="message success" style="text-align: left; padding: 15px; display: block;">
-          <p style="margin-top:0;"><strong>Mapel:</strong> ${response.mapel}</p>
-          <p><strong>Rata-rata Rapor:</strong> ${response.nilaiRataRataRapor}</p>
-          <p><strong>Rata-rata Ujian:</strong> ${response.nilaiRataRataUjian}</p>
-          <h4 style="margin-bottom:0;">Nilai Akhir: ${response.nilaiAkhirIjazah}</h4>
-        </div>
-      `;
-    } else {
-      html = `<div class="message error" style="display: block;">${response.message}</div>`;
-    }
-    document.getElementById('hasil-hitung').innerHTML = html;
-  }
+  // [PERUBAHAN] Fungsi hasilHitung() dihapus
 
   function onLogout(response) {
     setLoading(false);
