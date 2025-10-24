@@ -1225,7 +1225,7 @@
             <td>${siswa.nisn}</td>
             <td>${siswa.kelas}</td>
             <td>
-              <button class="btn-aksi btn-edit-siswa" 
+              <button class="btn-aksi btn-edit btn-edit-siswa" 
                 data-id="${siswa.id}"
                 data-nama="${siswa.nama}"
                 data-nisn="${siswa.nisn}"
@@ -1235,7 +1235,7 @@
                 data-tgl-lahir="${siswa.tglLahir}"
                 data-kelas="${siswa.kelas}"
               >Edit</button>
-              <button class="btn-aksi btn-delete-siswa" data-id="${siswa.id}" data-nama="${siswa.nama}">Hapus</button>
+              <button class="btn-aksi btn-delete btn-delete-siswa" data-id="${siswa.id}" data-nama="${siswa.nama}">Hapus</button>
             </td>
           </tr>
         `;
@@ -1260,10 +1260,10 @@
    * Ini akan memuat daftar kelas terlebih dahulu.
    */
   function showModalSiswa(mode, siswaData) {
-    setLoading(true);
+    // setLoading(true); // [DIHAPUS] Loader fullscreen tidak lagi dipakai di sini
     hideMessage('modal-siswa-error');
     
-    // 1. Reset form
+    // 1. Reset form (biarkan ini)
     document.getElementById('modal-siswa-mode').value = mode;
     document.getElementById('modal-siswa-id').value = siswaData.id || '';
     document.getElementById('modal-siswa-nama').value = '';
@@ -1273,17 +1273,40 @@
     document.getElementById('modal-siswa-tempat-lahir').value = '';
     document.getElementById('modal-siswa-tgl-lahir').value = '';
     
+    // [BARU] Set dropdown kelas ke mode loading
+    const selectKelas = document.getElementById('modal-siswa-kelas');
+    selectKelas.innerHTML = '<option value="">-- Memuat kelas... --</option>';
+    
+    // [BARU] Nonaktifkan tombol simpan saat kelas dimuat
+    document.getElementById('btn-simpan-siswa').disabled = true; 
+
     // Atur judul
     if (mode === 'add') {
       document.getElementById('modal-siswa-title').innerText = "Tambah Siswa Baru";
       document.getElementById('modal-siswa-nisn').readOnly = false;
     } else {
       document.getElementById('modal-siswa-title').innerText = "Edit Data Siswa";
-      // NISN (sebagai Primary Key) tidak boleh diubah saat edit
-      document.getElementById('modal-siswa-nisn').readOnly = true;
+      // [DIUBAH] NISN tidak lagi dikunci sesuai permintaan
+      document.getElementById('modal-siswa-nisn').readOnly = false;
+
+      // === [PERUBAHAN KUNCI] ===
+      // Pindahkan populasi data ke sini agar instan
+      // Data ini sudah ada di 'siswaData' dan tidak perlu menunggu 'getKelas'
+      document.getElementById('modal-siswa-id').value = siswaData.id;
+      document.getElementById('modal-siswa-nama').value = siswaData.nama;
+      document.getElementById('modal-siswa-nisn').value = siswaData.nisn;
+      document.getElementById('modal-siswa-nis-lokal').value = siswaData.nisLokal;
+      document.getElementById('modal-siswa-jk').value = siswaData.jk;
+      document.getElementById('modal-siswa-tempat-lahir').value = siswaData.tempatLahir;
+      document.getElementById('modal-siswa-tgl-lahir').value = siswaData.tglLahir;
+      // 'modal-siswa-kelas' akan di-set di callback setelah daftar kelas dimuat
     }
 
+    // [BARU] Tampilkan modal SEKARANG (setelah form diisi jika mode 'edit')
+    document.getElementById('siswa-modal').style.display = 'block';
+
     // 2. Panggil backend untuk mendapatkan daftar kelas
+    // Kita tetap kirim siswaData agar callback tahu kelas mana yang harus dipilih
     google.script.run
       .withSuccessHandler((response) => onKelasListLoadedForModal(response, siswaData))
       .withFailureHandler(onGagal)
@@ -1300,33 +1323,26 @@
     
     if (response.status !== 'sukses' || !response.kelas || response.kelas.length === 0) {
       // Gagal memuat kelas atau tidak ada kelas
-      setLoading(false);
       selectKelas.innerHTML = '<option value="">-- Tidak ada data kelas --</option>';
-      showMessage('modal-siswa-error', "Tidak dapat menambah siswa. Harap isi data kelas terlebih dahulu di menu 'Kelola Kelas'.", true);
-      btnSimpan.disabled = true; // Nonaktifkan tombol simpan
+      showMessage('modal-siswa-error', "Tidak dapat menambah/edit siswa. Harap isi data kelas terlebih dahulu di menu 'Kelola Kelas'.", true);
+      btnSimpan.disabled = true; // Tetap nonaktif
     } else {
       // Sukses, isi dropdown kelas
       selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
       response.kelas.forEach(namaKelas => {
         selectKelas.innerHTML += `<option value="${namaKelas}">${namaKelas}</option>`;
       });
-      btnSimpan.disabled = false; // Aktifkan tombol simpan
+      btnSimpan.disabled = false; // [PENTING] Aktifkan tombol simpan
       
-      // 3. Jika mode 'edit', isi sisa form
+      // === [PERUBAHAN KUNCI] ===
+      // 3. Jika mode 'edit', HANYA atur nilai dropdown 'kelas'
       if (document.getElementById('modal-siswa-mode').value === 'edit') {
-        document.getElementById('modal-siswa-id').value = siswaData.id;
-        document.getElementById('modal-siswa-nama').value = siswaData.nama;
-        document.getElementById('modal-siswa-nisn').value = siswaData.nisn;
-        document.getElementById('modal-siswa-nis-lokal').value = siswaData.nisLokal;
-        document.getElementById('modal-siswa-jk').value = siswaData.jk;
-        document.getElementById('modal-siswa-tempat-lahir').value = siswaData.tempatLahir;
-        document.getElementById('modal-siswa-tgl-lahir').value = siswaData.tglLahir;
+        // Semua input lain (nama, nisn, dll) sudah diisi di 'showModalSiswa'
         document.getElementById('modal-siswa-kelas').value = siswaData.kelas;
       }
       
-      setLoading(false);
-      // 4. Tampilkan modal
-      document.getElementById('siswa-modal').style.display = 'block';
+      // setLoading(false); // [DIHAPUS]
+      // document.getElementById('siswa-modal').style.display = 'block'; // [DIHAPUS] Sudah pindah
     }
   }
 
