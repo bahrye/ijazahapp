@@ -1,6 +1,7 @@
 // ! ID MASTER SHEET ANDA
 // ! Ini adalah sheet yang berisi daftar sekolah (Email, Password, ID Sheet mereka)
 const MASTER_SHEET_ID = "191TzI0vRzK8xg7kGym8qUnvXz_edlCH_IJmmwMZMK_M"; 
+const MAPEL_CACHE_KEY = 'mapel_data'; // <-- TAMBAHKAN INI
 
 /**
  * Fungsi utama untuk menampilkan halaman web.
@@ -318,6 +319,17 @@ function getDynamicDefaultMapel(jenjang, masterSpreadsheet) {
 // FUNGSI CRUD MATA PELAJARAN
 // ===========================================
 
+/**
+ * [HELPER] Menghapus cache mapel agar data dimuat ulang.
+ */
+function clearMapelCache() {
+  try {
+    CacheService.getUserCache().remove(MAPEL_CACHE_KEY);
+  } catch (e) {
+    Logger.log("Gagal membersihkan cache mapel: " + e.message);
+  }
+}
+
 function getMapelSheet() {
   // Panggil 'penjaga' di awal
   const userProperties = validateAndRefreshSession();
@@ -332,12 +344,26 @@ function getMapelSheet() {
 
 function getMapel() {
   try {
+    const userCache = CacheService.getUserCache();
+    const cachedMapel = userCache.get(MAPEL_CACHE_KEY);
+
+    if (cachedMapel != null) {
+      // Data ditemukan di cache, kirim langsung (super cepat)
+      Logger.log("Mengambil mapel dari CACHE");
+      return { status: "sukses", mapel: JSON.parse(cachedMapel) };
+    }
+    
+    // Data tidak ada di cache, ambil dari sheet (lambat)
+    Logger.log("Mengambil mapel dari SPREADSHEET");
     const sheetMapel = getMapelSheet();
     const data = sheetMapel.getDataRange().getValues();
     data.shift(); // Hapus header
     
     const mapel = data.map(row => ({ id: row[0], nama: row[1] }))
                       .filter(row => row.id); // Filter baris kosong
+    
+    // Simpan ke cache untuk 10 menit (600 detik)
+    userCache.put(MAPEL_CACHE_KEY, JSON.stringify(mapel), 600); 
     
     return { status: "sukses", mapel: mapel };
   } catch (e) {
@@ -361,6 +387,7 @@ function createMapel(mapelID, namaMapel) {
     }
     
     sheetMapel.appendRow([mapelID, namaMapel]);
+    clearMapelCache();
     return { status: "sukses" };
     
   } catch (e) {
@@ -380,6 +407,7 @@ function updateMapel(mapelID, namaMapel) {
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === mapelID) {
         sheetMapel.getRange(i + 1, 2).setValue(namaMapel);
+        clearMapelCache();
         return { status: "sukses" };
       }
     }
@@ -398,6 +426,7 @@ function deleteMapel(mapelID) {
     for (let i = data.length - 1; i >= 1; i--) {
       if (data[i][0] === mapelID) {
         sheetMapel.deleteRow(i + 1);
+        clearMapelCache();
         return { status: "sukses" };
       }
     }
@@ -450,6 +479,7 @@ function syncDefaultMapel() {
     if (mapelToAdd.length > 0) {
       sheetMapel.getRange(sheetMapel.getLastRow() + 1, 1, mapelToAdd.length, 2)
                 .setValues(mapelToAdd);
+      clearMapelCache();
       return { status: "sukses", message: `Berhasil menambahkan ${mapelToAdd.length} mapel default yang hilang.` };
     } else {
       return { status: "sukses", message: "Data mapel Anda sudah sinkron. Tidak ada yang ditambahkan." };
@@ -472,7 +502,7 @@ function deleteAllMapel() {
     if (lastRow > 1) {
       sheetMapel.deleteRows(2, lastRow - 1);
     }
-    
+    clearMapelCache();
     return { status: "sukses", message: "Semua mapel telah dihapus." };
     
   } catch (e) {
