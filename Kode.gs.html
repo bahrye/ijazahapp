@@ -275,73 +275,8 @@ function checkToken(tokenFromClient) {
 }
 
 
-// ===========================================
-// FUNGSI PENGOLAHAN NILAI (CONTOH)
-// ===========================================
+// [PERUBAHAN] Bagian "FUNGSI PENGOLAHAN NILAI (CONTOH)" telah dihapus
 
-/**
- * [UPDATE] Fungsi ini diupdate agar mengambil bobot
- * menggunakan helper getPengaturanSheet yang lebih kuat.
- */
-function hitungNilaiIjazahSiswa(siswaID) {
-  try {
-    // Panggil 'penjaga' di awal
-    const userProperties = validateAndRefreshSession();
-    const spreadsheetID = userProperties.getProperty('spreadsheetID');
-    
-    const ss = SpreadsheetApp.openById(spreadsheetID);
-    
-    // [UPDATE] Gunakan helper function yang lebih kuat
-    const sheetSetting = getPengaturanSheet(ss);
-    
-    // [UPDATE] Ambil bobot dengan cara yang lebih kuat
-    const dataBobot = sheetSetting.getRange('A1:B' + sheetSetting.getLastRow()).getValues();
-    let bobotRapor = 60; // Default
-    let bobotUjian = 40; // Default
-
-    for (let i = 0; i < dataBobot.length; i++) {
-      if (dataBobot[i][0] === 'Bobot_Rapor') {
-        bobotRapor = dataBobot[i][1];
-      } else if (dataBobot[i][0] === 'Bobot_Ujian') {
-        bobotUjian = dataBobot[i][1];
-      }
-    }
-    // [AKHIR UPDATE]
-    
-    if (siswaID === 'S-001') {
-      // Data dummy untuk tes
-      const dataRaporSiswa = { Sem1_P: 85, Sem1_K: 88, Sem2_P: 86, Sem2_K: 87, Sem3_P: 88, Sem3_K: 88, Sem4_P: 90, Sem4_K: 90, Sem5_P: 90, Sem5_K: 92 };
-      const dataUjianSiswa = { UjianMadrasah: 88, UjianPraktek: 90 };
-      
-      let nilaiUjian = 0;
-      if (dataUjianSiswa.UjianPraktek && dataUjianSiswa.UjianPraktek > 0) {
-        nilaiUjian = (dataUjianSiswa.UjianMadrasah + dataUjianSiswa.UjianPraktek) / 2;
-      } else {
-        nilaiUjian = dataUjianSiswa.UjianMadrasah;
-      }
-      
-      const nilaiRaporArray = Object.values(dataRaporSiswa);
-      const totalNilaiRapor = nilaiRaporArray.reduce((acc, val) => acc + val, 0);
-      const rataRataRapor = totalNilaiRapor / nilaiRaporArray.length;
-      
-      const nilaiAkhir = (rataRataRapor * bobotRapor / 100) + (nilaiUjian * bobotUjian / 100);
-      
-      return {
-        status: "sukses",
-        mapel: "Pendidikan Agama (Contoh)",
-        nilaiRataRataRapor: rataRataRapor.toFixed(2),
-        nilaiRataRataUjian: nilaiUjian.toFixed(2),
-        nilaiAkhirIjazah: nilaiAkhir.toFixed(2)
-      };
-    } else {
-      return { status: "error", message: "SiswaID 'S-001' tidak ditemukan untuk demo." };
-    }
-    
-  } catch (e) {
-    Logger.log(e);
-    return { status: "error", message: e.message };
-  }
-}
 
 // ===========================================
 // FUNGSI HELPER MAPEL DEFAULT (DINAMIS)
