@@ -76,6 +76,8 @@
         </ul>
         <button id="btn-buka-data-sekolah">Kelola Data Sekolah</button>
         <button id="btn-buka-mapel" style="background-color: #198754; margin-top: 10px;">Kelola Mata Pelajaran</button>
+        <button id="btn-buka-bobot" style="margin-top: 10px;">Kelola Bobot Nilai Ijazah</button>
+        
         <hr>
         
         <h3>Contoh Perhitungan</h3>
@@ -190,7 +192,33 @@
       </div>
     </div>
 
+    <div class="container" id="halaman-bobot" style="display: none;">
+      <div class="page">
+        <h2>Kelola Bobot Nilai Ijazah</h2>
+        <p>Atur persentase bobot untuk nilai rapor dan nilai ujian. Total keduanya harus 100%. Bobot default adalah 60% Rapor dan 40% Ujian.</p>
+        
+        <form id="form-bobot">
+          
+          <div class="form-group">
+            <label for="bobot-rapor">Bobot Nilai Rapor (%)</label>
+            <input type="number" id="bobot-rapor" min="0" max="100" placeholder="Contoh: 60">
+          </div>
+          
+          <div class="form-group">
+            <label for="bobot-ujian">Bobot Nilai Ujian (%)</label>
+            <input type="number" id="bobot-ujian" min="0" max="100" placeholder="Contoh: 40">
+          </div>
+          
+          <p id="bobot-message" class="message" style="display: none;"></p>
 
+          <hr>
+          <div class="form-actions">
+              <button type="button" id="btn-kembali-ke-dashboard-3">Kembali ke Dashboard</button>
+              <button type="submit" id="btn-simpan-bobot">Simpan Perubahan</button>
+          </div>
+        </form>
+      </div>
+    </div>
     <div class="container" id="halaman-mapel" style="display: none;">
       <div class="page">
         <div class="page-header">
