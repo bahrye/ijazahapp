@@ -4,6 +4,8 @@
     <base target="_top">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengolahan Nilai Ijazah</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
     <?!= include('style'); ?>
   </head>
   <body>
@@ -20,41 +22,49 @@
       </div>
 
       <div id="halaman-login" class="page">
-        <div class="form-group">
-          <input type="email" id="login-email" placeholder="Email Admin Sekolah">
-        </div>
-        <div class="form-group">
-          <input type="password" id="login-password" placeholder="Password">
-        </div>
+        <form id="login-form">
+          <div class="form-group">
+            <input type="email" id="login-email" placeholder="Email Admin Sekolah" name="email" autocomplete="email">
+          </div>
+          <div class="form-group form-group-password">
+            <input type="password" id="login-password" placeholder="Password" name="password" autocomplete="current-password">
+            <span id="toggle-login-password" class="toggle-password-icon fas fa-eye"></span>
+          </div>
+        </form>
         <button id="btn-login">Masuk</button>
         <p id="login-error" class="message error"></p>
         <a id="link-ke-registrasi" class="nav-link">Belum punya akun? Daftar di sini</a>
       </div>
 
       <div id="halaman-registrasi" class="page" style="display: none;">
-        <div class="form-group">
-          <input type="text" id="reg-nama-sekolah" placeholder="Nama Sekolah">
-        </div>
-        <div class="form-group">
-          <select id="reg-jenjang">
-            <option value="">-- Pilih Jenjang --</option>
-            <option value="SD/MI">SD/MI</option>
-            <option value="SMP/MTS">SMP/MTS</option>
-            <option value="SMA/MA">SMA/MA</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <input type="email" id="reg-email" placeholder="Email Admin">
-        </div>
-        <div class="form-group">
-          <input type="password" id="reg-password" placeholder="Buat Password">
-        </div>
+        <form id="reg-form">
+          <div class="form-group">
+            <input type="text" id="reg-nama-sekolah" placeholder="Nama Sekolah">
+          </div>
+          <div class="form-group">
+            <select id="reg-jenjang">
+              <option value="">-- Pilih Jenjang --</option>
+              <option value="SD/MI">SD/MI</option>
+              <option value="SMP/MTS">SMP/MTS</option>
+              <option value="SMA/MA">SMA/MA</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <input type="email" id="reg-email" placeholder="Email Admin">
+          </div>
+          <div class="form-group form-group-password">
+            <input type="password" id="reg-password" placeholder="Buat Password" name="password" autocomplete="new-password">
+            <span id="toggle-reg-password" class="toggle-password-icon fas fa-eye"></span>
+          </div>
+        </form>
         <button id="btn-registrasi">Daftar</button>
         <p id="reg-message" class="message"></p>
         <a id="link-ke-login" class="nav-link">Sudah punya akun? Login</a>
       </div>
 
-    </div> <div class="container" id="halaman-utama" style="display: none;">
+    </div> 
+    
+    <div class="container" id="halaman-utama" style="display: none;">
       <div class="page">
         <h2 id="salam-sekolah">Selamat Datang, Admin</h2>
         <p>Ini adalah dashboard utama. Di sini Anda bisa:</p>
@@ -64,7 +74,8 @@
           <li>Input Nilai Ujian</li>
           <li>Cetak Laporan Nilai Ijazah</li>
         </ul>
-        <button id="btn-buka-mapel" style="background-color: #198754;">Kelola Mata Pelajaran</button>
+        <button id="btn-buka-data-sekolah">Kelola Data Sekolah</button>
+        <button id="btn-buka-mapel" style="background-color: #198754; margin-top: 10px;">Kelola Mata Pelajaran</button>
         <hr>
         
         <h3>Contoh Perhitungan</h3>
@@ -76,6 +87,109 @@
         <button id="btn-logout">Logout</button>
       </div>
     </div>
+
+    <div class="container" id="halaman-data-sekolah" style="display: none;">
+      <div class="page">
+        <h2>Kelola Data Sekolah</h2>
+        <p>Lengkapi data identitas sekolah Anda. Data ini akan digunakan pada dokumen dan laporan.</p>
+        
+        <form id="form-data-sekolah">
+          
+          <h3 class="form-section-header">Identitas Utama</h3>
+          <div class="form-group">
+            <label for="data-nama-sekolah">Nama Sekolah</label>
+            <input type="text" id="data-nama-sekolah" disabled>
+          </div>
+          <div class="form-group">
+            <label for="data-jenjang-pilihan">Jenjang Sekolah (Wajib)</label>
+            <select id="data-jenjang-pilihan"></select>
+          </div>
+          <div class="form-group">
+            <label for="data-npsn">NPSN (Wajib)</label>
+            <input type="text" id="data-npsn" placeholder="Masukkan NPSN">
+          </div>
+          <div class="form-group" id="grup-nsm">
+            <label for="data-nsm">NSM</label>
+            <input type="text" id="data-nsm" placeholder="Masukkan NSM (jika ada)">
+          </div>
+
+          <h3 class="form-section-header">Alamat</h3>
+          <div class="form-group">
+            <label for="data-alamat">Alamat Sekolah (Wajib)</label>
+            <textarea id="data-alamat" rows="3" placeholder="Masukkan alamat lengkap sekolah"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="data-provinsi">Provinsi</label>
+            <input type="text" id="data-provinsi" placeholder="Misal: Jawa Barat">
+          </div>
+          <div class="form-group-inline">
+            <div class="form-group" style="flex-grow: 1;">
+              <label for="data-kabkot">Kabupaten/Kota</label>
+              <input type="text" id="data-kabkot" placeholder="Misal: Kota Bandung">
+            </div>
+            <div class="form-group" style="width: 150px;">
+              <label>&nbsp;</label>
+              <select id="data-pilihan-kabkot">
+                <option value="Kabupaten">Kabupaten</option>
+                <option value="Kota">Kota</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="data-kecamatan">Kecamatan</label>
+            <input type="text" id="data-kecamatan" placeholder="Misal: Coblong">
+          </div>
+          <div class="form-group-inline">
+            <div class="form-group" style="flex-grow: 1;">
+              <label for="data-keldes">Kelurahan/Desa</label>
+              <input type="text" id="data-keldes" placeholder="Misal: Dago">
+            </div>
+            <div class="form-group" style="width: 150px;">
+              <label>&nbsp;</label>
+              <select id="data-pilihan-keldes">
+                <option value="Kelurahan">Kelurahan</option>
+                <option value="Desa">Desa</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="data-kodepos">Kode Pos</label>
+            <input type="text" id="data-kodepos" placeholder="Misal: 40135">
+          </div>
+
+          <h3 class="form-section-header">Kontak & Legalitas</h3>
+          <div class="form-group">
+            <label for="data-telepon">Nomor Telepon</label>
+            <input type="text" id="data-telepon" placeholder="Misal: (022) 2501234">
+          </div>
+          <div class="form-group">
+            <label for="data-email">Email</label>
+            <input type="text" id="data-email" placeholder="Misal: info@sekolah.sch.id">
+          </div>
+          <div class="form-group">
+            <label for="data-website">Website</label>
+            <input type="text" id="data-website" placeholder="Misal: https://sekolah.sch.id">
+          </div>
+          <div class="form-group">
+            <label for="data-kepsek">Nama Kepala Sekolah (Wajib)</label>
+            <input type="text" id="data-kepsek" placeholder="Masukkan nama lengkap">
+          </div>
+          <div class="form-group">
+            <label for="data-nip-kepsek">NIP Kepala Sekolah</label>
+            <input type="text" id="data-nip-kepsek" placeholder="Masukkan NIP (jika ada)">
+          </div>
+          
+          <p id="data-sekolah-message" class="message" style="display: none;"></p>
+
+          <hr>
+          <div class="form-actions">
+              <button type="button" id="btn-kembali-ke-dashboard-2">Kembali ke Dashboard</button>
+              <button type="submit" id="btn-simpan-data-sekolah">Simpan Perubahan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
 
     <div class="container" id="halaman-mapel" style="display: none;">
       <div class="page">
