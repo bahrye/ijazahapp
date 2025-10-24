@@ -744,4 +744,71 @@
     background-color: #157347;
   }
 
+  /* [PERUBAHAN DIMULAI] 23. Style Kartu Menu Dashboard (Permintaan User) */
+            
+  .dashboard-menu-grid {
+    display: grid;
+    /* Buat 2 kolom di HP, 3 kolom di layar lebih besar */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px; /* Jarak antar kartu */
+    margin-top: 25px;
+    margin-bottom: 20px;
+  }
+
+  /* Di layar lebih besar (desktop), buat jadi 3 kolom */
+  @media (min-width: 500px) {
+    .dashboard-menu-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .dashboard-card {
+    /* Reset style default tombol */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    
+    /* Tampilan Kartu */
+    background-color: var(--bg-white) !important; /* Paksa override style inline/ID */
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 25px 15px; /* Padding atas-bawah lebih besar */
+    min-height: 130px; /* Tinggi minimum kartu */
+    
+    /* Teks */
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary-color) !important; /* Paksa override warna teks */
+    
+    /* Interaksi */
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    
+    /* Override style tombol lama (margin, width) */
+    width: 100%;
+    margin: 0 !important; /* Paksa override margin-top */
+  }
+
+  .dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: var(--primary-color) !important;
+    color: white !important;
+  }
+
+  /* Ikon di dalam kartu */
+  .dashboard-card i {
+    font-size: 30px; /* Ukuran ikon */
+    margin-bottom: 15px; /* Jarak ikon ke teks */
+    /* Warna ikon akan ikut berubah saat hover (mewarisi dari .dashboard-card) */
+  }
+  
+  /* Teks di dalam kartu */
+  .dashboard-card span {
+    line-height: 1.4; /* Jarak antar baris teks jika wrap */
+  }
+  /* [PERUBAHAN SELESAI] */
+
 </style>
