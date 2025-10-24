@@ -46,12 +46,14 @@
     document.getElementById('auth-container').style.display = 'none';
     document.getElementById('halaman-utama').style.display = 'none';
     document.getElementById('halaman-mapel').style.display = 'none';
-    document.getElementById('halaman-data-sekolah').style.display = 'none'; // [BARU] Sembunyikan halaman baru
+    document.getElementById('halaman-data-sekolah').style.display = 'none';
+    document.getElementById('halaman-bobot').style.display = 'none'; // [BARU] Sembunyikan halaman bobot
 
     // Sembunyikan pesan error
     hideMessage('login-error');
     hideMessage('reg-message');
-    hideMessage('data-sekolah-message'); // [BARU] Sembunyikan pesan error data sekolah
+    hideMessage('data-sekolah-message');
+    hideMessage('bobot-message'); // [BARU] Sembunyikan pesan error bobot
 
     if (idHalaman === 'halaman-utama') {
       document.getElementById('halaman-utama').style.display = 'block';
@@ -59,8 +61,11 @@
     else if (idHalaman === 'halaman-mapel') {
       document.getElementById('halaman-mapel').style.display = 'block';
     } 
-    else if (idHalaman === 'halaman-data-sekolah') { // [BARU] Tampilkan halaman baru
+    else if (idHalaman === 'halaman-data-sekolah') { 
       document.getElementById('halaman-data-sekolah').style.display = 'block';
+    } 
+    else if (idHalaman === 'halaman-bobot') { // [BARU] Tampilkan halaman bobot
+      document.getElementById('halaman-bobot').style.display = 'block';
     } 
     else {
       // Tampilkan container auth
@@ -276,6 +281,32 @@
     document.getElementById('data-jenjang-pilihan').addEventListener('change', updateTampilanNSM);
     // --- AKHIR BAGIAN BARU ---
 
+    
+    // --- [BARU] LISTENER FITUR BOBOT ---
+    
+    document.getElementById('btn-buka-bobot').addEventListener('click', () => {
+      bukaHalamanBobot();
+    });
+
+    document.getElementById('btn-kembali-ke-dashboard-3').addEventListener('click', () => {
+      tampilHalaman('halaman-utama');
+    });
+
+    document.getElementById('form-bobot').addEventListener('submit', (e) => {
+      e.preventDefault();
+      simpanBobot();
+    });
+
+    // Listener untuk sinkronisasi input bobot
+    document.getElementById('bobot-rapor').addEventListener('input', () => {
+      sinkronkanBobot('rapor');
+    });
+    document.getElementById('bobot-ujian').addEventListener('input', () => {
+      sinkronkanBobot('ujian');
+    });
+    
+    // --- AKHIR BAGIAN BARU ---
+
 
     // --- LISTENER FITUR MAPEL ---
 
@@ -478,9 +509,12 @@
     } else if (document.getElementById('mapel-modal').style.display !== 'none') {
       showMessage('modal-mapel-error', 'Error: ' + errorMsg, true);
     } else if (document.getElementById('halaman-data-sekolah').style.display !== 'none') {
-      // [BARU] Tangani error di halaman data sekolah
       showMessage('data-sekolah-message', 'Error: ' + errorMsg, true);
-    } else {
+    } 
+    else if (document.getElementById('halaman-bobot').style.display !== 'none') { // [BARU]
+      showMessage('bobot-message', 'Error: ' + errorMsg, true);
+    } 
+    else {
       // Fallback
       showInfoModal('Terjadi Error', errorMsg, true); 
     }
@@ -626,7 +660,7 @@
 
 
   // ===========================================
-  // [BARU] FUNGSI & HANDLER DATA SEKOLAH
+  // FUNGSI & HANDLER DATA SEKOLAH
   // ===========================================
 
   /**
@@ -801,6 +835,114 @@
       showMessage('data-sekolah-message', 'Data sekolah berhasil disimpan!', false); // false = sukses
     } else {
       showMessage('data-sekolah-message', response.message, true);
+    }
+  }
+
+
+  // ===========================================
+  // [BARU] FUNGSI & HANDLER BOBOT NILAI
+  // ===========================================
+
+  /**
+   * [HELPER] Sinkronisasi input bobot agar total 100%.
+   */
+  function sinkronkanBobot(sumber) {
+    const inputRapor = document.getElementById('bobot-rapor');
+    const inputUjian = document.getElementById('bobot-ujian');
+    
+    let nilaiRapor = parseInt(inputRapor.value, 10);
+    let nilaiUjian = parseInt(inputUjian.value, 10);
+    
+    if (sumber === 'rapor') {
+      if (isNaN(nilaiRapor)) {
+        inputUjian.value = '';
+        return;
+      }
+      if (nilaiRapor > 100) {
+        nilaiRapor = 100;
+        inputRapor.value = 100;
+      }
+      if (nilaiRapor < 0) {
+         nilaiRapor = 0;
+         inputRapor.value = 0;
+      }
+      inputUjian.value = 100 - nilaiRapor;
+    } else if (sumber === 'ujian') {
+      if (isNaN(nilaiUjian)) {
+        inputRapor.value = '';
+        return;
+      }
+      if (nilaiUjian > 100) {
+        nilaiUjian = 100;
+        inputUjian.value = 100;
+      }
+      if (nilaiUjian < 0) {
+         nilaiUjian = 0;
+         inputUjian.value = 0;
+      }
+      inputRapor.value = 100 - nilaiUjian;
+    }
+  }
+
+  /**
+   * Membuka halaman kelola bobot dan memuat data.
+   */
+  function bukaHalamanBobot() {
+    tampilHalaman('halaman-bobot');
+    setLoading(true);
+    hideMessage('bobot-message');
+    document.getElementById('form-bobot').reset(); // Bersihkan form
+    
+    google.script.run
+      .withSuccessHandler(onBobotLoaded)
+      .withFailureHandler(onGagal)
+      .getBobotData(); // Fungsi backend baru
+  }
+
+  /**
+   * [CALLBACK] Menampilkan data bobot di form setelah dimuat.
+   */
+  function onBobotLoaded(response) {
+    setLoading(false);
+    if (response.status !== 'sukses') {
+      showMessage('bobot-message', response.message, true);
+      return;
+    }
+    document.getElementById('bobot-rapor').value = response.bobotRapor;
+    document.getElementById('bobot-ujian').value = response.bobotUjian;
+  }
+
+  /**
+   * Mengumpulkan dan mengirim data bobot untuk disimpan.
+   */
+  function simpanBobot() {
+    setLoading(true);
+    hideMessage('bobot-message');
+    
+    const bobotRapor = parseInt(document.getElementById('bobot-rapor').value, 10) || 0;
+    const bobotUjian = parseInt(document.getElementById('bobot-ujian').value, 10) || 0;
+    
+    if ((bobotRapor + bobotUjian) !== 100) {
+      setLoading(false);
+      showMessage('bobot-message', 'Total bobot harus 100%. Silakan periksa kembali isian Anda.', true);
+      return;
+    }
+    
+    google.script.run
+      .withSuccessHandler(onBobotSaved)
+      .withFailureHandler(onGagal)
+      .saveBobotData(bobotRapor, bobotUjian); // Fungsi backend baru
+  }
+  
+  /**
+   * [CALLBACK] Menampilkan pesan sukses/gagal setelah menyimpan.
+   */
+  function onBobotSaved(response) {
+    setLoading(false);
+    if (response.status === 'sukses') {
+      showMessage('bobot-message', 'Data bobot berhasil disimpan!', false); // false = sukses
+    } else {
+      showMessage('bobot-message', response.message, true);
     }
   }
 
