@@ -135,11 +135,13 @@ function prosesRegistrasi(namaSekolah, jenjang, email, password) {
     const defaultSheet = newSpreadsheet.getSheets()[0];
     
     // [UPDATE] Menambahkan header baru untuk data siswa
-    newSpreadsheet.insertSheet('Siswa')
-      .appendRow([
+    const sheetSiswa = newSpreadsheet.insertSheet('Siswa');
+    sheetSiswa.appendRow([
         'SiswaID', 'NamaSiswa', 'NISN', 'NIS_Lokal', 'JenisKelamin', 
         'TempatLahir', 'TglLahir', 'Kelas'
       ]);
+    // [BARU] Set format kolom C (NISN) dan D (NIS_Lokal) ke Teks
+    sheetSiswa.getRange('C:D').setNumberFormat('@');
       
     newSpreadsheet.insertSheet('Kelas')
       .appendRow(['NamaKelas']);
@@ -596,6 +598,15 @@ function getSiswaSheet(ss) {
       ]);
     SpreadsheetApp.flush();
   }
+  
+  // [BARU] Set format kolom C (NISN) dan D (NIS_Lokal) ke Teks
+  // Ini akan berlaku untuk sheet baru DAN sheet lama yang mungkin formatnya salah
+  try {
+    sheet.getRange('C:D').setNumberFormat('@');
+  } catch (e) {
+    Logger.log("Gagal set format teks untuk NISN/NIS: " + e.message);
+  }
+  
   return sheet;
 }
 
