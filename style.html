@@ -409,7 +409,9 @@
     #halaman-siswa,
     #halaman-data-sekolah,
     #halaman-bobot,
-    #halaman-kelas {
+    #halaman-kelas,
+    #halaman-input-ujian,
+    #halaman-input-nilai-detail {
       max-width: 960px;
     }
   }
@@ -1060,7 +1062,6 @@
     color: white !important;
   }
 
-
   /* 29. [BARU] Style Halaman Input Nilai Detail */
   .input-nilai-table-container {
     overflow-x: auto;
@@ -1161,6 +1162,84 @@
   #btn-kembali-ke-input-ujian:hover {
       background-color: #5a6268;
       color: white;
+  }
+
+  /* 30. [BARU] Style Filter Bar (Halaman Siswa) */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    background-color: var(--bg-light);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px; /* Jarak dari paragraf di atas */
+    margin-bottom: 20px; /* Jarak ke tabel di bawah */
+  }
+  .filter-bar .form-group {
+    margin-bottom: 0;
+    flex-grow: 1;
+    min-width: 200px;
+  }
+  .filter-bar .form-group label {
+    font-size: 13px;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .filter-bar select {
+    padding: 12px; /* Dibuat sedikit lebih kecil dari form utama */
+    font-size: 14px;
+  }
+
+  /* 31. [BARU] Style Tombol Aksi Naik/Turun Siswa */
+  .btn-aksi.btn-move-up {
+    background-color: var(--success-color); /* Hijau */
+  }
+  .btn-aksi.btn-move-down {
+    background-color: #fd7e14; /* Oranye */
+  }
+  
+  .btn-aksi:disabled {
+    background-color: var(--secondary-color) !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* 32. [BARU] Style untuk Tombol Aksi di Filter Bar */
+  .filter-bar .form-group.filter-bar-action {
+    flex-grow: 0; /* Jangan membesar */
+    min-width: 0; /* Jangan membesar */
+    align-self: flex-end; /* Posisikan di bawah (sejajar dengan input) */
+  }
+
+  #btn-simpan-urutan-siswa {
+    width: auto; /* Lebar otomatis */
+    padding: 12px 18px; /* Samakan padding dengan select */
+    font-size: 14px;
+    background-color: var(--success-color); /* Warna hijau */
+  }
+  
+  #btn-simpan-urutan-siswa:hover {
+    background-color: #157347;
+  }
+  
+  #btn-simpan-urutan-siswa:disabled {
+    background-color: var(--secondary-color) !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  /* [BARU] Penataan tombol aksi di tabel */
+  .siswa-table .btn-aksi.btn-move-up,
+  .siswa-table .btn-aksi.btn-move-down {
+    width: 40px; /* Buat tombol panah jadi kotak kecil */
+    padding: 5px 0;
+    font-size: 12px;
+    margin: 0 2px; /* Beri jarak horizontal */
+  }
+  
+  .siswa-table td:last-child {
+    width: 210px; /* Perlebar kolom aksi */
+    white-space: nowrap; /* Jangan biarkan tombol turun baris */
   }
 
 </style>
