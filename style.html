@@ -277,13 +277,14 @@
   /* Tombol Aksi di Tabel */
   .btn-aksi {
     display: inline-flex;
-    width: 100%; /* [DIUBAH] Membuat lebar tombol penuh (sama panjang) */
+    /* width: 100%; */ /* [DIUBAH] Dihapus, biarkan auto */
+    width: auto; /* [BARU] Lebar otomatis */
     box-sizing: border-box;
     padding: 5px 10px;
     font-size: 12px;
     margin: 0;
-    /* margin-left: 5px; */ /* [DIUBAH] Hapus margin-left */
-    margin-bottom: 5px; /* [BARU] Memberi jarak vertikal antar tombol */
+    margin-left: 5px; /* [DIUBAH] Kembalikan margin-left */
+    /* margin-bottom: 5px; */ /* [DIUBAH] Hapus margin-bottom */
     border: none;
     border-radius: 5px;
     cursor: pointer;
@@ -291,13 +292,23 @@
     gap: 5px;
   }
   .btn-aksi:last-child {
-    margin-bottom: 0;
+    /* margin-bottom: 0; */ /* [DIUBAH] Dihapus */
   }
   .btn-aksi:first-child {
     margin-left: 0;
   }
   .btn-edit { background-color: var(--primary-color); }
   .btn-delete { background-color: var(--danger-color); }
+
+  /* [BARU] Atur ulang tombol di tabel mapel agar tetap vertikal */
+  .mapel-table .btn-aksi {
+    width: 100%;
+    margin-left: 0;
+    margin-bottom: 5px;
+  }
+  .mapel-table .btn-aksi:last-child {
+    margin-bottom: 0;
+  }
 
   /* Tombol "Kembali ke Dashboard" */
   #btn-kembali-ke-dashboard,
