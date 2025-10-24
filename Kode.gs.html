@@ -40,7 +40,7 @@ function include(filename) {
 
 /**
  * Memproses login pengguna.
- * [UPDATE] Mengirim nama sekolah sbg uppercase.
+ * [UPDATE] Mengirim nama sekolah sbg uppercase dan jenjangPilihan.
  */
 function prosesLogin(email, password) {
   try {
@@ -61,23 +61,29 @@ function prosesLogin(email, password) {
         // Buat token unik
         const token = Utilities.getUuid();
         const now = new Date().getTime(); // Stempel waktu
-        const namaSekolahUpper = row[1].toUpperCase(); // [UPDATE]
+        const namaSekolahUpper = row[1].toUpperCase();
+        const userSpreadsheetID = row[5]; // [BARU] Ambil ID sheet
         
         const userProperties = PropertiesService.getUserProperties();
         userProperties.setProperty('sessionToken', token);
-        userProperties.setProperty('lastActivity', now.toString()); // Simpan sebagai string
+        userProperties.setProperty('lastActivity', now.toString());
         
+        // [BARU] Ambil jenjangPilihan SPESIFIK dari sheet sekolah
+        const jenjangPilihan = getJenjangPilihanFromSheet(userSpreadsheetID);
+
         // Simpan data lain seperti biasa
         userProperties.setProperty('sekolahID', row[0]);
-        userProperties.setProperty('namaSekolah', namaSekolahUpper); // [UPDATE] Simpan sbg uppercase
-        userProperties.setProperty('jenjang', row[2]);
-        userProperties.setProperty('spreadsheetID', row[5]);
+        userProperties.setProperty('namaSekolah', namaSekolahUpper); 
+        userProperties.setProperty('jenjang', row[2]); // Ini "SD/MI", "SMP/MTS"
+        userProperties.setProperty('spreadsheetID', userSpreadsheetID); // [DIUBAH] Gunakan variabel
+        userProperties.setProperty('jenjangPilihan', jenjangPilihan); // [BARU] Simpan "MI"
         
         return { 
           status: "sukses", 
-          namaSekolah: namaSekolahUpper, // [UPDATE] Kirim sbg uppercase
-          jenjang: row[2],
-          token: token // Kirim token ke klien
+          namaSekolah: namaSekolahUpper,
+          jenjang: row[2], // "SD/MI"
+          jenjangPilihan: jenjangPilihan, // [BARU] "MI"
+          token: token
         };
       }
     }
@@ -159,11 +165,14 @@ function prosesRegistrasi(namaSekolah, jenjang, email, password) {
       .appendRow(['NamaKelas']);
     
     const sheetMapel = newSpreadsheet.insertSheet('Mapel');
-    sheetMapel.appendRow(['MapelID', 'NamaMapel']); // Header
+    // [DIUBAH] Header sekarang 4 kolom
+    sheetMapel.appendRow(['MapelID', 'NamaMapel', 'isUS', 'isUP']); 
 
     const defaultMapel = getDynamicDefaultMapel(jenjang, masterSS);
     if (defaultMapel.length > 0) {
-      sheetMapel.getRange(2, 1, defaultMapel.length, 2).setValues(defaultMapel);
+      // [DIUBAH] Rentang sekarang 4 kolom
+      // Ini akan memperbaiki error "Data 4 kolom, rentang 2 kolom"
+      sheetMapel.getRange(2, 1, defaultMapel.length, 4).setValues(defaultMapel);
     }
 
     newSpreadsheet.insertSheet('Nilai_Rapor')
@@ -262,7 +271,7 @@ function validateAndRefreshSession() {
 
 /**
  * [CHECK AWAL] Memeriksa token saat halaman dimuat.
- * [UPDATE] Mengirim nama sekolah sbg uppercase.
+ * [UPDATE] Mengirim nama sekolah sbg uppercase dan jenjangPilihan.
  */
 function checkToken(tokenFromClient) {
   try {
@@ -272,8 +281,9 @@ function checkToken(tokenFromClient) {
     if (tokenFromClient === storedToken) {
       return { 
         status: "sukses", 
-        namaSekolah: userProperties.getProperty('namaSekolah').toUpperCase(), // [UPDATE]
-        jenjang: userProperties.getProperty('jenjang')
+        namaSekolah: userProperties.getProperty('namaSekolah').toUpperCase(),
+        jenjang: userProperties.getProperty('jenjang'),
+        jenjangPilihan: userProperties.getProperty('jenjangPilihan') // [BARU]
       };
     } else {
       userProperties.deleteAllProperties();
@@ -294,8 +304,10 @@ function checkToken(tokenFromClient) {
 // FUNGSI HELPER MAPEL DEFAULT (DINAMIS)
 // ===========================================
 
+// GANTI FUNGSI INI
 /**
  * Mengambil daftar mapel default dari Master Sheet berdasarkan jenjang.
+ * [DIUBAH] Mengembalikan 4 kolom [ID, Nama, isUS, isUP] (default false)
  */
 function getDynamicDefaultMapel(jenjang, masterSpreadsheet) {
   try {
@@ -319,7 +331,8 @@ function getDynamicDefaultMapel(jenjang, masterSpreadsheet) {
       // Filter: jika jenjangnya cocok ATAU jenjangnya "UMUM"
       if (jenjangData === jenjang || jenjangData === 'UMUM') {
         if (mapelID && namaMapel) { // Pastikan data tidak kosong
-          defaultMapel.push([mapelID, namaMapel]);
+          // [DIUBAH] Tambahkan 2 kolom default 'false'
+          defaultMapel.push([mapelID, namaMapel, false, false]);
         }
       }
     }
@@ -374,9 +387,15 @@ function getMapel() {
     Logger.log("Mengambil mapel dari SPREADSHEET");
     const sheetMapel = getMapelSheet();
     const data = sheetMapel.getDataRange().getValues();
-    data.shift(); // Hapus header
+    const headers = data.shift(); // Hapus header
     
-    const mapel = data.map(row => ({ id: row[0], nama: row[1] }))
+    // [DIUBAH] Tambahkan isUS (col 2) dan isUP (col 3)
+    const mapel = data.map(row => ({ 
+                        id: row[0], 
+                        nama: row[1],
+                        isUS: row[2] || false, // default false jika kosong
+                        isUP: row[3] || false  // default false jika kosong
+                      }))
                       .filter(row => row.id); // Filter baris kosong
     
     // Simpan ke cache untuk 10 menit (600 detik)
@@ -403,7 +422,9 @@ function createMapel(mapelID, namaMapel) {
       }
     }
     
-    sheetMapel.appendRow([mapelID, namaMapel]);
+    // [DIUBAH] Tambahkan 2 kolom baru dengan nilai default 'false'
+    sheetMapel.appendRow([mapelID, namaMapel, false, false]);
+    
     clearMapelCache();
     return { status: "sukses" };
     
@@ -458,6 +479,7 @@ function deleteMapel(mapelID) {
 // FUNGSI KELOLA MAPEL (BULK)
 // ===========================================
 
+// GANTI FUNGSI INI
 /**
  * [SINKRONISASI] Menambahkan mapel default yang hilang ke sheet Mapel sekolah.
  */
@@ -466,9 +488,9 @@ function syncDefaultMapel() {
     const userProperties = validateAndRefreshSession();
     const jenjang = userProperties.getProperty('jenjang');
     
-    // 1. Ambil daftar mapel default dari Master Sheet
+    // 1. Ambil daftar mapel default (sekarang 4 kolom)
     const masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
-    const defaultMapelList = getDynamicDefaultMapel(jenjang, masterSS); // Array [ [ID, Nama], [ID, Nama] ]
+    const defaultMapelList = getDynamicDefaultMapel(jenjang, masterSS); // Array [ [ID, Nama, false, false], ... ]
     
     // 2. Ambil daftar mapel yang ada di sheet sekolah
     const sheetMapel = getMapelSheet(); // Ini sudah memvalidasi sesi
@@ -485,16 +507,18 @@ function syncDefaultMapel() {
 
     // 3. Filter mapel default yang BELUM ADA
     const mapelToAdd = [];
-    defaultMapelList.forEach(mapel => {
+    defaultMapelList.forEach(mapel => { // 'mapel' sekarang array 4-elemen
       const mapelID = mapel[0];
       if (!existingMapelIDs.has(mapelID.toUpperCase())) {
-        mapelToAdd.push(mapel); // Tambahkan [ID, Nama]
+        // [DIUBAH] Langsung push 'mapel' (karena sudah 4 kolom)
+        mapelToAdd.push(mapel); 
       }
     });
     
     // 4. Tambahkan mapel yang hilang ke sheet
     if (mapelToAdd.length > 0) {
-      sheetMapel.getRange(sheetMapel.getLastRow() + 1, 1, mapelToAdd.length, 2)
+      // Rentang 4 kolom (ini sudah benar dari sebelumnya)
+      sheetMapel.getRange(sheetMapel.getLastRow() + 1, 1, mapelToAdd.length, 4)
                 .setValues(mapelToAdd);
       clearMapelCache();
       return { status: "sukses", message: `Berhasil menambahkan ${mapelToAdd.length} mapel default yang hilang.` };
@@ -523,6 +547,56 @@ function deleteAllMapel() {
     return { status: "sukses", message: "Semua mapel telah dihapus." };
     
   } catch (e) {
+    return { status: "gagal", message: e.message };
+  }
+}
+
+/**
+ * [BARU] Menyimpan status tipe ujian (US/UP) untuk semua mapel secara batch.
+ * Menerima array: [{id: "MTK", isUS: true, isUP: false}, ...]
+ */
+function saveMapelTipeUjianBatch(tipeUjianData) {
+  try {
+    validateAndRefreshSession();
+    
+    const sheetMapel = getMapelSheet();
+    
+    // 1. Ambil semua data dari sheet
+    const dataRange = sheetMapel.getDataRange();
+    const data = dataRange.getValues(); // Termasuk header
+    
+    // 2. Buat Peta (Map) dari data baru untuk pencarian cepat
+    // Peta: "MTK" -> {id: "MTK", isUS: true, isUP: false}
+    const dataMap = new Map(tipeUjianData.map(item => [item.id, item]));
+    
+    let changesMade = false;
+    
+    // 3. Loop melalui data sheet (mulai dari baris 1, karena 0 adalah header)
+    for (let i = 1; i < data.length; i++) {
+      const id = data[i][0]; // Kolom A (MapelID)
+      const newData = dataMap.get(id);
+      
+      // Jika ID ini ada di data baru
+      if (newData) {
+        // Cek apakah nilainya berbeda
+        if (data[i][2] != newData.isUS || data[i][3] != newData.isUP) {
+          data[i][2] = newData.isUS; // Perbarui Kolom C (isUS)
+          data[i][3] = newData.isUP; // Perbarui Kolom D (isUP)
+          changesMade = true;
+        }
+      }
+    }
+    
+    // 4. Jika ada perubahan, tulis kembali SEMUA data ke sheet
+    if (changesMade) {
+      dataRange.setValues(data);
+      clearMapelCache(); // Hapus cache karena data berubah
+    }
+    
+    return { status: "sukses" };
+    
+  } catch (e) {
+    Logger.log(e);
     return { status: "gagal", message: e.message };
   }
 }
@@ -836,11 +910,28 @@ function getDataSekolahSheet(ss) {
       '', 'Kabupaten', '', '', 'Kelurahan', 
       '', '', '', '', '', ''
     ]);
-    // [BARU] Set baris data (baris 2) agar formatnya Teks Biasa (@)
     sheet.getRange('A2:P2').setNumberFormat('@');
     SpreadsheetApp.flush(); // Pastikan sheet dibuat
   }
   return sheet;
+}
+
+// TAMBAHKAN FUNGSI HELPER BARU INI (setelah getDataSekolahSheet)
+/**
+ * [HELPER BARU] Mengambil jenjangPilihan (SD/MI/SMP/dll) dari sheet Data_Sekolah.
+ * @param {string} spreadsheetID - ID spreadsheet milik sekolah.
+ * @returns {string} Nilai jenjangPilihan (mis. "MI") or empty string.
+ */
+function getJenjangPilihanFromSheet(spreadsheetID) {
+  try {
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheet = getDataSekolahSheet(ss); // Menggunakan helper yg sudah ada
+    const jenjangPilihan = sheet.getRange('A2').getValue(); // Ambil dari A2
+    return String(jenjangPilihan);
+  } catch (e) {
+    Logger.log(`Gagal mengambil jenjangPilihan dari sheet ${spreadsheetID}: ${e.message}`);
+    return ""; // Kembalikan string kosong jika gagal
+  }
 }
 
 /**
@@ -891,13 +982,16 @@ function getSchoolData() {
 
 /**
  * [SERVER] Menyimpan data sekolah ke sheet 'Data_Sekolah'.
- * [UPDATE] Tidak perlu diubah, karena format cell sudah diatur.
+ * [UPDATE] Menyimpan jenjangPilihan ke session.
  */
 function saveSchoolData(data) {
   try {
     const userProperties = validateAndRefreshSession();
     const spreadsheetID = userProperties.getProperty('spreadsheetID');
     
+    // [BARU] Update jenjangPilihan di session
+    userProperties.setProperty('jenjangPilihan', data.jenjangPilihan);
+
     const ss = SpreadsheetApp.openById(spreadsheetID);
     const sheet = getDataSekolahSheet(ss);
     
@@ -909,8 +1003,6 @@ function saveSchoolData(data) {
     ];
     
     // Tulis data ke baris 2
-    // Karena cell A2:P2 sudah diformat sebagai Teks (@), 
-    // Google Sheets tidak akan mengubah "098" menjadi 98.
     sheet.getRange('A2:P2').setValues([dataArray]);
     
     return { status: "sukses" };
