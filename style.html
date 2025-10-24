@@ -461,11 +461,13 @@
   }
 
   #btn-tambah-mapel-baru,
-  #btn-tambah-siswa-baru {
+  #btn-tambah-siswa-baru, 
+  #btn-simpan-tipe-ujian {
     background-color: var(--success-color);
   }
   #btn-tambah-mapel-baru:hover,
-  #btn-tambah-siswa-baru:hover {
+  #btn-tambah-siswa-baru:hover, 
+  #btn-simpan-tipe-ujian:hover {
     background-color: #157347;
   }
 
@@ -813,7 +815,8 @@
   #btn-simpan-bobot:disabled,
   #btn-simpan-kelas:disabled,
   #btn-simpan-siswa:disabled,
-  #btn-simpan-mapel:disabled {
+  #btn-simpan-mapel:disabled,
+  #btn-simpan-tipe-ujian:disabled {
     background-color: var(--secondary-color) !important;
     opacity: 0.65;
     cursor: not-allowed;
@@ -1251,6 +1254,65 @@
   .siswa-table td:last-child {
     width: 210px; /* Perlebar kolom aksi */
     white-space: nowrap; /* Jangan biarkan tombol turun baris */
+  }
+
+  /* 33. [BARU] Style Kolom Checkbox Tipe Ujian di Tabel Mapel */
+  .mapel-table th.col-cek,
+  .mapel-table td.col-cek {
+    width: 60px; /* Lebar kolom US/UM */
+    text-align: center;
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+  
+  .mapel-table th.col-up,
+  .mapel-table td.col-up {
+     width: 40px; /* Lebar kolom UP (lebih sempit) */
+  }
+
+  .mapel-table td.col-cek input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  
+  .mapel-table td:last-child {
+      width: 120px; /* Pastikan kolom aksi tetap */
+  }
+
+  /* [DIUBAH] Perbarui styling tombol aksi di tabel mapel */
+  .mapel-table td:last-child .btn-aksi {
+    width: 100%;
+    margin-left: 0;
+    margin-bottom: 5px;
+  }
+  .mapel-table td:last-child .btn-aksi:last-child {
+    margin-bottom: 0;
+  }
+
+  /* [BARU] Tambahkan di paling akhir file */
+
+  /* 34. [BARU] Style Toolbar di Atas Tabel (Mapel & Siswa) */
+  .table-toolbar {
+    display: flex;
+    justify-content: space-between; /* Mendorong item ke ujung */
+    align-items: center; /* Menyejajarkan teks & tombol */
+    margin-bottom: 20px; /* Jarak ke tabel di bawahnya */
+  }
+
+  .table-toolbar p {
+    margin: 0; /* Hapus margin default paragraf */
+    color: var(--text-dark);
+  }
+
+  /* Pastikan tombol di toolbar tidak memakan lebar penuh */
+  .table-toolbar #btn-simpan-tipe-ujian,
+  .table-toolbar #btn-simpan-urutan-siswa {
+    width: auto;
+    margin: 0; /* Hapus margin jika ada */
+    flex-shrink: 0; /* Jangan biarkan tombol mengecil */
+    padding: 10px 15px; /* Samakan dengan tombol header */
+    font-size: 14px;
   }
 
 </style>
