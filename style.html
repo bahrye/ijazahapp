@@ -1129,7 +1129,7 @@
   .input-nilai {
     width: 80px;
     padding: 8px;
-    font-size: 14px;
+    font-size: 16px;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     box-sizing: border-box;
@@ -1313,6 +1313,153 @@
     flex-shrink: 0; /* Jangan biarkan tombol mengecil */
     padding: 10px 15px; /* Samakan dengan tombol header */
     font-size: 14px;
+  }
+
+  /* 35. [BARU] Style untuk Grid Input Nilai */
+  .input-nilai-table-container {
+    max-height: 60vh; /* Batasi tinggi tabel agar bisa di-scroll */
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: 20px;
+    /* overflow-x: auto; sudah ada */
+    /* overflow-y: auto; sudah ada */
+  }
+
+  .input-nilai-table th {
+    background-color: var(--bg-light);
+    /* position, top, dan z-index dipindahkan ke thead */
+    white-space: nowrap; /* Mencegah header mapel terpotong */
+  }
+
+  /* [BARU] Buat seluruh header row sticky */
+  .input-nilai-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 1; /* [BARU] Atur sebagai lapisan 1 (di bawah) */
+  }
+
+  .input-nilai-table td:first-child {
+    /* Hanya untuk sel data (tbody) */
+    position: sticky;
+    z-index: 2; /* [DIUBAH] Atur sebagai lapisan 2 (di atas thead) */
+    background-color: var(--bg-white);
+    border-right: 2px solid var(--border-color); /* [BARU] Garis pemisah */
+  }
+  
+  .input-nilai-table th:first-child {
+    /* Hanya untuk sel header (thead) */
+    position: sticky;
+    z-index: 3; /* [DIUBAH] Atur sebagai lapisan 3 (paling atas) */
+    background-color: var(--bg-light); /* Samakan dgn header lain */
+    border-right: 2px solid var(--border-color); /* [BARU] Garis pemisah */
+  }
+  .input-nilai-table tr:nth-child(even) td:first-child {
+     background-color: var(--bg-light); /* Jaga warna zebra */
+  }
+
+  .input-nilai-table th:first-child,
+  .input-nilai-table td:first-child {
+    left: 0; /* Kolom pertama menempel di kiri */
+    width: 200px;
+    white-space: normal; /* Nama siswa boleh wrap */
+  }
+  
+  /* Kolom Mapel */
+  .input-nilai-table .col-mapel {
+    width: 90px;
+    min-width: 90px;
+    text-align: center;
+    padding: 8px;
+  }
+  
+  .input-nilai-table .col-mapel input.input-nilai {
+    width: 80px; /* [DIUBAH] Samakan lebar */
+    padding: 8px;
+    font-size: 16px; /* [BARU] Pastikan font 16px */
+  }
+
+  /* 36. [DIUBAH] Style untuk Kolom Jumlah & Rata-Rata (Tidak Sticky) */
+  .input-nilai-table .th-total,
+  .input-nilai-table .col-total {
+    /* HAPUS: position: sticky; */
+    /* HAPUS: z-index: 6; */
+    background-color: #f4f6f8; /* Latar abu-abu muda */
+    font-weight: 700;
+    text-align: center;
+    width: 90px;
+    min-width: 90px;
+    border-left: 2px solid var(--border-color);
+  }
+
+  /* Style Header */
+  .input-nilai-table th.th-total {
+    background-color: var(--bg-light); /* Samakan dengan header lain */
+    /* HAPUS: z-index: 11; */
+  }
+  
+  /* Kolom Rata-Rata (Paling Kanan) */
+  .input-nilai-table .th-total-rata,
+  .input-nilai-table .col-total-rata {
+    /* HAPUS: right: 0; */
+  }
+
+  /* Kolom Jumlah (Kanan, sebelah Rata-Rata) */
+  .input-nilai-table .th-total-jumlah,
+  .input-nilai-table .col-total-jumlah {
+    /* HAPUS: right: 90px; */
+  }
+  
+  /* Jaga warna zebra untuk kolom kalkulasi */
+  .input-nilai-table tr:nth-child(even) .col-total {
+    background-color: #e9ecef;
+  }
+
+  /* 37. [BARU] Membuat Kolom Total Sticky HANYA di Desktop */
+  @media (min-width: 768px) {
+  
+    /* Terapkan STICKY ke kolom total */
+    .input-nilai-table .th-total,
+    .input-nilai-table .col-total {
+      position: sticky;
+      z-index: 6; /* Di atas sel mapel */
+    }
+  
+    /* Pastikan z-index header total lebih tinggi dari header mapel */
+    .input-nilai-table th.th-total {
+      z-index: 11; /* Di atas header mapel (10), di bawah header Nama Siswa (12) */
+    }
+
+    /* Atur posisi menempel di KANAN */
+    .input-nilai-table .th-total-rata,
+    .input-nilai-table .col-total-rata {
+      right: 0; /* Menempel di paling kanan */
+    }
+  
+    .input-nilai-table .th-total-jumlah,
+    .input-nilai-table .col-total-jumlah {
+      right: 90px; /* Menempel di sebelah kolom rata-rata (lebar 90px) */
+    }
+  }
+
+  /* 38. [BARU] Style untuk Nama Siswa yang Bisa Diklik */
+  .clickable-nama-siswa {
+    cursor: pointer;
+    color: var(--primary-color);
+    font-weight: 500; /* Sedikit tebal */
+    text-decoration: none;
+    display: inline-block;
+    padding: 2px 0; /* Beri sedikit ruang napas */
+  }
+  
+  .clickable-nama-siswa:hover {
+    text-decoration: underline;
+    color: var(--primary-dark);
+  }
+
+  /* Perbaikan kecil agar nama yang panjang tidak menabrak input */
+  .input-nilai-table td:first-child {
+      white-space: normal; /* Izinkan nama untuk wrap (jika panjang) */
+      line-height: 1.4;
   }
 
 </style>
