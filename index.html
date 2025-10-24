@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengolahan Nilai Ijazah</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
+
     <?!= include('style'); ?>
   </head>
   <body>
-    
+
     <div id="loader" style="display: none;">
       <div class="spinner"></div>
     </div>
@@ -31,7 +31,7 @@
             <span id="toggle-login-password" class="toggle-password-icon fas fa-eye"></span>
           </div>
         </form>
-        <button id="btn-login">Masuk</button>
+        <button id="btn-login"><i class="fas fa-sign-in-alt"></i>Masuk</button>
         <p id="login-error" class="message error"></p>
         <a id="link-ke-registrasi" class="nav-link">Belum punya akun? Daftar di sini</a>
       </div>
@@ -57,18 +57,18 @@
             <span id="toggle-reg-password" class="toggle-password-icon fas fa-eye"></span>
           </div>
         </form>
-        <button id="btn-registrasi">Daftar</button>
+        <button id="btn-registrasi"><i class="fas fa-user-plus"></i>Daftar</button>
         <p id="reg-message" class="message"></p>
         <a id="link-ke-login" class="nav-link">Sudah punya akun? Login</a>
       </div>
 
-    </div> 
-    
+    </div>
+
     <div class="container" id="halaman-utama" style="display: none;">
       <div class="page">
         <h2 id="salam-sekolah">Selamat Datang, Admin</h2>
         <p>Ini adalah dashboard utama. Silakan pilih menu di bawah ini:</p>
-        
+
         <div class="dashboard-menu-grid">
           <button class="dashboard-card" id="btn-buka-data-sekolah">
             <i class="fas fa-school"></i>
@@ -90,27 +90,27 @@
             <i class="fas fa-chalkboard-teacher"></i>
             <span>Kelola Kelas</span>
           </button>
-          </div>
-        
+        </div>
+
         <hr>
-        <button id="btn-logout">Logout</button>
+        <button id="btn-logout"><i class="fas fa-sign-out-alt"></i>Logout</button>
       </div>
     </div>
 
     <div class="container" id="halaman-data-sekolah" style="display: none;">
       <div class="page">
         <div class="page-top-nav">
-          <button type="button" id="btn-kembali-ke-dashboard-2">Kembali ke Dasbor</button>
+          <button type="button" id="btn-kembali-ke-dashboard-2"><i class="fas fa-arrow-circle-left"></i>Kembali ke Dasbor</button>
         </div>
-        
+
         <div class="page-header">
           <h2>Kelola Data Sekolah</h2>
         </div>
-        
+
         <p>Lengkapi data identitas sekolah Anda. Data ini akan digunakan pada dokumen dan laporan.</p>
-        
+
         <form id="form-data-sekolah">
-          
+
           <h3 class="form-section-header">Identitas Utama</h3>
           <div class="form-group">
             <label for="data-nama-sekolah">Nama Sekolah</label>
@@ -194,12 +194,12 @@
             <label for="data-nip-kepsek">NIP Kepala Sekolah</label>
             <input type="text" id="data-nip-kepsek" placeholder="Masukkan NIP (jika ada)">
           </div>
-          
+
           <p id="data-sekolah-message" class="message" style="display: none;"></p>
 
           <hr>
           <div class="form-actions">
-              <button type="submit" id="btn-simpan-data-sekolah">Simpan Perubahan</button>
+              <button type="submit" id="btn-simpan-data-sekolah"><i class="fas fa-save"></i>Simpan Perubahan</button>
           </div>
         </form>
       </div>
@@ -208,32 +208,32 @@
     <div class="container" id="halaman-bobot" style="display: none;">
       <div class="page">
         <div class="page-top-nav">
-          <button type="button" id="btn-kembali-ke-dashboard-3">Kembali ke Dasbor</button>
+          <button type="button" id="btn-kembali-ke-dashboard-3"><i class="fas fa-arrow-circle-left"></i>Kembali ke Dasbor</button>
         </div>
-        
+
         <div class="page-header">
           <h2>Kelola Bobot Nilai Ijazah</h2>
         </div>
 
         <p>Atur persentase bobot untuk nilai rapor dan nilai ujian. Total keduanya harus 100%. Bobot default adalah 60% Rapor dan 40% Ujian.</p>
-        
+
         <form id="form-bobot">
-          
+
           <div class="form-group">
             <label for="bobot-rapor">Bobot Nilai Rapor (%)</label>
             <input type="number" id="bobot-rapor" min="0" max="100" placeholder="Contoh: 60">
           </div>
-          
+
           <div class="form-group">
             <label for="bobot-ujian">Bobot Nilai Ujian (%)</label>
             <input type="number" id="bobot-ujian" min="0" max="100" placeholder="Contoh: 40">
           </div>
-          
+
           <p id="bobot-message" class="message" style="display: none;"></p>
 
           <hr>
           <div class="form-actions">
-              <button type="submit" id="btn-simpan-bobot">Simpan Perubahan</button>
+              <button type="submit" id="btn-simpan-bobot"><i class="fas fa-save"></i>Simpan Perubahan</button>
           </div>
         </form>
       </div>
@@ -242,48 +242,48 @@
     <div class="container" id="halaman-kelas" style="display: none;">
       <div class="page">
         <div class="page-top-nav">
-          <button type="button" id="btn-kembali-ke-dashboard-4">Kembali ke Dasbor</button>
+          <button type="button" id="btn-kembali-ke-dashboard-4"><i class="fas fa-arrow-circle-left"></i>Kembali ke Dasbor</button>
         </div>
-        
+
         <div class="page-header">
           <h2>Kelola Kelas</h2>
         </div>
 
         <p>Masukkan nama-nama kelas yang ada di sekolah Anda. Klik tombol (+) untuk menambah baris baru.</p>
-        
+
         <form id="form-kelas">
-          
+
           <div id="kelas-list-container">
             <p>Memuat data kelas...</p>
           </div>
-          
+
           <p id="kelas-message" class="message" style="display: none;"></p>
 
           <hr>
           <div class="form-actions">
-              <button type="submit" id="btn-simpan-kelas">Simpan Perubahan</button>
+              <button type="submit" id="btn-simpan-kelas"><i class="fas fa-save"></i>Simpan Perubahan</button>
           </div>
         </form>
       </div>
     </div>
-    
+
 
     <div class="container" id="halaman-siswa" style="display: none;">
       <div class="page">
         <div class="page-top-nav">
-            <button id="btn-kembali-ke-dashboard-5">Kembali ke Dasbor</button>
+            <button id="btn-kembali-ke-dashboard-5"><i class="fas fa-arrow-circle-left"></i>Kembali ke Dasbor</button>
         </div>
-      
+
         <div class="page-header">
           <h2>Kelola Data Siswa</h2>
           <div class="header-buttons">
-            <button id="btn-tambah-siswa-baru">+ Tambah Siswa</button>
-            <button id="btn-hapus-semua-siswa">Hapus Semua Siswa</button>
+            <button id="btn-tambah-siswa-baru"><i class="fas fa-plus"></i>Tambah Siswa</button>
+            <button id="btn-hapus-semua-siswa"><i class="fas fa-trash-alt"></i>Hapus Semua Siswa</button>
             </div>
         </div>
-        
+
         <p>Kelola data siswa di sekolah Anda. Data ini akan digunakan untuk input nilai.</p>
-        
+
         <div class="siswa-table-container" id="siswa-table-container">
           <p>Memuat data siswa...</p>
         </div>
@@ -293,20 +293,20 @@
     <div class="container" id="halaman-mapel" style="display: none;">
       <div class="page">
         <div class="page-top-nav">
-          <button id="btn-kembali-ke-dashboard">Kembali ke Dasbor</button>
+          <button id="btn-kembali-ke-dashboard"><i class="fas fa-arrow-circle-left"></i>Kembali ke Dasbor</button>
         </div>
-        
+
         <div class="page-header">
           <h2>Kelola Mapel</h2>
           <div class="header-buttons">
-            <button id="btn-tambah-mapel-baru">+ Tambah Mapel</button>
-            <button id="btn-ambil-default">Ambil Mapel Default</button>
-            <button id="btn-hapus-semua">Hapus Semua Mapel</button>
+            <button id="btn-tambah-mapel-baru"><i class="fas fa-plus"></i>Tambah Mapel</button>
+            <button id="btn-ambil-default"><i class="fas fa-download"></i>Ambil Mapel Default</button>
+            <button id="btn-hapus-semua"><i class="fas fa-trash-alt"></i>Hapus Semua Mapel</button>
             </div>
         </div>
-        
+
         <p>Kelola mata pelajaran yang akan digunakan di sekolah Anda.</p>
-        
+
         <div class="mapel-table-container" id="mapel-table-container">
           <p>Memuat data mapel...</p>
         </div>
@@ -322,7 +322,7 @@
         <div class="modal-body">
           <input type="hidden" id="modal-siswa-mode" value="add">
           <input type="hidden" id="modal-siswa-id" value="">
-          
+
           <div class="form-group">
             <label for="modal-siswa-nama">Nama Lengkap Siswa (Wajib)</label>
             <input type="text" id="modal-siswa-nama" placeholder="Masukkan nama lengkap">
@@ -358,12 +358,12 @@
               <option value="">-- Memuat kelas... --</option>
             </select>
           </div>
-          
+
           <p id="modal-siswa-error" class="message error"></p>
         </div>
         <div class="modal-footer">
-          <button id="btn-batal-modal-siswa">Batal</button>
-          <button id="btn-simpan-siswa">Simpan</button>
+          <button id="btn-batal-modal-siswa"><i class="fas fa-times"></i>Batal</button>
+          <button id="btn-simpan-siswa"><i class="fas fa-save"></i>Simpan</button>
         </div>
       </div>
     </div>
@@ -375,7 +375,7 @@
         </div>
         <div class="modal-body">
           <input type="hidden" id="modal-mapel-mode" value="add">
-          
+
           <div class="form-group">
             <label for="modal-mapel-id">Kode Mapel (Unik)</label>
             <input type="text" id="modal-mapel-id" placeholder="Contoh: MTK, BIN, FIS">
@@ -387,8 +387,8 @@
           <p id="modal-mapel-error" class="message error"></p>
         </div>
         <div class="modal-footer">
-          <button id="btn-batal-modal">Batal</button>
-          <button id="btn-simpan-mapel">Simpan</button>
+          <button id="btn-batal-modal"><i class="fas fa-times"></i>Batal</button>
+          <button id="btn-simpan-mapel"><i class="fas fa-save"></i>Simpan</button>
         </div>
       </div>
     </div>
@@ -402,8 +402,8 @@
         <div class="modal-body" id="confirm-modal-body">
           </div>
         <div class="modal-footer">
-          <button id="btn-confirm-cancel">Batal</button>
-          <button id="btn-confirm-ok">OK</button>
+          <button id="btn-confirm-cancel"><i class="fas fa-times"></i>Batal</button>
+          <button id="btn-confirm-ok"><i class="fas fa-check"></i>OK</button>
         </div>
       </div>
     </div>
@@ -417,7 +417,7 @@
         <div class="modal-body" id="info-modal-body">
           </div>
         <div class="modal-footer">
-          <button id="btn-info-ok">OK</button>
+          <button id="btn-info-ok"><i class="fas fa-check"></i>OK</button>
         </div>
       </div>
     </div>
