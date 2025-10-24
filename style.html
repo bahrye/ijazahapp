@@ -422,11 +422,12 @@
     color: var(--primary-color);
   }
   
-  /* [BARU] 18. Halaman Kelola Data Sekolah */
+  /* 18. Halaman Kelola Data Sekolah */
   
   /* Targetkan agar lebar di desktop */
   @media (min-width: 768px) {
-    #halaman-data-sekolah {
+    #halaman-data-sekolah,
+    #halaman-bobot { /* [UPDATE] Terapkan juga di halaman bobot */
       max-width: 960px; 
     }
   }
@@ -501,10 +502,12 @@
     padding: 12px 20px;
   }
   
-  #btn-kembali-ke-dashboard-2 {
+  #btn-kembali-ke-dashboard-2,
+  #btn-kembali-ke-dashboard-3 { /* [UPDATE] Terapkan juga di tombol kembali hal. bobot */
     background-color: var(--secondary-color);
   }
-  #btn-kembali-ke-dashboard-2:hover {
+  #btn-kembali-ke-dashboard-2:hover,
+  #btn-kembali-ke-dashboard-3:hover { /* [UPDATE] */
     background-color: #5a6268;
   }
   #btn-simpan-data-sekolah {
@@ -514,12 +517,47 @@
     background-color: #157347;
   }
 
-  /* [BARU] 19. Format Tampilan Uppercase */
+  /* 19. Format Tampilan Uppercase */
   #reg-nama-sekolah,  /* Input registrasi */
   #salam-sekolah,     /* Salam di dashboard */
   #data-nama-sekolah  /* Input di form data sekolah */
   {
     text-transform: uppercase;
+  }
+
+  /* [BARU] 20. Style Tombol Bobot & Halaman Bobot */
+  
+  /* Beri warna oranye pada tombol di dashboard */
+  #btn-buka-bobot {
+    background-color: #fd7e14; /* Oranye */
+  }
+  #btn-buka-bobot:hover {
+    background-color: #e67312; 
+  }
+
+  /* Pastikan input[type="number"] memiliki style yang sama */
+  input[type="number"] {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-sizing: border-box; /* Penting! */
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  }
+
+  /* Beri warna hijau pada tombol simpan di halaman bobot */
+  #btn-simpan-bobot {
+    background-color: var(--success-color);
+  }
+  #btn-simpan-bobot:hover {
+    background-color: #157347;
   }
 
 </style>
