@@ -1,5 +1,5 @@
 <script>
-  // [BARU] Variabel global untuk menyimpan jenjang dasar
+  // Variabel global untuk menyimpan jenjang dasar
   let jenjangBaseCache = '';
 
   // ===========================================
@@ -47,13 +47,17 @@
     document.getElementById('halaman-utama').style.display = 'none';
     document.getElementById('halaman-mapel').style.display = 'none';
     document.getElementById('halaman-data-sekolah').style.display = 'none';
-    document.getElementById('halaman-bobot').style.display = 'none'; // [BARU] Sembunyikan halaman bobot
+    document.getElementById('halaman-bobot').style.display = 'none';
+    document.getElementById('halaman-kelas').style.display = 'none';
+    document.getElementById('halaman-siswa').style.display = 'none'; // [BARU] Sembunyikan halaman siswa
 
     // Sembunyikan pesan error
     hideMessage('login-error');
     hideMessage('reg-message');
     hideMessage('data-sekolah-message');
-    hideMessage('bobot-message'); // [BARU] Sembunyikan pesan error bobot
+    hideMessage('bobot-message');
+    hideMessage('kelas-message');
+    hideMessage('siswa-message'); // [BARU] Sembunyikan pesan error siswa
 
     if (idHalaman === 'halaman-utama') {
       document.getElementById('halaman-utama').style.display = 'block';
@@ -64,9 +68,15 @@
     else if (idHalaman === 'halaman-data-sekolah') { 
       document.getElementById('halaman-data-sekolah').style.display = 'block';
     } 
-    else if (idHalaman === 'halaman-bobot') { // [BARU] Tampilkan halaman bobot
+    else if (idHalaman === 'halaman-bobot') {
       document.getElementById('halaman-bobot').style.display = 'block';
     } 
+    else if (idHalaman === 'halaman-kelas') {
+      document.getElementById('halaman-kelas').style.display = 'block';
+    } 
+    else if (idHalaman === 'halaman-siswa') { // [BARU] Tampilkan halaman siswa
+      document.getElementById('halaman-siswa').style.display = 'block';
+    }
     else {
       // Tampilkan container auth
       document.getElementById('auth-container').style.display = 'block';
@@ -261,28 +271,28 @@
       this.classList.toggle('fa-eye-slash');
     });
 
-    // [BARU] Listener untuk tombol 'Kelola Data Sekolah'
+    // Listener untuk tombol 'Kelola Data Sekolah'
     document.getElementById('btn-buka-data-sekolah').addEventListener('click', () => {
       bukaHalamanDataSekolah();
     });
 
-    // [BARU] Listener untuk tombol 'Kembali' di hal. data sekolah
+    // Listener untuk tombol 'Kembali' di hal. data sekolah
     document.getElementById('btn-kembali-ke-dashboard-2').addEventListener('click', () => {
       tampilHalaman('halaman-utama');
     });
 
-    // [BARU] Listener untuk simpan form data sekolah
+    // Listener untuk simpan form data sekolah
     document.getElementById('form-data-sekolah').addEventListener('submit', (e) => {
       e.preventDefault();
       simpanDataSekolah();
     });
 
-    // [BARU] Listener untuk logika kondisional NSM
+    // Listener untuk logika kondisional NSM
     document.getElementById('data-jenjang-pilihan').addEventListener('change', updateTampilanNSM);
-    // --- AKHIR BAGIAN BARU ---
+    // --- AKHIR BAGIAN DATA SEKOLAH ---
 
     
-    // --- [BARU] LISTENER FITUR BOBOT ---
+    // --- LISTENER FITUR BOBOT ---
     
     document.getElementById('btn-buka-bobot').addEventListener('click', () => {
       bukaHalamanBobot();
@@ -305,7 +315,108 @@
       sinkronkanBobot('ujian');
     });
     
-    // --- AKHIR BAGIAN BARU ---
+    // --- AKHIR BAGIAN BOBOT ---
+
+
+    // --- LISTENER FITUR KELAS ---
+
+    document.getElementById('btn-buka-kelas').addEventListener('click', () => {
+      bukaHalamanKelas();
+    });
+
+    document.getElementById('btn-kembali-ke-dashboard-4').addEventListener('click', () => {
+      tampilHalaman('halaman-utama');
+    });
+
+    document.getElementById('form-kelas').addEventListener('submit', (e) => {
+      e.preventDefault();
+      simpanKelas();
+    });
+
+    // Listener dinamis (delegasi event) untuk tombol (+) dan (x)
+    document.getElementById('kelas-list-container').addEventListener('click', (e) => {
+      const target = e.target;
+      
+      if (target.classList.contains('btn-add-kelas')) {
+        // Jika tombol (+) diklik
+        const list = getCurrentKelasList();
+        list.push(''); // Tambah string kosong baru
+        renderKelasList(list);
+        // Fokus ke input baru
+        document.querySelector('#kelas-list-container .kelas-input-row:last-child input').focus();
+      } 
+      else if (target.classList.contains('btn-remove-kelas')) {
+        // Jika tombol (x) diklik
+        const rowToRemove = target.parentElement;
+        const list = getCurrentKelasList();
+        const allRows = Array.from(document.querySelectorAll('#kelas-list-container .kelas-input-row'));
+        const indexToRemove = allRows.indexOf(rowToRemove);
+        
+        if (indexToRemove > -1) {
+          list.splice(indexToRemove, 1); // Hapus item dari array
+        }
+        renderKelasList(list); // Render ulang
+      }
+    });
+
+    // --- AKHIR BAGIAN KELAS ---
+
+
+    // --- [BARU] LISTENER FITUR SISWA ---
+
+    document.getElementById('btn-buka-siswa').addEventListener('click', () => {
+      bukaHalamanSiswa();
+    });
+
+    document.getElementById('btn-kembali-ke-dashboard-5').addEventListener('click', () => {
+      tampilHalaman('halaman-utama');
+    });
+
+    document.getElementById('btn-tambah-siswa-baru').addEventListener('click', () => {
+      showModalSiswa('add', {}); // Kirim objek kosong
+    });
+
+    document.getElementById('btn-hapus-semua-siswa').addEventListener('click', () => {
+      hapusSemuaSiswa();
+    });
+    
+    // Listener untuk tombol simpan di modal siswa
+    document.getElementById('btn-simpan-siswa').addEventListener('click', () => {
+      simpanSiswa();
+    });
+    
+    // Listener untuk menutup modal siswa
+    document.getElementById('btn-tutup-modal-siswa').addEventListener('click', tutupModalSiswa);
+    document.getElementById('btn-batal-modal-siswa').addEventListener('click', tutupModalSiswa);
+    
+    // Listener untuk tombol aksi (Edit/Delete) di tabel siswa
+    document.getElementById('siswa-table-container').addEventListener('click', (e) => {
+      const target = e.target.closest('button'); 
+      if (!target) return; 
+
+      if (target.classList.contains('btn-edit-siswa')) {
+        // Kumpulkan semua data dari atribut 'data-*'
+        const dataset = target.dataset;
+        const siswaData = {
+          id: dataset.id,
+          nama: dataset.nama,
+          nisn: dataset.nisn,
+          nisLokal: dataset.nisLokal,
+          jk: dataset.jk,
+          tempatLahir: dataset.tempatLahir,
+          tglLahir: dataset.tglLahir,
+          kelas: dataset.kelas
+        };
+        showModalSiswa('edit', siswaData);
+      }
+      else if (target.classList.contains('btn-delete-siswa')) {
+        const id = target.getAttribute('data-id');
+        const nama = target.getAttribute('data-nama');
+        hapusSiswa(id, nama);
+      }
+    });
+
+    // --- AKHIR BAGIAN SISWA ---
 
 
     // --- LISTENER FITUR MAPEL ---
@@ -508,12 +619,20 @@
       showMessage('reg-message', 'Error: ' + errorMsg, true);
     } else if (document.getElementById('mapel-modal').style.display !== 'none') {
       showMessage('modal-mapel-error', 'Error: ' + errorMsg, true);
+    } else if (document.getElementById('siswa-modal').style.display !== 'none') { // [BARU]
+      showMessage('modal-siswa-error', 'Error: ' + errorMsg, true);
     } else if (document.getElementById('halaman-data-sekolah').style.display !== 'none') {
       showMessage('data-sekolah-message', 'Error: ' + errorMsg, true);
     } 
-    else if (document.getElementById('halaman-bobot').style.display !== 'none') { // [BARU]
+    else if (document.getElementById('halaman-bobot').style.display !== 'none') {
       showMessage('bobot-message', 'Error: ' + errorMsg, true);
     } 
+    else if (document.getElementById('halaman-kelas').style.display !== 'none') {
+      showMessage('kelas-message', 'Error: ' + errorMsg, true);
+    }
+    else if (document.getElementById('halaman-siswa').style.display !== 'none') { // [BARU]
+      showMessage('siswa-message', 'Error: ' + errorMsg, true);
+    }
     else {
       // Fallback
       showInfoModal('Terjadi Error', errorMsg, true); 
@@ -840,7 +959,7 @@
 
 
   // ===========================================
-  // [BARU] FUNGSI & HANDLER BOBOT NILAI
+  // FUNGSI & HANDLER BOBOT NILAI
   // ===========================================
 
   /**
@@ -945,5 +1064,382 @@
       showMessage('bobot-message', response.message, true);
     }
   }
+
+  // ===========================================
+  // FUNGSI & HANDLER KELOLA KELAS
+  // ===========================================
+
+  /**
+   * [HELPER] Mengambil daftar kelas saat ini dari input.
+   */
+  function getCurrentKelasList() {
+    const inputs = document.querySelectorAll('#kelas-list-container input');
+    const list = [];
+    inputs.forEach(input => {
+      list.push(input.value); // Simpan semua, termasuk yg kosong, untuk re-render
+    });
+    return list;
+  }
+
+  /**
+   * [HELPER] Merender ulang daftar input kelas.
+   */
+  function renderKelasList(kelasList) {
+    const container = document.getElementById('kelas-list-container');
+    container.innerHTML = ''; // Kosongkan kontainer
+    
+    let listToRender = kelasList;
+    // Jika list kosong (setelah load atau semua dihapus), tampilkan 1 baris kosong
+    if (listToRender.length === 0) {
+      listToRender = [''];
+    }
+
+    listToRender.forEach((nama, index) => {
+      const div = document.createElement('div');
+      div.className = 'kelas-input-row';
+      
+      let html = `<input type="text" placeholder="Nama Kelas (Contoh: VI A)" value="${nama}">`;
+      
+      // Tampilkan tombol Hapus (x) jika ada lebih dari 1 baris
+      if (listToRender.length > 1) {
+        html += '<button type="button" class="btn-aksi-kelas btn-remove-kelas">&times;</button>';
+      }
+      
+      // Tampilkan tombol Tambah (+) hanya di baris terakhir
+      if (index === listToRender.length - 1) {
+        html += '<button type="button" class="btn-aksi-kelas btn-add-kelas">+</button>';
+      }
+      
+      div.innerHTML = html;
+      container.appendChild(div);
+    });
+  }
+
+  /**
+   * Membuka halaman kelola kelas dan memuat data.
+   */
+  function bukaHalamanKelas() {
+    tampilHalaman('halaman-kelas');
+    setLoading(true);
+    hideMessage('kelas-message');
+    document.getElementById('kelas-list-container').innerHTML = "<p>Memuat data kelas...</p>";
+    
+    google.script.run
+      .withSuccessHandler(onKelasLoaded)
+      .withFailureHandler(onGagal)
+      .getKelas(); // Fungsi backend baru
+  }
+
+  /**
+   * [CALLBACK] Menampilkan data kelas di form setelah dimuat.
+   */
+  function onKelasLoaded(response) {
+    setLoading(false);
+    if (response.status !== 'sukses') {
+      showMessage('kelas-message', response.message, true);
+      document.getElementById('kelas-list-container').innerHTML = '';
+      return;
+    }
+    renderKelasList(response.kelas || []);
+  }
+
+  /**
+   * Mengumpulkan, memvalidasi, dan mengirim data kelas untuk disimpan.
+   */
+  function simpanKelas() {
+    setLoading(true);
+    hideMessage('kelas-message');
+    
+    // 1. Ambil semua nilai, ubah ke string, trim, dan filter yang kosong
+    const list = getCurrentKelasList()
+                   .map(nama => String(nama).trim())
+                   .filter(nama => nama.length > 0);
+                   
+    // 2. Validasi duplikat
+    const uniqueList = new Set(list.map(nama => nama.toUpperCase())); // Cek duplikat case-insensitive
+    if (uniqueList.size !== list.length) {
+      setLoading(false);
+      showMessage('kelas-message', 'Nama kelas tidak boleh ada yang sama (duplikat).', true);
+      return;
+    }
+    
+    // 3. Kirim ke server
+    google.script.run
+      .withSuccessHandler(onKelasSaved)
+      .withFailureHandler(onGagal)
+      .saveKelas(list); // Fungsi backend baru
+  }
+  
+  /**
+   * [CALLBACK] Menampilkan pesan sukses/gagal setelah menyimpan.
+   */
+  function onKelasSaved(response) {
+    setLoading(false);
+    if (response.status === 'sukses') {
+      showMessage('kelas-message', 'Data kelas berhasil disimpan!', false); // false = sukses
+    } else {
+      showMessage('kelas-message', response.message, true);
+    }
+  }
+
+
+  // ===========================================
+  // [BARU] FUNGSI & HANDLER KELOLA SISWA
+  // ===========================================
+
+  /**
+   * Membuka halaman kelola siswa dan memuat data tabel.
+   */
+  function bukaHalamanSiswa() {
+    tampilHalaman('halaman-siswa');
+    setLoading(true);
+    document.getElementById('siswa-table-container').innerHTML = "<p>Memuat data siswa...</p>";
+    
+    google.script.run
+      .withSuccessHandler(onSiswaLoaded)
+      .withFailureHandler(onGagal)
+      .getSiswa(); // Fungsi backend baru
+  }
+
+  /**
+   * [CALLBACK] Merender tabel siswa setelah data dimuat.
+   */
+  function onSiswaLoaded(response) {
+    setLoading(false);
+    const container = document.getElementById('siswa-table-container');
+    
+    if (response.status === "sukses") {
+      let html = '<table class="siswa-table">';
+      // Header tabel disesuaikan dengan data
+      html += '<tr><th>Nama Siswa</th><th>NISN</th><th>Kelas</th><th>Aksi</th></tr>';
+      
+      if (response.siswa.length === 0) {
+        html += '<tr><td colspan="4" style="text-align: center;">Belum ada data siswa.</td></tr>';
+      }
+      
+      // Loop data siswa
+      response.siswa.forEach(siswa => {
+        html += `
+          <tr>
+            <td>${siswa.nama}</td>
+            <td>${siswa.nisn}</td>
+            <td>${siswa.kelas}</td>
+            <td>
+              <button class="btn-aksi btn-edit-siswa" 
+                data-id="${siswa.id}"
+                data-nama="${siswa.nama}"
+                data-nisn="${siswa.nisn}"
+                data-nis-lokal="${siswa.nisLokal}"
+                data-jk="${siswa.jk}"
+                data-tempat-lahir="${siswa.tempatLahir}"
+                data-tgl-lahir="${siswa.tglLahir}"
+                data-kelas="${siswa.kelas}"
+              >Edit</button>
+              <button class="btn-aksi btn-delete-siswa" data-id="${siswa.id}" data-nama="${siswa.nama}">Hapus</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += '</table>';
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat siswa: ${response.message}</p>`;
+    }
+  }
+
+  /**
+   * Menutup modal siswa.
+   */
+  function tutupModalSiswa() {
+    document.getElementById('siswa-modal').style.display = 'none';
+  }
+
+  /**
+   * Menampilkan modal siswa (Tambah/Edit).
+   * Ini akan memuat daftar kelas terlebih dahulu.
+   */
+  function showModalSiswa(mode, siswaData) {
+    setLoading(true);
+    hideMessage('modal-siswa-error');
+    
+    // 1. Reset form
+    document.getElementById('modal-siswa-mode').value = mode;
+    document.getElementById('modal-siswa-id').value = siswaData.id || '';
+    document.getElementById('modal-siswa-nama').value = '';
+    document.getElementById('modal-siswa-nisn').value = '';
+    document.getElementById('modal-siswa-nis-lokal').value = '';
+    document.getElementById('modal-siswa-jk').value = '';
+    document.getElementById('modal-siswa-tempat-lahir').value = '';
+    document.getElementById('modal-siswa-tgl-lahir').value = '';
+    
+    // Atur judul
+    if (mode === 'add') {
+      document.getElementById('modal-siswa-title').innerText = "Tambah Siswa Baru";
+      document.getElementById('modal-siswa-nisn').readOnly = false;
+    } else {
+      document.getElementById('modal-siswa-title').innerText = "Edit Data Siswa";
+      // NISN (sebagai Primary Key) tidak boleh diubah saat edit
+      document.getElementById('modal-siswa-nisn').readOnly = true;
+    }
+
+    // 2. Panggil backend untuk mendapatkan daftar kelas
+    google.script.run
+      .withSuccessHandler((response) => onKelasListLoadedForModal(response, siswaData))
+      .withFailureHandler(onGagal)
+      .getKelas();
+  }
+
+  /**
+   * [CALLBACK] Dipanggil setelah daftar kelas dimuat untuk modal siswa.
+   */
+  function onKelasListLoadedForModal(response, siswaData) {
+    const selectKelas = document.getElementById('modal-siswa-kelas');
+    const btnSimpan = document.getElementById('btn-simpan-siswa');
+    hideMessage('modal-siswa-error');
+    
+    if (response.status !== 'sukses' || !response.kelas || response.kelas.length === 0) {
+      // Gagal memuat kelas atau tidak ada kelas
+      setLoading(false);
+      selectKelas.innerHTML = '<option value="">-- Tidak ada data kelas --</option>';
+      showMessage('modal-siswa-error', "Tidak dapat menambah siswa. Harap isi data kelas terlebih dahulu di menu 'Kelola Kelas'.", true);
+      btnSimpan.disabled = true; // Nonaktifkan tombol simpan
+    } else {
+      // Sukses, isi dropdown kelas
+      selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+      response.kelas.forEach(namaKelas => {
+        selectKelas.innerHTML += `<option value="${namaKelas}">${namaKelas}</option>`;
+      });
+      btnSimpan.disabled = false; // Aktifkan tombol simpan
+      
+      // 3. Jika mode 'edit', isi sisa form
+      if (document.getElementById('modal-siswa-mode').value === 'edit') {
+        document.getElementById('modal-siswa-id').value = siswaData.id;
+        document.getElementById('modal-siswa-nama').value = siswaData.nama;
+        document.getElementById('modal-siswa-nisn').value = siswaData.nisn;
+        document.getElementById('modal-siswa-nis-lokal').value = siswaData.nisLokal;
+        document.getElementById('modal-siswa-jk').value = siswaData.jk;
+        document.getElementById('modal-siswa-tempat-lahir').value = siswaData.tempatLahir;
+        document.getElementById('modal-siswa-tgl-lahir').value = siswaData.tglLahir;
+        document.getElementById('modal-siswa-kelas').value = siswaData.kelas;
+      }
+      
+      setLoading(false);
+      // 4. Tampilkan modal
+      document.getElementById('siswa-modal').style.display = 'block';
+    }
+  }
+
+  /**
+   * Mengumpulkan dan menyimpan data siswa (Tambah/Edit).
+   */
+  function simpanSiswa() {
+    setLoading(true);
+    hideMessage('modal-siswa-error');
+    
+    // 1. Kumpulkan data dari form
+    const dataSiswa = {
+      id: document.getElementById('modal-siswa-id').value, // Akan kosong saat 'add'
+      nama: document.getElementById('modal-siswa-nama').value.trim(),
+      nisn: document.getElementById('modal-siswa-nisn').value.trim(),
+      nisLokal: document.getElementById('modal-siswa-nis-lokal').value.trim(),
+      jk: document.getElementById('modal-siswa-jk').value,
+      tempatLahir: document.getElementById('modal-siswa-tempat-lahir').value.trim(),
+      tglLahir: document.getElementById('modal-siswa-tgl-lahir').value,
+      kelas: document.getElementById('modal-siswa-kelas').value
+    };
+    
+    // 2. Validasi client-side
+    const errors = [];
+    if (!dataSiswa.nama) errors.push("Nama Lengkap");
+    if (!dataSiswa.nisn) errors.push("NISN");
+    if (!dataSiswa.jk) errors.push("Jenis Kelamin");
+    if (!dataSiswa.kelas) errors.push("Kelas");
+    
+    if (errors.length > 0) {
+      setLoading(false);
+      showMessage('modal-siswa-error', "Field (Wajib) tidak boleh kosong: " + errors.join(', ') + ".", true);
+      return;
+    }
+    
+    // 3. Tentukan mode dan panggil backend
+    const mode = document.getElementById('modal-siswa-mode').value;
+    
+    if (mode === 'add') {
+      google.script.run
+        .withSuccessHandler(onSiswaSaved)
+        .withFailureHandler(onGagal)
+        .createSiswa(dataSiswa); // Fungsi backend baru
+    } else { // Mode 'edit'
+      google.script.run
+        .withSuccessHandler(onSiswaSaved)
+        .withFailureHandler(onGagal)
+        .updateSiswa(dataSiswa); // Fungsi backend baru
+    }
+  }
+
+  /**
+   * [CALLBACK] Dipanggil setelah data siswa disimpan.
+   */
+  function onSiswaSaved(response) {
+    setLoading(false); 
+    
+    if (response.status === "sukses") {
+      tutupModalSiswa();
+      bukaHalamanSiswa(); // Muat ulang data tabel siswa
+    } else {
+      // Tampilkan error di dalam modal
+      showMessage('modal-siswa-error', response.message, true);
+    }
+  }
+
+  /**
+   * Menghapus satu siswa berdasarkan ID.
+   */
+  function hapusSiswa(siswaID, namaSiswa) {
+    const title = "Konfirmasi Hapus";
+    const message = `Yakin ingin menghapus siswa: <strong>${namaSiswa}</strong> (ID: ${siswaID})?<br><br><strong>PERINGATAN:</strong> Semua data nilai yang terkait dengan siswa ini juga akan hilang.`;
+    
+    const callback = function() {
+      setLoading(true);
+      google.script.run
+        .withSuccessHandler(onSiswaSaved) // Bisa pakai callback yang sama
+        .withFailureHandler(onGagal)
+        .deleteSiswa(siswaID); // Fungsi backend baru
+    };
+    
+    showConfirmationModal(title, message, callback, 'danger');
+  }
+
+  /**
+   * Menghapus semua siswa di sheet.
+   */
+  function hapusSemuaSiswa() {
+    const title = "PERINGATAN BESAR!";
+    const message = "Anda yakin ingin menghapus <strong>SEMUA</strong> data siswa? Tindakan ini tidak bisa dibatalkan dan akan menghapus semua data nilai yang terkait.";
+    
+    const callback = function() {
+      setLoading(true);
+      google.script.run
+        .withSuccessHandler(onSiswaTableRefreshed)
+        .withFailureHandler(onGagal)
+        .deleteAllSiswa(); // Fungsi backend baru
+    };
+    
+    showConfirmationModal(title, message, callback, 'danger'); 
+  }
+
+  /**
+   * [CALLBACK] Dipanggil setelah 'Hapus Semua Siswa' berhasil.
+   */
+  function onSiswaTableRefreshed(response) {
+    setLoading(false); 
+    if (response.status === "sukses") {
+      showInfoModal("Sukses", response.message, false, bukaHalamanSiswa);
+    } else {
+      showInfoModal("Error", response.message, true, null);
+    }
+  }
+
 
 </script>
