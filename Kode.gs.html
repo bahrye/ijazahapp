@@ -640,16 +640,42 @@ function createSiswa(dataSiswa) {
     const ss = SpreadsheetApp.openById(spreadsheetID);
     const sheet = getSiswaSheet(ss);
     
-    // Cek duplikat NISN (Kolom C)
     const data = sheet.getDataRange().getValues();
+    
+    let maxIdNum = 0;
+    let maxUrutan = 0;
+    const nisnSet = new Set();
+
     for (let i = 1; i < data.length; i++) {
-      if (data[i][2] == dataSiswa.nisn) { // Kolom NISN (index 2)
-        return { status: "gagal", message: "NISN '" + dataSiswa.nisn + "' sudah terdaftar atas nama " + data[i][1] + "." };
+      // Cek NISN Duplikat
+      if (data[i][2]) {
+        nisnSet.add(String(data[i][2]));
+      }
+      
+      // Cari Max ID
+      const idNum = parseInt((data[i][0] || 'SIS-0').split('-')[1] || 0);
+      if (idNum > maxIdNum) {
+        maxIdNum = idNum;
+      }
+      
+      // Cari Max Urutan
+      const urutanNum = Number(data[i][8] || 0); // Cek Kolom I
+      if (urutanNum > maxUrutan) {
+        maxUrutan = urutanNum;
       }
     }
     
-    // Buat ID unik
-    const newSiswaID = "SIS-" + (sheet.getLastRow()); // Sederhana, berdasarkan jumlah baris
+    // Cek duplikat NISN
+    if (nisnSet.has(String(dataSiswa.nisn))) {
+      return { status: "gagal", message: "NISN '" + dataSiswa.nisn + "' sudah terdaftar." };
+    }
+
+    // Tentukan ID dan Urutan baru
+    // Kita gunakan max(maxId, maxUrutan) agar urutan tidak tumpang tindih
+    const nextNum = Math.max(maxIdNum, maxUrutan) + 1;
+    
+    const newSiswaID = "SIS-" + nextNum;
+    const newUrutan = nextNum;
     
     const newRow = [
       newSiswaID,
@@ -660,7 +686,7 @@ function createSiswa(dataSiswa) {
       dataSiswa.tempatLahir,
       dataSiswa.tglLahir || null, 
       dataSiswa.kelas,
-      sheet.getLastRow() // [BARU] Set Urutan default ke nomor baris terakhir
+      newUrutan // [PERBAIKAN] Set Urutan baru yang aman
     ];
     
     sheet.appendRow(newRow);
@@ -1166,7 +1192,22 @@ function prosesImportExcelSiswa(fileData) {
     // 5. Siapkan variabel loop
     const gagalList = [];
     const rowsToAppend = [];
-    const lastRowIndex = sheetSiswa.getLastRow();
+    // const lastRowIndex = sheetSiswa.getLastRow(); // [DIHAPUS] Logika lama tidak aman
+    
+    // [BARU] Dapatkan data ID dan Urutan yang ada
+    const existingData = sheetSiswa.getDataRange().getValues();
+    let maxIdNum = 0;
+    let maxUrutan = 0;
+    for (let i = 1; i < existingData.length; i++) {
+      const idNum = parseInt((existingData[i][0] || 'SIS-0').split('-')[1] || 0);
+      if (idNum > maxIdNum) maxIdNum = idNum;
+      
+      const urutanNum = Number(existingData[i][8] || 0);
+      if (urutanNum > maxUrutan) maxUrutan = urutanNum;
+    }
+    
+    // [BARU] Tentukan nomor awal
+    let nextNum = Math.max(maxIdNum, maxUrutan) + 1;
 
     // 6. Loop dan validasi setiap baris dari data Excel
     for (let i = 0; i < excelData.length; i++) {
@@ -1213,14 +1254,18 @@ function prosesImportExcelSiswa(fileData) {
       }
 
       // [VALIDASI LOLOS]
-      const newSiswaID = "SIS-" + (lastRowIndex + rowsToAppend.length + 1);
+      const newSiswaID = "SIS-" + nextNum;
+      const newUrutan = nextNum;
+      
       const newRow = [
         newSiswaID, nama, nisn, nisLokal, jk, 
-        tempatLahir, (tglLahir || null), kelas
+        tempatLahir, (tglLahir || null), kelas,
+        newUrutan // [PERBAIKAN] Tambahkan 'urutan' ke Kolom I
       ];
       
       rowsToAppend.push(newRow);
       existingNisnSet.add(nisn);
+      nextNum++; // [BARU] Naikkan counter untuk siswa berikutnya
     }
 
     // 7. Simpan data baru (Batch Append)
