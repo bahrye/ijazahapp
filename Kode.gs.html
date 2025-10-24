@@ -1,7 +1,9 @@
 // ! ID MASTER SHEET ANDA
 // ! Ini adalah sheet yang berisi daftar sekolah (Email, Password, ID Sheet mereka)
 const MASTER_SHEET_ID = "191TzI0vRzK8xg7kGym8qUnvXz_edlCH_IJmmwMZMK_M"; 
-const MAPEL_CACHE_KEY = 'mapel_data'; // <-- TAMBAHKAN INI
+const MAPEL_CACHE_KEY = 'mapel_data'; 
+// [BARU] ID Folder Google Drive target Anda
+const TARGET_FOLDER_ID = "1Xu9vSZQKAxVCNDuAXI8W5l-3xb58cQm9";
 
 /**
  * Fungsi utama untuk menampilkan halaman web.
@@ -26,7 +28,7 @@ function include(filename) {
 
 /**
  * Memproses login pengguna.
- * (DIPERBARUI: Membuat token & stempel waktu)
+ * [UPDATE] Mengirim nama sekolah sbg uppercase.
  */
 function prosesLogin(email, password) {
   try {
@@ -47,6 +49,7 @@ function prosesLogin(email, password) {
         // Buat token unik
         const token = Utilities.getUuid();
         const now = new Date().getTime(); // Stempel waktu
+        const namaSekolahUpper = row[1].toUpperCase(); // [UPDATE]
         
         const userProperties = PropertiesService.getUserProperties();
         userProperties.setProperty('sessionToken', token);
@@ -54,13 +57,13 @@ function prosesLogin(email, password) {
         
         // Simpan data lain seperti biasa
         userProperties.setProperty('sekolahID', row[0]);
-        userProperties.setProperty('namaSekolah', row[1]);
+        userProperties.setProperty('namaSekolah', namaSekolahUpper); // [UPDATE] Simpan sbg uppercase
         userProperties.setProperty('jenjang', row[2]);
         userProperties.setProperty('spreadsheetID', row[5]);
         
         return { 
           status: "sukses", 
-          namaSekolah: row[1], 
+          namaSekolah: namaSekolahUpper, // [UPDATE] Kirim sbg uppercase
           jenjang: row[2],
           token: token // Kirim token ke klien
         };
@@ -77,7 +80,7 @@ function prosesLogin(email, password) {
 
 /**
  * Memproses registrasi sekolah baru.
- * (Membuat sheet secara manual, tanpa template)
+ * [UPDATE] Menyimpan nama sekolah sbg uppercase.
  */
 function prosesRegistrasi(namaSekolah, jenjang, email, password) {
   let newSSID = null; // Variabel untuk menyimpan ID sheet baru jika terjadi error
@@ -102,10 +105,32 @@ function prosesRegistrasi(namaSekolah, jenjang, email, password) {
       }
     }
 
+    // --- [BLOK KODE BARU: LOGIKA FOLDER] ---
+    let targetFolder;
+    try {
+      // Langsung ambil folder target menggunakan ID
+      targetFolder = DriveApp.getFolderById(TARGET_FOLDER_ID);
+    } catch (folderError) {
+      Logger.log("Error mengambil folder: " + folderError);
+      return { status: "gagal", message: "Error: Folder target tidak ditemukan atau tidak dapat diakses. ID: " + TARGET_FOLDER_ID };
+    }
+    // --- [AKHIR BLOK KODE BARU] ---
+
+    // [UPDATE] Pastikan namaSekolah adalah uppercase
+    const namaSekolahUpper = namaSekolah.toUpperCase();
+
     // Buat Spreadsheet Baru untuk Sekolah
-    const newSpreadsheet = SpreadsheetApp.create("Database Nilai - " + namaSekolah);
+    const newSpreadsheet = SpreadsheetApp.create("Database Nilai - " + namaSekolahUpper); // [UPDATE]
     newSSID = newSpreadsheet.getId();
     Logger.log("Spreadsheet baru dibuat (manual): " + newSSID);
+
+    // --- [BLOK KODE BARU: PINDAHKAN FILE] ---
+    // Pindahkan file spreadsheet yang baru dibuat ke folder target
+    const newFile = DriveApp.getFileById(newSSID);
+    targetFolder.addFile(newFile); // Tambahkan ke folder target
+    DriveApp.getRootFolder().removeFile(newFile); // Hapus dari root (ini adalah operasi 'move')
+    Logger.log("Spreadsheet dipindahkan ke folder: " + targetFolder.getName());
+    // --- [AKHIR BLOK KODE BARU] ---
 
     const defaultSheet = newSpreadsheet.getSheets()[0];
     
@@ -135,13 +160,30 @@ function prosesRegistrasi(namaSekolah, jenjang, email, password) {
     sheetSetting.appendRow(['Bobot_Rapor', 60]);
     sheetSetting.appendRow(['Bobot_Ujian', 40]);
 
+    // Tambahkan sheet Data_Sekolah
+    const sheetDataSekolah = newSpreadsheet.insertSheet('Data_Sekolah');
+    sheetDataSekolah.appendRow([
+      // Header (A1:P1)
+      'JenjangPilihan', 'NPSN', 'NSM', 'Alamat', 'Provinsi', 
+      'KabKot', 'PilihanKabKot', 'Kecamatan', 'KelDes', 'PilihanKelDes', 
+      'KodePos', 'Telepon', 'Email', 'Website', 'NamaKepsek', 'NIPKepsek'
+    ]);
+    sheetDataSekolah.appendRow([
+      // Data Default (A2:P2)
+      '', '', '', '', '', 
+      '', 'Kabupaten', '', '', 'Kelurahan', 
+      '', '', '', '', '', ''
+    ]);
+    // Set baris data (baris 2) agar formatnya Teks Biasa (@)
+    sheetDataSekolah.getRange('A2:P2').setNumberFormat('@');
+
     newSpreadsheet.deleteSheet(defaultSheet);
     
     const newSekolahID = "SKL-" + (sheetSekolah.getLastRow());
     
     sheetSekolah.appendRow([
       newSekolahID, 
-      namaSekolah, 
+      namaSekolahUpper, // [UPDATE]
       jenjang, 
       email, 
       password, 
@@ -152,6 +194,7 @@ function prosesRegistrasi(namaSekolah, jenjang, email, password) {
     
   } catch (e) {
     Logger.log(e);
+    // Jika terjadi error SETELAH spreadsheet dibuat, hapus spreadsheet tersebut
     if (newSSID) {
       DriveApp.getFileById(newSSID).setTrashed(true);
     }
@@ -198,6 +241,7 @@ function validateAndRefreshSession() {
 
 /**
  * [CHECK AWAL] Memeriksa token saat halaman dimuat.
+ * [UPDATE] Mengirim nama sekolah sbg uppercase.
  */
 function checkToken(tokenFromClient) {
   try {
@@ -207,7 +251,7 @@ function checkToken(tokenFromClient) {
     if (tokenFromClient === storedToken) {
       return { 
         status: "sukses", 
-        namaSekolah: userProperties.getProperty('namaSekolah'), 
+        namaSekolah: userProperties.getProperty('namaSekolah').toUpperCase(), // [UPDATE]
         jenjang: userProperties.getProperty('jenjang')
       };
     } else {
@@ -506,6 +550,114 @@ function deleteAllMapel() {
     return { status: "sukses", message: "Semua mapel telah dihapus." };
     
   } catch (e) {
+    return { status: "gagal", message: e.message };
+  }
+}
+
+// ===========================================
+// [BARU] FUNGSI KELOLA DATA SEKOLAH
+// ===========================================
+
+/**
+ * [HELPER] Membuka sheet Data_Sekolah, atau membuatnya jika belum ada.
+ * [UPDATE] Menambahkan format teks '@' untuk akun lama.
+ */
+function getDataSekolahSheet(ss) {
+  let sheet = ss.getSheetByName('Data_Sekolah');
+  if (!sheet) {
+    // Buat sheet jika tidak ada (untuk kompatibilitas akun lama)
+    sheet = ss.insertSheet('Data_Sekolah');
+    sheet.appendRow([
+      'JenjangPilihan', 'NPSN', 'NSM', 'Alamat', 'Provinsi', 
+      'KabKot', 'PilihanKabKot', 'Kecamatan', 'KelDes', 'PilihanKelDes', 
+      'KodePos', 'Telepon', 'Email', 'Website', 'NamaKepsek', 'NIPKepsek'
+    ]);
+    sheet.appendRow([
+      '', '', '', '', '', 
+      '', 'Kabupaten', '', '', 'Kelurahan', 
+      '', '', '', '', '', ''
+    ]);
+    // [BARU] Set baris data (baris 2) agar formatnya Teks Biasa (@)
+    sheet.getRange('A2:P2').setNumberFormat('@');
+    SpreadsheetApp.flush(); // Pastikan sheet dibuat
+  }
+  return sheet;
+}
+
+/**
+ * [SERVER] Mengambil data sekolah dari sheet 'Data_Sekolah'.
+ * [UPDATE] Mengirim nama sekolah sbg uppercase.
+ */
+function getSchoolData() {
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const namaSekolah = userProperties.getProperty('namaSekolah'); // Sudah uppercase dari login/token
+    const jenjangBase = userProperties.getProperty('jenjang'); // "SD/MI", "SMP/MTS", dll.
+    
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheet = getDataSekolahSheet(ss);
+    
+    const data = sheet.getRange('A2:P2').getValues()[0];
+    
+    // Map data dari array ke objek agar mudah dibaca di client
+    const dataSekolah = {
+      jenjangBase: jenjangBase,
+      namaSekolah: namaSekolah.toUpperCase(), // [UPDATE] Pastikan uppercase
+      jenjangPilihan: data[0],
+      npsn: data[1],
+      nsm: data[2],
+      alamat: data[3],
+      provinsi: data[4],
+      kabKot: data[5],
+      pilihanKabKot: data[6],
+      kecamatan: data[7],
+      kelDes: data[8],
+      pilihanKelDes: data[9],
+      kodePos: data[10],
+      telepon: data[11],
+      email: data[12],
+      website: data[13],
+      namaKepsek: data[14],
+      nipKepsek: data[15]
+    };
+    
+    return { status: "sukses", data: dataSekolah };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
+}
+
+/**
+ * [SERVER] Menyimpan data sekolah ke sheet 'Data_Sekolah'.
+ * [UPDATE] Tidak perlu diubah, karena format cell sudah diatur.
+ */
+function saveSchoolData(data) {
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheet = getDataSekolahSheet(ss);
+    
+    // Ubah objek kembali menjadi array DENGAN URUTAN YANG BENAR
+    const dataArray = [
+      data.jenjangPilihan, data.npsn, data.nsm, data.alamat, data.provinsi,
+      data.kabKot, data.pilihanKabKot, data.kecamatan, data.kelDes, data.pilihanKelDes,
+      data.kodePos, data.telepon, data.email, data.website, data.namaKepsek, data.nipKepsek
+    ];
+    
+    // Tulis data ke baris 2
+    // Karena cell A2:P2 sudah diformat sebagai Teks (@), 
+    // Google Sheets tidak akan mengubah "098" menjadi 98.
+    sheet.getRange('A2:P2').setValues([dataArray]);
+    
+    return { status: "sukses" };
+    
+  } catch (e) {
+    Logger.log(e);
     return { status: "gagal", message: e.message };
   }
 }
