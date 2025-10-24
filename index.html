@@ -14,7 +14,7 @@
       <div class="spinner"></div>
     </div>
 
-    <div class="container" id="auth-container">
+    <div class="container" id="auth-container" style="display: none;">
 
       <div class="app-header">
         <h1>Nilai Ijazah</h1>
@@ -277,9 +277,10 @@
         <div class="page-header">
           <h2>Kelola Data Siswa</h2>
           <div class="header-buttons">
+            <button id="btn-import-siswa"><i class="fas fa-upload"></i>Import Siswa</button>
             <button id="btn-tambah-siswa-baru"><i class="fas fa-plus"></i>Tambah Siswa</button>
             <button id="btn-hapus-semua-siswa"><i class="fas fa-trash-alt"></i>Hapus Semua Siswa</button>
-            </div>
+          </div>
         </div>
 
         <p>Kelola data siswa di sekolah Anda. Data ini akan digunakan untuk input nilai.</p>
@@ -418,6 +419,51 @@
           </div>
         <div class="modal-footer">
           <button id="btn-info-ok"><i class="fas fa-check"></i>OK</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="import-siswa-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-import-siswa-title">Import Data Siswa</h2>
+          <span class="close-button" id="btn-tutup-modal-import-siswa">&times;</span>
+        </div>
+        <div class="modal-body">
+          <p>Import data siswa menggunakan file Excel. Ikuti langkah-langkah di bawah ini:</p>
+          
+          <div class="import-step-box">
+            <div class="import-step-number">1</div>
+            <div class="import-step-content">
+              <h4 class="import-step-header">Unduh Template</h4>
+              <p>Dapatkan template Excel, isi data siswa, dan pastikan semua kolom wajib terisi.</p>
+              <button id="btn-download-template-siswa" class="btn-aksi"><i class="fas fa-file-excel"></i>Unduh Template (.xlsx)</button>
+              <p id="template-message" class="message" style="display: none;"></p>
+            </div>
+          </div>
+
+          <div class="import-step-box">
+            <div class="import-step-number">2</div>
+            <div class="import-step-content">
+              <h4 class="import-step-header">Unggah File Excel</h4>
+              <p>Pilih file Excel (`.xlsx` atau `.xls`) yang sudah Anda isi.</p>
+              
+              <label for="file-upload-siswa" class="file-upload-zone" id="file-upload-zone">
+                <input type="file" id="file-upload-siswa" accept=".xlsx, .xls, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span id="file-upload-text">Klik untuk memilih file atau seret & letakkan di sini.</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="import-siswa-results" style="display: none;">
+            </div>
+          
+        </div>
+        <div class="modal-footer">
+          <button id="btn-batal-modal-import-siswa"><i class="fas fa-times"></i>Tutup</button>
+          <button id="btn-proses-import-siswa" disabled><i class="fas fa-cogs"></i>Proses Import</button>
         </div>
       </div>
     </div>
