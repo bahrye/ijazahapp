@@ -267,57 +267,6 @@ function checkToken(tokenFromClient) {
 
 
 // ===========================================
-// FUNGSI PENGOLAHAN NILAI (CONTOH)
-// ===========================================
-
-function hitungNilaiIjazahSiswa(siswaID) {
-  try {
-    // Panggil 'penjaga' di awal
-    const userProperties = validateAndRefreshSession();
-    const spreadsheetID = userProperties.getProperty('spreadsheetID');
-    
-    const ss = SpreadsheetApp.openById(spreadsheetID);
-    const sheetSetting = ss.getSheetByName('Pengaturan');
-    
-    const bobotRapor = sheetSetting.getRange('B2').getValue(); 
-    const bobotUjian = sheetSetting.getRange('B3').getValue(); 
-    
-    if (siswaID === 'S-001') {
-      // Data dummy untuk tes
-      const dataRaporSiswa = { Sem1_P: 85, Sem1_K: 88, Sem2_P: 86, Sem2_K: 87, Sem3_P: 88, Sem3_K: 88, Sem4_P: 90, Sem4_K: 90, Sem5_P: 90, Sem5_K: 92 };
-      const dataUjianSiswa = { UjianMadrasah: 88, UjianPraktek: 90 };
-      
-      let nilaiUjian = 0;
-      if (dataUjianSiswa.UjianPraktek && dataUjianSiswa.UjianPraktek > 0) {
-        nilaiUjian = (dataUjianSiswa.UjianMadrasah + dataUjianSiswa.UjianPraktek) / 2;
-      } else {
-        nilaiUjian = dataUjianSiswa.UjianMadrasah;
-      }
-      
-      const nilaiRaporArray = Object.values(dataRaporSiswa);
-      const totalNilaiRapor = nilaiRaporArray.reduce((acc, val) => acc + val, 0);
-      const rataRataRapor = totalNilaiRapor / nilaiRaporArray.length;
-      
-      const nilaiAkhir = (rataRataRapor * bobotRapor / 100) + (nilaiUjian * bobotUjian / 100);
-      
-      return {
-        status: "sukses",
-        mapel: "Pendidikan Agama (Contoh)",
-        nilaiRataRataRapor: rataRataRapor.toFixed(2),
-        nilaiRataRataUjian: nilaiUjian.toFixed(2),
-        nilaiAkhirIjazah: nilaiAkhir.toFixed(2)
-      };
-    } else {
-      return { status: "error", message: "SiswaID 'S-001' tidak ditemukan untuk demo." };
-    }
-    
-  } catch (e) {
-    Logger.log(e);
-    return { status: "error", message: e.message };
-  }
-}
-
-// ===========================================
 // FUNGSI HELPER MAPEL DEFAULT (DINAMIS)
 // ===========================================
 
@@ -555,7 +504,7 @@ function deleteAllMapel() {
 }
 
 // ===========================================
-// [BARU] FUNGSI KELOLA DATA SEKOLAH
+// FUNGSI KELOLA DATA SEKOLAH
 // ===========================================
 
 /**
@@ -659,5 +608,174 @@ function saveSchoolData(data) {
   } catch (e) {
     Logger.log(e);
     return { status: "gagal", message: e.message };
+  }
+}
+
+
+// ===========================================
+// [BARU] FUNGSI KELOLA BOBOT NILAI
+// ===========================================
+
+/**
+ * [HELPER] Membuka sheet Pengaturan, atau membuatnya jika belum ada.
+ */
+function getPengaturanSheet(ss) {
+  let sheet = ss.getSheetByName('Pengaturan');
+  if (!sheet) {
+    // Buat sheet jika tidak ada (untuk kompatibilitas)
+    sheet = ss.insertSheet('Pengaturan');
+    sheet.appendRow(['Setting', 'Value']);
+    sheet.appendRow(['Bobot_Rapor', 60]); // Default
+    sheet.appendRow(['Bobot_Ujian', 40]); // Default
+    SpreadsheetApp.flush();
+  }
+  return sheet;
+}
+
+/**
+ * [SERVER] Mengambil data bobot dari sheet 'Pengaturan'.
+ */
+function getBobotData() {
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheet = getPengaturanSheet(ss);
+    
+    const data = sheet.getRange('A1:B' + sheet.getLastRow()).getValues();
+    let bobotRapor = 60; // Default
+    let bobotUjian = 40; // Default
+
+    // Loop untuk mencari berdasarkan nama (lebih kuat drpd B2/B3)
+    for (let i = 0; i < data.length; i++) {
+      if (data[i][0] === 'Bobot_Rapor') {
+        bobotRapor = data[i][1];
+      } else if (data[i][0] === 'Bobot_Ujian') {
+        bobotUjian = data[i][1];
+      }
+    }
+    
+    return { status: "sukses", bobotUjian: bobotUjian, bobotRapor: bobotRapor };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
+}
+
+/**
+ * [SERVER] Menyimpan data bobot ke sheet 'Pengaturan'.
+ */
+function saveBobotData(bobotRapor, bobotUjian) {
+  try {
+    validateAndRefreshSession(); // Validasi sesi
+    
+    if ((bobotRapor + bobotUjian) !== 100) {
+      return { status: "gagal", message: "Total bobot harus 100." };
+    }
+
+    const userProperties = PropertiesService.getUserProperties();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheet = getPengaturanSheet(ss);
+
+    const data = sheet.getRange('A1:B' + sheet.getLastRow()).getValues();
+    let foundRapor = false;
+    let foundUjian = false;
+
+    // Loop untuk update berdasarkan nama
+    for (let i = 0; i < data.length; i++) {
+      const rowIdx = i + 1; // Index baris (mulai dari 1)
+      if (data[i][0] === 'Bobot_Rapor') {
+        sheet.getRange('B' + rowIdx).setValue(bobotRapor);
+        foundRapor = true;
+      } else if (data[i][0] === 'Bobot_Ujian') {
+        sheet.getRange('B' + rowIdx).setValue(bobotUjian);
+        foundUjian = true;
+      }
+    }
+    
+    // Jika setting tidak ditemukan (mis. sheet lama), tambahkan
+    if (!foundRapor) {
+      sheet.appendRow(['Bobot_Rapor', bobotRapor]);
+    }
+    if (!foundUjian) {
+      sheet.appendRow(['Bobot_Ujian', bobotUjian]);
+    }
+
+    return { status: "sukses" };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
+}
+
+
+// ===========================================
+// FUNGSI PENGOLAHAN NILAI (CONTOH)
+// ===========================================
+
+/**
+ * [UPDATE] Fungsi ini diupdate agar mengambil bobot
+ * menggunakan helper getPengaturanSheet yang lebih kuat.
+ */
+function hitungNilaiIjazahSiswa(siswaID) {
+  try {
+    // Panggil 'penjaga' di awal
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    
+    // [UPDATE] Gunakan helper function yang lebih kuat
+    const sheetSetting = getPengaturanSheet(ss);
+    
+    // [UPDATE] Ambil bobot dengan cara yang lebih kuat
+    const dataBobot = sheetSetting.getRange('A1:B' + sheetSetting.getLastRow()).getValues();
+    let bobotRapor = 60; // Default
+    let bobotUjian = 40; // Default
+
+    for (let i = 0; i < dataBobot.length; i++) {
+      if (dataBobot[i][0] === 'Bobot_Rapor') {
+        bobotRapor = dataBobot[i][1];
+      } else if (dataBobot[i][0] === 'Bobot_Ujian') {
+        bobotUjian = dataBobot[i][1];
+      }
+    }
+    // [AKHIR UPDATE]
+    
+    if (siswaID === 'S-001') {
+      // Data dummy untuk tes
+      const dataRaporSiswa = { Sem1_P: 85, Sem1_K: 88, Sem2_P: 86, Sem2_K: 87, Sem3_P: 88, Sem3_K: 88, Sem4_P: 90, Sem4_K: 90, Sem5_P: 90, Sem5_K: 92 };
+      const dataUjianSiswa = { UjianMadrasah: 88, UjianPraktek: 90 };
+      
+      let nilaiUjian = 0;
+      if (dataUjianSiswa.UjianPraktek && dataUjianSiswa.UjianPraktek > 0) {
+        nilaiUjian = (dataUjianSiswa.UjianMadrasah + dataUjianSiswa.UjianPraktek) / 2;
+      } else {
+        nilaiUjian = dataUjianSiswa.UjianMadrasah;
+      }
+      
+      const nilaiRaporArray = Object.values(dataRaporSiswa);
+      const totalNilaiRapor = nilaiRaporArray.reduce((acc, val) => acc + val, 0);
+      const rataRataRapor = totalNilaiRapor / nilaiRaporArray.length;
+      
+      const nilaiAkhir = (rataRataRapor * bobotRapor / 100) + (nilaiUjian * bobotUjian / 100);
+      
+      return {
+        status: "sukses",
+        mapel: "Pendidikan Agama (Contoh)",
+        nilaiRataRataRapor: rataRataRapor.toFixed(2),
+        nilaiRataRataUjian: nilaiUjian.toFixed(2),
+        nilaiAkhirIjazah: nilaiAkhir.toFixed(2)
+      };
+    } else {
+      return { status: "error", message: "SiswaID 'S-001' tidak ditemukan untuk demo." };
+    }
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "error", message: e.message };
   }
 }
