@@ -64,7 +64,7 @@
 
     </div>
 
-<div class="container" id="halaman-utama" style="display: none;">
+    <div class="container" id="halaman-utama" style="display: none;">
       <div class="page">
         <div class="page-top-nav">
           <button id="btn-logout"><i class="fas fa-sign-out-alt"></i>Logout</button>
@@ -72,7 +72,8 @@
 
         <h2 id="salam-sekolah">Selamat Datang, Admin</h2>
         <p>Ini adalah dashboard utama. Silakan pilih menu di bawah ini:</p>
-
+        
+        <h3 class="dashboard-section-header">Kelola Data</h3>
         <div class="dashboard-menu-grid">
           <button class="dashboard-card" id="btn-buka-data-sekolah">
             <i class="fas fa-school"></i>
@@ -95,6 +96,72 @@
             <span>Kelola Kelas</span>
           </button>
         </div>
+
+        <hr class="dashboard-divider">
+
+        <h3 class="dashboard-section-header">Input Nilai</h3>
+        <div class="dashboard-menu-grid dashboard-grid-input"> <button class="dashboard-card" id="btn-buka-input-ujian">
+            <i class="fas fa-pen-alt"></i>
+            <span>Input Nilai Ujian</span>
+          </button>
+          </div>
+
+      </div>
+    </div>
+
+    <div class="container" id="halaman-input-ujian" style="display: none;">
+      <div class="page">
+        <div class="page-top-nav">
+          <button type="button" id="btn-kembali-ke-dashboard-6"><i class="fas fa-arrow-circle-left"></i>Kembali ke Dasbor</button>
+        </div>
+
+        <div class="page-header">
+          <h2>Input Nilai Ujian</h2>
+        </div>
+
+        <p>Pilih jenis ujian yang akan diinput nilainya.</p>
+
+        <div class="dashboard-menu-grid dashboard-grid-input">
+          <button class="dashboard-card" id="btn-buka-input-um">
+            <i class="fas fa-graduation-cap"></i>
+            <span id="label-ujian-utama">Ujian Sekolah</span> 
+          </button>
+          <button class="dashboard-card" id="btn-buka-input-praktek">
+            <i class="fas fa-flask"></i>
+            <span>Ujian Praktek</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="container" id="halaman-input-nilai-detail" style="display: none;">
+      <div class="page">
+        <div class="page-top-nav">
+          <button type="button" id="btn-kembali-ke-input-ujian"><i class="fas fa-arrow-circle-left"></i>Kembali ke Pilihan Ujian</button>
+        </div>
+
+        <div class="page-header">
+          <h2 id="judul-halaman-input-nilai">Input Nilai Ujian</h2> 
+        </div>
+
+        <div class="form-group">
+          <label for="input-nilai-pilih-mapel">Pilih Mata Pelajaran:</label>
+          <select id="input-nilai-pilih-mapel">
+            <option value="">-- Muat mapel... --</option>
+          </select>
+        </div>
+
+        <p id="input-nilai-message" class="message" style="display: none;"></p>
+        
+        <div class="input-nilai-table-container" id="input-nilai-table-container">
+          <p>Pilih mata pelajaran untuk menampilkan daftar siswa.</p>
+        </div>
+        
+        <hr>
+        <div class="form-actions">
+            <button type="button" id="btn-simpan-input-nilai" disabled><i class="fas fa-save"></i>Simpan Perubahan Nilai</button>
+        </div>
+
       </div>
     </div>
 
