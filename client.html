@@ -1,10 +1,12 @@
 <script>
   // Variabel global
   let jenjangBaseCache = '';
+  let jenjangPilihanCache = ''; // [BARU] Simpan jenjang spesifik (MI, SD, dll)
   const LAST_PAGE_KEY = 'lastVisitedPageId'; // Kunci untuk localStorage
   let siswaTelahDiImport = false; // [BARU] Flag untuk refresh tabel setelah import
   let globalSiswaList = []; // [BARU] Cache untuk daftar siswa
   let isSiswaOrderDirty = false; // [BARU] Flag jika ada urutan yg diubah
+  let isMapelTipeDirty = false; // [BARU] Flag jika ada tipe ujian yg diubah
 
   // ===========================================
   // FUNGSI UTILITAS
@@ -79,6 +81,7 @@
     hideMessage('kelas-message');
     hideMessage('siswa-message');
     hideMessage('input-nilai-message');
+    hideMessage('mapel-message');
 
     // Tentukan halaman yang akan ditampilkan
     const targetElement = document.getElementById(idHalaman);
@@ -202,40 +205,51 @@
   }
 
   /**
-   * Helper untuk membuka halaman berdasarkan ID tersimpan.
+  * Helper untuk membuka halaman berdasarkan ID tersimpan.
+  */
+  function bukaHalamanTersimpan(pageId) {
+    switch (pageId) {
+        case 'halaman-utama':
+            tampilHalaman('halaman-utama');
+            break; // Dashboard tidak perlu load data awal
+        case 'halaman-mapel':
+            bukaHalamanMapel();
+            break;
+        case 'halaman-data-sekolah':
+            bukaHalamanDataSekolah();
+            break;
+        case 'halaman-bobot':
+            bukaHalamanBobot();
+            break;
+        case 'halaman-kelas':
+            bukaHalamanKelas();
+            break;
+        case 'halaman-siswa':
+            bukaHalamanSiswa();
+            break;
+        case 'halaman-input-ujian':
+            bukaHalamanInputUjian();
+            break;
+        case 'halaman-input-nilai-detail':
+            // Jika di-refresh, kembalikan ke menu input, bukan halaman detail
+            bukaHalamanInputUjian(); 
+            break;
+        default:
+            console.warn("ID halaman tersimpan tidak valid:", pageId, ". Menampilkan dashboard.");
+            tampilHalaman('halaman-utama'); // Fallback ke dashboard
+            break;
+    }
+  }
+
+  /**
+   * [BARU] Mengatur status "dirty" mapel dan mengaktifkan/menonaktifkan tombol simpan
    */
-   function bukaHalamanTersimpan(pageId) {
-      switch (pageId) {
-          case 'halaman-utama':
-              tampilHalaman('halaman-utama');
-              break; // Dashboard tidak perlu load data awal
-          case 'halaman-mapel':
-              bukaHalamanMapel();
-              break;
-          case 'halaman-data-sekolah':
-              bukaHalamanDataSekolah();
-              break;
-          case 'halaman-bobot':
-              bukaHalamanBobot();
-              break;
-          case 'halaman-kelas':
-              bukaHalamanKelas();
-              break;
-          case 'halaman-siswa':
-              bukaHalamanSiswa();
-              break;
-          case 'halaman-input-ujian':
-              bukaHalamanInputUjian();
-              break;
-          case 'halaman-input-nilai-detail':
-              // Jika di-refresh, kembalikan ke menu input, bukan halaman detail
-              bukaHalamanInputUjian(); 
-              break;
-          default:
-              console.warn("ID halaman tersimpan tidak valid:", pageId, ". Menampilkan dashboard.");
-              tampilHalaman('halaman-utama'); // Fallback ke dashboard
-              break;
-      }
+  function setMapelTipeDirty(isDirty) {
+    isMapelTipeDirty = isDirty;
+    const btnSimpan = document.getElementById('btn-simpan-tipe-ujian');
+    if (btnSimpan) {
+      btnSimpan.disabled = !isDirty;
+    }
   }
 
   // ===========================================
@@ -543,9 +557,22 @@
     document.getElementById('btn-tutup-modal').addEventListener('click', tutupModalMapel);
     document.getElementById('btn-batal-modal').addEventListener('click', tutupModalMapel);
     document.getElementById('btn-simpan-mapel').addEventListener('click', simpanMapel);
+    // [BARU] Tambahkan listener untuk tombol simpan tipe ujian
+    document.getElementById('btn-simpan-tipe-ujian').addEventListener('click', simpanTipeUjian);
+
+    // [DIUBAH] Modifikasi listener 'mapel-table-container'
+    // 1. Ubah listener dari 'click' ke 'change' untuk checkbox
+    document.getElementById('mapel-table-container').addEventListener('change', (e) => {
+        if (e.target.classList.contains('mapel-tipe-cek')) {
+          setMapelTipeDirty(true);
+        }
+    });
+
+    // 2. Buat listener 'click' HANYA untuk tombol (edit/delete)
     document.getElementById('mapel-table-container').addEventListener('click', (e) => {
-        const target = e.target.closest('button');
+        const target = e.target.closest('button'); // Hanya cari tombol
         if (!target) return;
+        
         if (target.classList.contains('btn-edit')) {
             const id = target.getAttribute('data-id');
             const nama = target.getAttribute('data-nama');
@@ -669,6 +696,7 @@
       // Halaman sudah ditampilkan oleh logika DOMContentLoaded.
       document.getElementById('salam-sekolah').innerText = `Selamat Datang, Admin ${response.namaSekolah}`;
       jenjangBaseCache = response.jenjang;
+      jenjangPilihanCache = response.jenjangPilihan; // [BARU]
       
     } else {
       // Token tidak valid atau kedaluwarsa
@@ -690,6 +718,7 @@
       // SIMPAN TOKEN ke localStorage
       localStorage.setItem('sessionToken', response.token);
       jenjangBaseCache = response.jenjang;
+      jenjangPilihanCache = response.jenjangPilihan; // [BARU]
 
       document.getElementById('salam-sekolah').innerText = `Selamat Datang, Admin ${response.namaSekolah}`;
       tampilHalaman('halaman-utama'); // tampilHalaman akan menyimpan 'halaman-utama'
@@ -777,6 +806,7 @@
 
   function bukaHalamanMapel() {
     tampilHalaman('halaman-mapel'); // tampilHalaman akan menyimpan ID
+    setMapelTipeDirty(false); // [BARU] Reset dirty flag
     document.getElementById('mapel-table-container').innerHTML = "<p>Memuat data mapel...</p>";
 
     google.script.run
@@ -789,18 +819,34 @@
       const container = document.getElementById('mapel-table-container');
 
       if (response.status === "sukses") {
+        // [BARU] Tentukan label US/UM
+        const jenjangPilihan = jenjangPilihanCache;
+        const labelUjian = (jenjangPilihan === 'MI' || jenjangPilihan === 'MTS' || jenjangPilihan === 'MA') ? 'UM' : 'US';
+
         let html = '<table class="mapel-table">';
-        html += '<tr><th>Kode Mapel</th><th>Nama Mapel</th><th>Aksi</th></tr>';
+        // [DIUBAH] Tambahkan 2 header kolom baru
+        html += `<tr><th>Kode Mapel</th><th>Nama Mapel</th><th class="col-cek">${labelUjian}</th><th class="col-cek col-up">UP</th><th>Aksi</th></tr>`;
 
         if (response.mapel.length === 0) {
-          html += '<tr><td colspan="3" style="text-align: center;">Belum ada data mapel.</td></tr>';
+          // [DIUBAH] Colspan jadi 5
+          html += '<tr><td colspan="5" style="text-align: center;">Belum ada data mapel.</td></tr>';
         }
 
         response.mapel.forEach(mapel => {
+          // [BARU] Ambil status boolean
+          const isUS = mapel.isUS || false;
+          const isUP = mapel.isUP || false;
+          
           html += `
             <tr>
               <td>${mapel.id}</td>
               <td>${mapel.nama}</td>
+              <td class="col-cek">
+                <input type="checkbox" class="mapel-tipe-cek" data-id="${mapel.id}" data-tipe="us" ${isUS ? 'checked' : ''}>
+              </td>
+              <td class="col-cek col-up">
+                <input type="checkbox" class="mapel-tipe-cek" data-id="${mapel.id}" data-tipe="up" ${isUP ? 'checked' : ''}>
+              </td>
               <td>
                 <button class="btn-aksi btn-edit" data-id="${mapel.id}" data-nama="${mapel.nama}"><i class="fas fa-pencil-alt"></i>Edit</button>
                 <button class="btn-aksi btn-delete" data-id="${mapel.id}"><i class="fas fa-trash-alt"></i>Hapus</button>
@@ -903,6 +949,59 @@
       }
   }
 
+/**
+   * [BARU] Mengumpulkan dan menyimpan semua status tipe ujian (checkbox).
+   */
+  function simpanTipeUjian() {
+      setLoading(true);
+      hideMessage('mapel-message');
+      
+      const allCheckboxes = document.querySelectorAll('#mapel-table-container .mapel-tipe-cek');
+      const dataMap = new Map();
+
+      // 1. Loop semua checkbox dan kumpulkan datanya per ID mapel
+      allCheckboxes.forEach(checkbox => {
+          const id = checkbox.dataset.id;
+          const tipe = checkbox.dataset.tipe;
+          const isChecked = checkbox.checked;
+
+          // Jika mapel ini belum ada di Map, tambahkan
+          if (!dataMap.has(id)) {
+              dataMap.set(id, { id: id, isUS: false, isUP: false });
+          }
+
+          // Update data di Map
+          const mapelData = dataMap.get(id);
+          if (tipe === 'us') {
+              mapelData.isUS = isChecked;
+          } else if (tipe === 'up') {
+              mapelData.isUP = isChecked;
+          }
+      });
+
+      // 2. Ubah Map menjadi array
+      const dataToSave = Array.from(dataMap.values());
+      
+      // 3. Kirim ke server
+      google.script.run
+        .withSuccessHandler(onMapelTipeUjianSaved)
+        .withFailureHandler(onGagal)
+        .saveMapelTipeUjianBatch(dataToSave); // Panggil fungsi batch baru
+  }
+  
+  /**
+   * [BARU] Callback setelah tipe ujian mapel berhasil disimpan
+   */
+  function onMapelTipeUjianSaved(response) {
+    setLoading(false);
+    if (response.status === 'sukses') {
+      setMapelTipeDirty(false); // Nonaktifkan tombol
+      showMessage('mapel-message', 'Tipe ujian berhasil disimpan!', false);
+    } else {
+      // Biarkan tombol aktif agar user bisa mencoba lagi
+      showMessage('mapel-message', response.message, true);
+    }
+  }
 
   // ===========================================
   // FUNGSI & HANDLER DATA SEKOLAH
@@ -930,6 +1029,7 @@
 
       const data = response.data;
       jenjangBaseCache = data.jenjangBase;
+      jenjangPilihanCache = data.jenjangPilihan; // [BARU] Simpan data terbaru
       populateSelectJenjang(data.jenjangBase, data.jenjangPilihan);
 
       document.getElementById('data-nama-sekolah').value = data.namaSekolah;
@@ -1034,6 +1134,7 @@
       }
 
       // 4. Kirim ke server (jika tidak ada error)
+      jenjangPilihanCache = dataToSave.jenjangPilihan;
       google.script.run
         .withSuccessHandler(onDataSekolahSaved)
         .withFailureHandler(onGagal)
@@ -1797,10 +1898,12 @@
     
     const labelUjianUtama = document.getElementById('label-ujian-utama');
     
-    // Gunakan jenjangBaseCache yang disimpan saat login/token check
-    if (jenjangBaseCache === 'MI' || jenjangBaseCache === 'MTS' || jenjangBaseCache === 'MA') {
+    // [DIUBAH] Gunakan jenjangPilihanCache (MI, MTS, MA)
+    const jenjangPilihan = jenjangPilihanCache;
+    if (jenjangPilihan === 'MI' || jenjangPilihan === 'MTS' || jenjangPilihan === 'MA') {
       labelUjianUtama.innerText = 'Ujian Madrasah';
     } else {
+      // Default ke 'Ujian Sekolah' (mencakup SD, SMP, SMA, atau jika kosong)
       labelUjianUtama.innerText = 'Ujian Sekolah';
     }
   }
@@ -1826,7 +1929,9 @@
 
     // 2. Atur Judul Halaman dan simpan tipe ujian di 'data-' attribute
     if (tipeUjian === 'UM') {
-      const label = (jenjangBaseCache === 'MI' || jenjangBaseCache === 'MTS' || jenjangBaseCache === 'MA') ? 'Ujian Madrasah' : 'Ujian Sekolah';
+      // [DIUBAH] Gunakan jenjangPilihanCache
+      const jenjangPilihan = jenjangPilihanCache;
+      const label = (jenjangPilihan === 'MI' || jenjangPilihan === 'MTS' || jenjangPilihan === 'MA') ? 'Ujian Madrasah' : 'Ujian Sekolah';
       judulHalaman.innerText = `Input Nilai ${label}`;
       judulHalaman.dataset.tipeUjian = 'UM';
     } else {
@@ -1843,21 +1948,45 @@
 
   /**
    * Callback setelah daftar mapel berhasil dimuat untuk halaman input nilai.
+   * [DIUBAH] Sekarang mem-filter mapel berdasarkan tipe ujian.
    */
   function onMapelLoadedForInput(response) {
     const selectMapel = document.getElementById('input-nilai-pilih-mapel');
-    if (response.status === 'sukses' && response.mapel.length > 0) {
-      selectMapel.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
-      response.mapel.forEach(mapel => {
-        selectMapel.innerHTML += `<option value="${mapel.id}">${mapel.nama} (${mapel.id})</option>`;
-      });
-      selectMapel.disabled = false;
+    const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian; // 'UM' or 'Praktek'
+    
+    if (response.status === 'sukses') {
+      
+      // [BARU] Filter mapel berdasarkan tipe ujian
+      let filteredMapel = [];
+      if (tipeUjian === 'UM') {
+          // Ambil mapel yang dicentang 'isUS' (Ujian Sekolah/Madrasah)
+          filteredMapel = response.mapel.filter(m => m.isUS === true);
+      } else { // Asumsi 'Praktek'
+          // Ambil mapel yang dicentang 'isUP' (Ujian Praktek)
+          filteredMapel = response.mapel.filter(m => m.isUP === true);
+      }
+      
+      // [DIUBAH] Cek hasil filter
+      if (filteredMapel.length > 0) {
+        selectMapel.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
+        filteredMapel.forEach(mapel => {
+          selectMapel.innerHTML += `<option value="${mapel.id}">${mapel.nama} (${mapel.id})</option>`;
+        });
+        selectMapel.disabled = false;
+      } else {
+        // [DIUBAH] Pesan error lebih spesifik
+        selectMapel.innerHTML = '<option value="">-- Tidak ada mapel --</option>';
+        let pesan = 'Tidak ada data Mata Pelajaran. Harap isi di menu "Kelola Mapel".';
+        if (response.mapel.length > 0) {
+          // Jika mapel ada tapi tidak ada yg dicentang
+          pesan = `Tidak ada mapel yang diatur untuk ${tipeUjian === 'UM' ? 'Ujian Sekolah/Madrasah' : 'Ujian Praktek'}. Harap centang di menu "Kelola Mapel".`;
+        }
+        showMessage('input-nilai-message', pesan, true);
+      }
+      
     } else if (response.status !== 'sukses') {
       selectMapel.innerHTML = '<option value="">-- Gagal muat mapel --</option>';
       showMessage('input-nilai-message', response.message, true);
-    } else {
-      selectMapel.innerHTML = '<option value="">-- Data mapel kosong --</option>';
-      showMessage('input-nilai-message', 'Tidak ada data Mata Pelajaran. Harap isi di menu "Kelola Mapel" terlebih dahulu.', true);
     }
   }
 
