@@ -353,6 +353,30 @@
 
         <p>Kelola data siswa di sekolah Anda. Data ini akan digunakan untuk input nilai.</p>
 
+        <div class="filter-bar">
+          <div class="form-group">
+            <label for="siswa-filter-kelas">Filter per Kelas</label>
+            <select id="siswa-filter-kelas">
+              <option value="semua">-- Tampilkan Semua Kelas --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="siswa-sort-by">Urutkan berdasarkan</label>
+            <select id="siswa-sort-by">
+              <option value="default">Urutan Default (Per Kelas)</option>
+              <option value="nama-az">Nama (A-Z)</option>
+              <option value="nama-za">Nama (Z-A)</option>
+              <option value="nisn-asc">NISN (Menaik)</option>
+              <option value="nisn-desc">NISN (Menurun)</option>
+            </select>
+          </div>
+          <div class="form-group filter-bar-action">
+            <button id="btn-simpan-urutan-siswa" class="btn-aksi" disabled>
+              <i class="fas fa-save"></i>Simpan Urutan
+            </button>
+          </div>
+        </div>
+
         <div class="siswa-table-container" id="siswa-table-container">
           <p>Memuat data siswa...</p>
         </div>
