@@ -1342,8 +1342,19 @@
         break;
       case 'default':
       default:
-        // TIDAK MELAKUKAN APA-APA
-        // Biarkan urutan dari server (yang sudah diurutkan per Kelas, lalu ID)
+        processedSiswa.sort((a, b) => {
+          // 1. Urutkan berdasarkan Kelas
+          const kelasCompare = a.kelas.localeCompare(b.kelas);
+          if (kelasCompare !== 0) {
+            return kelasCompare; // Kembalikan jika kelas berbeda
+          }
+          
+          // 2. Jika kelas sama, urutkan berdasarkan 'urutan'
+          const urutanA = Number(a.urutan) || 0;
+          const urutanB = Number(b.urutan) || 0; // <-- PERBAIKAN
+          
+          return urutanA - urutanB; // Urutkan angka secara menaik
+        });
         break;
     }
   
