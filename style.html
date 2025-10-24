@@ -1015,4 +1015,152 @@
     margin-top: 15px; /* Beri jarak 15px dari tombol di atasnya */
     margin-bottom: 0; /* Hapus margin bawah agar rapi */
   }
+
+  /* 28. [BARU] Style Dashboard (Pembatas & Header) */
+  .dashboard-section-header {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-dark);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+    margin-top: 25px;
+    margin-bottom: 20px;
+  }
+  .dashboard-section-header:first-of-type {
+    margin-top: 10px;
+  }
+
+  .dashboard-divider {
+    border: 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 25px;
+    margin-bottom: 0px;
+  }
+
+  /* [BARU] Paksa grid input nilai jadi 2 kolom di HP */
+  .dashboard-grid-input {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* [BARU] Warna kartu input nilai */
+  #btn-buka-input-ujian { color: #d63384; } /* Pink */
+  #btn-buka-input-ujian:hover {
+    background-color: #d63384 !important;
+    color: white !important;
+  }
+  /* Kartu Pilihan Ujian */
+  #btn-buka-input-um { color: var(--primary-color); } 
+  #btn-buka-input-um:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+  }
+  #btn-buka-input-praktek { color: var(--success-color); }
+  #btn-buka-input-praktek:hover {
+    background-color: var(--success-color) !important;
+    color: white !important;
+  }
+
+
+  /* 29. [BARU] Style Halaman Input Nilai Detail */
+  .input-nilai-table-container {
+    overflow-x: auto;
+    max-height: 500px; /* Batasi tinggi tabel agar bisa di-scroll */
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: 20px;
+  }
+
+  .input-nilai-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .input-nilai-table th, 
+  .input-nilai-table td {
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 14px;
+    vertical-align: middle;
+  }
+
+  .input-nilai-table th {
+    background-color: var(--bg-light);
+    font-weight: 700;
+    position: sticky; /* Header tabel menempel di atas saat scroll */
+    top: 0;
+    z-index: 10;
+  }
+
+  .input-nilai-table tr:last-child td {
+    border-bottom: none; /* Hapus border di baris terakhir */
+  }
+
+  .input-nilai-table td:first-child { font-weight: 500; }
+
+  /* Kolom input nilai */
+  .input-nilai-table th:last-child {
+    text-align: center;
+  }
+  .input-nilai-table td:last-child {
+    width: 120px;
+    padding-right: 15px;
+    text-align: center;
+  }
+
+  /* Input nilai di dalam tabel */
+  .input-nilai {
+    width: 80px;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-sizing: border-box;
+    text-align: center;
+    -moz-appearance: textfield; /* Sembunyikan panah di Firefox */
+  }
+
+  /* Sembunyikan panah di Chrome/Safari */
+  .input-nilai::-webkit-outer-spin-button,
+  .input-nilai::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .input-nilai:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+  }
+
+  #btn-simpan-input-nilai {
+    background-color: var(--success-color);
+  }
+  #btn-simpan-input-nilai:hover {
+    background-color: #157347;
+  }
+  #btn-simpan-input-nilai:disabled {
+    background-color: var(--secondary-color) !important;
+  }
+
+  /* Tombol kembali di halaman input-nilai */
+  #btn-kembali-ke-input-ujian {
+      width: auto;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0;
+      background-color: var(--secondary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      gap: 8px; 
+  }
+  #btn-kembali-ke-input-ujian:hover {
+      background-color: #5a6268;
+      color: white;
+  }
+
 </style>
