@@ -58,12 +58,12 @@
   .app-header p { margin: 5px 0 0; font-size: 14px; color: var(--text-light); }
 
   /* 6. Form (Input & Button) */
-  .form-group { margin-bottom: 15px; }
+  .form-group { margin-bottom: 20px; }
   .form-group label { 
     display: block;
     font-size: 14px; 
     font-weight: 500; 
-    margin-bottom: 5px; 
+    margin-bottom: 8px; 
     color: var(--text-dark);
   }
   
@@ -97,7 +97,7 @@
   .helper-text {
     font-size: 12px;
     color: var(--text-light);
-    margin-top: 4px;
+    margin-top: 6px;
     display: block;
   }
 
@@ -193,9 +193,8 @@
   #btn-logout:hover { background-color: #b02a37; }
   
   /* 11. Halaman Mapel & Tabel */
-  /* [UPDATE] Terapkan juga ke halaman-siswa */
-  #halaman-mapel .page-header,
-  #halaman-siswa .page-header {
+  /* [UPDATE] Dibuat global untuk semua halaman */
+  .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -203,10 +202,17 @@
     padding-bottom: 10px;
     margin-bottom: 20px;
   }
-  #halaman-mapel h2,
-  #halaman-siswa h2 { 
+  .page-header h2 { 
     margin: 0; 
   }
+
+  /* [BARU] Wrapper untuk tombol 'Kembali' di atas title */
+  .page-top-nav {
+    display: flex;
+    justify-content: flex-end; /* Posisikan tombol ke kanan */
+    margin-bottom: 10px; /* Jarak ke title di bawahnya */
+  }
+
   #btn-tambah-mapel-baru,
   #btn-tambah-siswa-baru { /* [UPDATE] */
     width: auto; /* Jangan full width */
@@ -217,11 +223,6 @@
   #btn-tambah-mapel-baru:hover,
   #btn-tambah-siswa-baru:hover { /* [UPDATE] */
     background-color: #157347; 
-  }
-  #btn-kembali-ke-dashboard,
-  #btn-kembali-ke-dashboard-5 { /* [UPDATE] */
-    width: 100%;
-    background-color: var(--secondary-color);
   }
 
   .mapel-table-container,
@@ -236,32 +237,39 @@
   }
   .mapel-table th, .mapel-table td,
   .siswa-table th, .siswa-table td { /* [UPDATE] */
-    border: 1px solid var(--border-color);
-    padding: 10px;
+    border: none; /* [UBAH] Hapus semua border */
+    border-bottom: 1px solid var(--border-color); /* [UBAH] Hanya gunakan border bawah */
+    padding: 12px 15px; /* [UBAH] Padding lebih profesional */
     text-align: left;
-    font-size: 14px; /* [BARU] Perkecil font tabel agar muat */
+    font-size: 14px; 
+    vertical-align: middle; /* [TAMBAH] Pusatkan teks secara vertikal */
   }
   .mapel-table th,
   .siswa-table th { /* [UPDATE] */
-    background-color: var(--bg-light);
-    text-align: center;
+    background-color: var(--bg-white); /* [UBAH] Samakan dengan bg utama */
+    text-align: left; /* [UBAH] Ratakan kiri agar lurus dengan data */
     font-size: 14px;
+    font-weight: 700; /* [TAMBAH] Tebalkan header */
+    color: var(--text-dark); /* [TAMBAH] Perjelas warna font */
+    border-bottom: 2px solid var(--border-color); /* [TAMBAH] Border header lebih tebal */
+    text-transform: uppercase; /* [TAMBAH] Buat header uppercase */
+    letter-spacing: 0.5px; /* [TAMBAH] Beri sedikit spasi antar huruf */
   }
   .mapel-table td:last-child,
   .siswa-table td:last-child { /* [UPDATE] */
-    width: 100px; 
-    text-align: center; 
+    width: 120px; /* [UBAH] Beri ruang lebih untuk 2 tombol */
+    text-align: right; /* [UBAH] Ratakan kanan */
   }
 
   /* Tombol Aksi di Tabel */
   .btn-aksi {
-    display: block;         
-    width: 100%;            
+    display: inline-block; /* [UBAH] Buat jadi inline */         
+    width: auto; /* [UBAH] Lebar otomatis */
     box-sizing: border-box; 
-    padding: 5px 8px;
+    padding: 5px 10px; /* [UBAH] Sesuaikan padding */
     font-size: 12px;
     margin: 0;              
-    margin-bottom: 5px;     
+    margin-left: 5px; /* [UBAH] Beri jarak antar tombol */
     border: none;
     border-radius: 5px;
     cursor: pointer;
@@ -270,8 +278,74 @@
   .btn-aksi:last-child {
     margin-bottom: 0;
   }
+  /* [TAMBAH] Tombol pertama tidak perlu margin kiri */
+  .btn-aksi:first-child {
+    margin-left: 0;
+  }
   .btn-edit { background-color: var(--primary-color); }
   .btn-delete { background-color: var(--danger-color); }
+
+  /* [UPDATE] Style global untuk semua tombol "Kembali ke Dashboard" */
+  #btn-kembali-ke-dashboard,
+  #btn-kembali-ke-dashboard-2,
+  #btn-kembali-ke-dashboard-3,
+  #btn-kembali-ke-dashboard-4,
+  #btn-kembali-ke-dashboard-5 {
+    width: auto;
+    padding: 8px 12px; /* Padding yg pas */
+    font-size: 14px;
+    font-weight: 700; /* [UBAH] Buat bold agar seragam dgn tombol lain */
+    margin: 0;
+    background-color: var(--secondary-color); /* [UBAH] Latar abu-abu solid */
+    color: white; /* [UBAH] Teks putih */
+    border: none; /* [UBAH] Hapus border */
+    border-radius: 6px;
+  }
+
+  /* [BARU] Tambah panah "←" seperti di contoh */
+  #btn-kembali-ke-dashboard::before,
+  #btn-kembali-ke-dashboard-2::before,
+  #btn-kembali-ke-dashboard-3::before,
+  #btn-kembali-ke-dashboard-4::before,
+  #btn-kembali-ke-dashboard-5::before {
+    content: "← ";
+    font-weight: 700;
+    margin-right: 5px;
+  }
+  
+  #btn-kembali-ke-dashboard:hover,
+  #btn-kembali-ke-dashboard-2:hover,
+  #btn-kembali-ke-dashboard-3:hover,
+  #btn-kembali-ke-dashboard-4:hover,
+  #btn-kembali-ke-dashboard-5:hover {
+     background-color: #5a6268; /* [UBAH] Hover state standar */
+     color: white; /* [UBAH] Teks tetap putih */
+  }
+
+  /* [BARU] Ratakan kanan header 'Aksi' */
+  .mapel-table th:last-child,
+  .siswa-table th:last-child {
+    text-align: right;
+  }
+
+  /* [BARU] Style nama siswa/mapel (kolom pertama) agar bold */
+  .mapel-table td:first-child,
+  .siswa-table td:first-child {
+    font-weight: 500; /* Roboto 500 = Medium (Bold) */
+    color: var(--text-dark);
+  }
+
+  /* [BARU] Zebra-striping & Hover effect */
+  .mapel-table tr:nth-child(even),
+  .siswa-table tr:nth-child(even) {
+    /* Target baris data genap (baris data pertama, ketiga, dst.) */
+    background-color: var(--bg-light);
+  }
+  .mapel-table tr:not(:first-child):hover,
+  .siswa-table tr:not(:first-child):hover {
+    /* Efek hover di semua baris data (bukan header) */
+    background-color: #e9ecef; 
+  }
 
   /* 12. Modal (Popup Form) */
   .modal {
@@ -553,18 +627,6 @@
     padding: 12px 20px;
   }
   
-  #btn-kembali-ke-dashboard-2,
-  #btn-kembali-ke-dashboard-3,
-  #btn-kembali-ke-dashboard-4,
-  #btn-kembali-ke-dashboard-5 { /* [UPDATE] */
-    background-color: var(--secondary-color);
-  }
-  #btn-kembali-ke-dashboard-2:hover,
-  #btn-kembali-ke-dashboard-3:hover,
-  #btn-kembali-ke-dashboard-4:hover,
-  #btn-kembali-ke-dashboard-5:hover { /* [UPDATE] */
-    background-color: #5a6268;
-  }
   #btn-simpan-data-sekolah {
     background-color: var(--success-color);
   }
