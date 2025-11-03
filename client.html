@@ -535,10 +535,42 @@
     // [MODIFIKASI BARU] Listener untuk tombol bersihkan nilai
     document.getElementById('btn-bersihkan-input-nilai').addEventListener('click', konfirmasiBersihkanNilai);
 
-    // [BARU] Listener untuk menghitung Jumlah/Rata-rata secara real-time
+    // [MODIFIKASI] Listener untuk menghitung Jumlah/Rata-rata secara real-time
+    // SEKARANG JUGA MELAKUKAN VALIDASI INPUT
     document.getElementById('halaman-input-nilai-detail').addEventListener('input', (e) => {
       // Jika yang di-input adalah kotak .input-nilai
       if (e.target.classList.contains('input-nilai')) {
+        
+        // --- [BLOK VALIDASI BARU] ---
+        let input = e.target;
+        let value = input.value;
+        
+        // 1. Hanya izinkan angka (hapus semua karakter non-digit)
+        // Ini akan otomatis menghapus tanda minus (-), koma (,), titik (.), dan huruf (e, abc)
+        let cleanedValue = value.replace(/[^\d]/g, ''); 
+        
+        // 2. Cek apakah nilainya berubah (misal dari "50." ke "50")
+        if (cleanedValue !== value) {
+          input.value = cleanedValue;
+        }
+        
+        // 3. Cek rentang (0-100)
+        if (cleanedValue !== '') {
+          let numValue = parseInt(cleanedValue, 10);
+          
+          if (numValue > 100) {
+            // Sesuai permintaan: Jika lebih dari 100, kosongkan
+            input.value = ''; 
+          } else {
+            // Set nilai lagi untuk menangani kasus '05' -> '5'
+            input.value = numValue.toString();
+          }
+          // Pengecekan < 0 tidak diperlukan,
+          // karena regex /[^\d]/g sudah menghapus tanda '-'
+        }
+        // --- [AKHIR BLOK VALIDASI BARU] ---
+        
+        // Lanjutkan ke logika kalkulasi (yang sudah ada)
         const siswaId = e.target.dataset.siswaId;
         const table = e.target.closest('.input-nilai-table');
         
@@ -2801,7 +2833,7 @@
     // 2. Ambil filter yang dipilih
     const selectedKelas = document.getElementById('rekap-nilai-filter-kelas').value;
     
-    // 3. Validasi data
+    // 3. Validasi data (tetap sama)
     if (!siswaList || siswaList.length === 0) {
       container.innerHTML = '<p style="text-align: center; padding: 20px;">Belum ada data siswa.</p>';
       return;
@@ -2811,12 +2843,12 @@
       return;
     }
 
-    // 4. Filter siswaList
+    // 4. Filter siswaList (tetap sama)
     const filteredSiswaList = (selectedKelas === 'semua')
       ? siswaList
       : siswaList.filter(siswa => siswa.kelas === selectedKelas);
 
-    // 5. Cek jika hasil filter kosong
+    // 5. Cek jika hasil filter kosong (tetap sama)
     if (filteredSiswaList.length === 0) {
         container.innerHTML = '<p style="text-align: center; padding: 20px;">Tidak ada siswa di kelas yang dipilih.</p>';
         return;
@@ -2841,6 +2873,7 @@
     });
     html += '<th class="th-total th-total-jumlah">Jumlah</th>';
     html += '<th class="th-total th-total-rata">Rata-Rata</th>';
+    html += '<th class="th-total th-total-bulat">Pembulatan</th>'; // [BARU] Kolom Header Pembulatan
     html += '</tr></thead>';
     
     // Body
@@ -2884,7 +2917,7 @@
                 nilaiTampil = nilai.toFixed(2); 
               }
             }
-            sum += nilai;
+            sum += nilai; // Akumulasi nilai (bisa jadi desimal)
         }
         
         // Tampilkan sebagai teks, bukan input
@@ -2898,9 +2931,19 @@
       const mapelCount = mapelList.length;
       const average = (mapelCount > 0) ? (sum / mapelCount) : 0;
       
-      // Tampilkan 2 desimal untuk jumlah dan rata-rata
-      html += `<td class="col-total col-total-jumlah">${sum.toFixed(2)}</td>`;
+      // [BARU] Hitung pembulatan
+      const pembulatan = Math.round(average);
+
+      // [BARU] Bersihkan 'sum' dari floating point aneh (misal 160.5000001)
+      // dan tampilkan apa adanya (misal "160.5" atau "160")
+      const sumTampil = parseFloat(sum.toFixed(2));
+      
+      // [DIUBAH] Tampilkan 'sumTampil' (bukan sum.toFixed(2))
+      html += `<td class="col-total col-total-jumlah">${sumTampil}</td>`;
+      // [TETAP] Tampilkan rata-rata dengan 2 desimal
       html += `<td class="col-total col-total-rata">${average.toFixed(2)}</td>`;
+      // [BARU] Tampilkan kolom pembulatan
+      html += `<td class="col-total col-total-bulat">${pembulatan}</td>`;
       html += '</tr>';
     });
     html += '</tbody></table>';
