@@ -332,7 +332,8 @@
   #btn-kembali-ke-dashboard-3,
   #btn-kembali-ke-dashboard-4,
   #btn-kembali-ke-dashboard-5,
-  #btn-kembali-ke-dashboard-6 {
+  #btn-kembali-ke-dashboard-6,
+  #btn-kembali-ke-dashboard-7 {
     width: auto;
     padding: 8px 12px;
     font-size: 14px;
@@ -350,7 +351,8 @@
   #btn-kembali-ke-dashboard-3:hover,
   #btn-kembali-ke-dashboard-4:hover,
   #btn-kembali-ke-dashboard-5:hover,
-  #btn-kembali-ke-dashboard-6:hover {
+  #btn-kembali-ke-dashboard-6:hover,
+  #btn-kembali-ke-dashboard-7:hover {
      background-color: #5a6268;
      color: white;
   }
@@ -462,7 +464,8 @@
     #halaman-kelas,
     #halaman-input-ujian,
     #halaman-input-nilai-detail,
-    #halaman-rekap-nilai { /* [DIUBAH] Tambahkan ID ini */
+    #halaman-rekap-nilai,
+    #halaman-semester {
       max-width: 960px;
     }
 
@@ -829,6 +832,7 @@
   #btn-buka-mapel { color: var(--success-color); } /* Hijau */
   #btn-buka-bobot { color: #fd7e14; } /* Oranye */
   #btn-buka-kelas { color: #0dcaf0; } /* Teal */
+  #btn-buka-semester { color: #dc3545; } /* [BARU] Merah */
 
   /* Aturan hover umum HANYA untuk efek visual */
   .dashboard-card:hover {
@@ -857,6 +861,10 @@
     background-color: #0dcaf0 !important;
     color: white !important; /* Paksa teks & ikon jadi putih */
   }
+  #btn-buka-semester:hover {
+    background-color: #dc3545 !important;
+    color: white !important;
+  }
 
   /* Ikon di dalam kartu */
   .dashboard-card i {
@@ -877,8 +885,9 @@
   #btn-simpan-mapel:disabled,
   #btn-simpan-tipe-ujian:disabled,
   #btn-proses-import-siswa:disabled,
-  #btn-bersihkan-input-nilai:disabled, /* [BARU] Tambahkan ID tombol baru */
-  #btn-proses-upload-nilai:disabled { /* [DIUBAH] Tambahkan tombol upload nilai */
+  #btn-bersihkan-input-nilai:disabled,
+  #btn-proses-upload-nilai:disabled,
+  #btn-simpan-semester:disabled {
     background-color: var(--secondary-color) !important;
     opacity: 0.65;
     cursor: not-allowed;
