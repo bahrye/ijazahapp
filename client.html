@@ -4,6 +4,7 @@
   let jenjangPilihanCache = ''; // [BARU] Simpan jenjang spesifik (MI, SD, dll)
   const LAST_PAGE_KEY = 'lastVisitedPageId'; // Kunci untuk localStorage
   let siswaTelahDiImport = false; // [BARU] Flag untuk refresh tabel setelah import
+  let nilaiTelahDiUpload = false; // [BARU] Flag untuk modal upload nilai
   let globalSiswaList = []; // [BARU] Cache untuk daftar siswa
   let isSiswaOrderDirty = false; // [BARU] Flag jika ada urutan yg diubah
   let isMapelTipeDirty = false; // [BARU] Flag jika ada tipe ujian yg diubah
@@ -113,6 +114,8 @@
     hideMessage('siswa-message');
     hideMessage('input-nilai-message');
     hideMessage('mapel-message');
+    hideMessage('template-message'); // [DIUBAH]
+    hideMessage('template-nilai-message'); // [BARU]
 
     // Tentukan halaman yang akan ditampilkan
     const targetElement = document.getElementById(idHalaman);
@@ -415,6 +418,9 @@
       bukaHalamanInputUjian();
     });
 
+    // [BARU] Listener untuk tombol Upload Nilai
+    document.getElementById('btn-buka-upload-nilai').addEventListener('click', bukaModalUploadNilai);
+
     // [BARU] Listener untuk 2 kartu di halaman input ujian
     document.getElementById('btn-buka-input-um').addEventListener('click', () => {
       // 'UM' = Ujian Madrasah/Sekolah
@@ -651,7 +657,7 @@
     document.getElementById('btn-download-template-siswa').addEventListener('click', downloadTemplateSiswa);
     document.getElementById('btn-proses-import-siswa').addEventListener('click', prosesImportFileSiswa);
 
-    // [BARU] Listener canggih untuk File Upload Zone
+    // [BARU] Listener canggih untuk File Upload Zone (SISWA)
     const fileUploadZone = document.getElementById('file-upload-zone');
     const fileUploadInput = document.getElementById('file-upload-siswa');
     const fileUploadText = document.getElementById('file-upload-text');
@@ -679,7 +685,7 @@
         }
     });
 
-    // 2. Efek visual Drag & Drop
+    // 2. Efek visual Drag & Drop (SISWA)
     fileUploadZone.addEventListener('dragover', (e) => {
         e.preventDefault(); // Wajib untuk mengizinkan 'drop'
         fileUploadZone.classList.add('drag-over');
@@ -702,6 +708,64 @@
           fileUploadInput.dispatchEvent(changeEvent);
         }
     });
+
+    // === [MODIFIKASI BARU] Listener untuk Modal Upload Nilai ===
+    document.getElementById('btn-tutup-modal-upload-nilai').addEventListener('click', tutupModalUploadNilai);
+    document.getElementById('btn-batal-modal-upload-nilai').addEventListener('click', tutupModalUploadNilai);
+    document.getElementById('btn-download-template-nilai').addEventListener('click', downloadTemplateNilai);
+    document.getElementById('btn-proses-upload-nilai').addEventListener('click', prosesUploadFileNilai);
+
+    // [MODIFIKASI BARU] Listener canggih untuk File Upload Zone (NILAI)
+    const fileUploadZoneNilai = document.getElementById('file-upload-zone-nilai');
+    const fileUploadInputNilai = document.getElementById('file-upload-nilai');
+    const fileUploadTextNilai = document.getElementById('file-upload-text-nilai');
+    const btnProsesUploadNilai = document.getElementById('btn-proses-upload-nilai');
+
+    // 1. Saat file dipilih (NILAI)
+    fileUploadInputNilai.addEventListener('change', (e) => {
+        const fileInput = e.target;
+        if (fileInput.files.length > 0) {
+            const fileName = fileInput.files[0].name;
+            if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                fileUploadTextNilai.innerText = `File dipilih: ${fileName}`;
+                fileUploadTextNilai.classList.add('file-chosen');
+                btnProsesUploadNilai.disabled = false;
+                hideMessage('template-nilai-message');
+            } else {
+                fileUploadTextNilai.innerText = 'File harus berekstensi .xlsx atau .xls';
+                fileUploadTextNilai.classList.remove('file-chosen');
+                btnProsesUploadNilai.disabled = true;
+            }
+        } else {
+            fileUploadTextNilai.innerText = 'Klik untuk memilih file atau seret & letakkan di sini.';
+            fileUploadTextNilai.classList.remove('file-chosen');
+            btnProsesUploadNilai.disabled = true;
+        }
+    });
+
+    // 2. Efek visual Drag & Drop (NILAI)
+    fileUploadZoneNilai.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileUploadZoneNilai.classList.add('drag-over');
+    });
+
+    fileUploadZoneNilai.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        fileUploadZoneNilai.classList.remove('drag-over');
+    });
+
+    fileUploadZoneNilai.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileUploadZoneNilai.classList.remove('drag-over');
+        
+        if (e.dataTransfer.files.length > 0) {
+          fileUploadInputNilai.files = e.dataTransfer.files;
+          const changeEvent = new Event('change');
+          fileUploadInputNilai.dispatchEvent(changeEvent);
+        }
+    });
+    // === [MODIFIKASI BARU SELESAI] ===
+
 
     // === PEMERIKSAAN TOKEN & HALAMAN TERAKHIR SAAT LOAD ===
     const token = localStorage.getItem('sessionToken');
@@ -830,7 +894,16 @@
       showMessage('modal-mapel-error', 'Error: ' + errorMsg, true);
     } else if (document.getElementById('siswa-modal').style.display !== 'none') {
       showMessage('modal-siswa-error', 'Error: ' + errorMsg, true);
-    } else if (document.getElementById('halaman-data-sekolah').style.display !== 'none') {
+    }
+    // [MODIFIKASI BARU] Tambahkan penanganan error untuk modal
+    else if (document.getElementById('import-siswa-modal').style.display !== 'none') {
+      showMessage('template-message', 'Error: ' + errorMsg, true);
+    }
+    else if (document.getElementById('upload-nilai-modal').style.display !== 'none') {
+      showMessage('template-nilai-message', 'Error: ' + errorMsg, true);
+    }
+    // [MODIFIKASI BARU SELESAI]
+    else if (document.getElementById('halaman-data-sekolah').style.display !== 'none') {
       setFormDisabled('form-data-sekolah', false); // Aktifkan form saat gagal
       showMessage('data-sekolah-message', 'Error: ' + errorMsg, true);
     }
@@ -1938,6 +2011,218 @@
     // Reset input file agar bisa upload file yang sama lagi
     document.getElementById('file-upload-siswa').value = null;
     document.getElementById('btn-proses-import-siswa').disabled = true;
+  }
+
+  // ===========================================
+  // [BARU] FUNGSI & HANDLER UPLOAD NILAI
+  // ===========================================
+
+  /**
+   * [BARU] Membuka modal Upload Nilai dan memuat daftar kelas.
+   */
+  function bukaModalUploadNilai() {
+    // 1. Reset modal
+    document.getElementById('file-upload-nilai').value = null;
+    document.getElementById('btn-proses-upload-nilai').disabled = true;
+    document.getElementById('import-nilai-results').style.display = 'none';
+    document.getElementById('import-nilai-results').innerHTML = '';
+    hideMessage('template-nilai-message');
+    
+    // Reset teks file upload zone
+    const fileUploadText = document.getElementById('file-upload-text-nilai');
+    fileUploadText.innerText = 'Klik untuk memilih file atau seret & letakkan di sini.';
+    fileUploadText.classList.remove('file-chosen');
+    document.getElementById('file-upload-zone-nilai').classList.remove('drag-over');
+
+    // Reset flag
+    nilaiTelahDiUpload = false;
+    
+    // 2. Tampilkan modal
+    document.getElementById('upload-nilai-modal').style.display = 'block';
+
+    // 3. Muat daftar kelas untuk dropdown
+    const selectKelas = document.getElementById('upload-nilai-filter-kelas');
+    selectKelas.innerHTML = '<option value="">-- Memuat kelas... --</option>';
+    
+    google.script.run
+      .withSuccessHandler(onKelasListLoadedForUploadModal) // Callback baru
+      .withFailureHandler(onGagal)
+      .getKelas(); // Panggil fungsi getKelas yang sudah ada
+  }
+
+  /**
+   * [BARU] Callback untuk mengisi dropdown kelas di modal upload nilai.
+   */
+  function onKelasListLoadedForUploadModal(response) {
+    const selectKelas = document.getElementById('upload-nilai-filter-kelas');
+    hideMessage('template-nilai-message'); // Sembunyikan pesan error (jika ada)
+
+    if (response.status !== 'sukses' || !response.kelas || response.kelas.length === 0) {
+      selectKelas.innerHTML = '<option value="">-- Tidak ada data kelas --</option>';
+      showMessage('template-nilai-message', "Tidak dapat membuat template. Harap isi data kelas terlebih dahulu di menu 'Kelola Kelas'.", true);
+    } else {
+      selectKelas.innerHTML = '<option value="semua">-- Semua Kelas --</option>'; // Sesuai permintaan
+      response.kelas.forEach(namaKelas => {
+        selectKelas.innerHTML += `<option value="${namaKelas}">${namaKelas}</option>`;
+      });
+    }
+  }
+
+  /**
+   * [BARU] Menutup modal upload nilai.
+   */
+  function tutupModalUploadNilai() {
+    document.getElementById('upload-nilai-modal').style.display = 'none';
+    if (nilaiTelahDiUpload) {
+      nilaiTelahDiUpload = false; // Reset flag
+      // Tidak perlu refresh, pesan sukses sudah ditampilkan di modal
+    }
+  }
+
+  /**
+   * [BARU] Memanggil server untuk mendapatkan data template nilai (Base64).
+   */
+  function downloadTemplateNilai() {
+    setLoading(true);
+    hideMessage('template-nilai-message');
+    
+    const kelasDipilih = document.getElementById('upload-nilai-filter-kelas').value;
+    if (!kelasDipilih) {
+        setLoading(false);
+        showMessage('template-nilai-message', 'Gagal memuat kelas. Silakan coba buka ulang modal.', true);
+        return;
+    }
+
+    google.script.run
+      .withSuccessHandler(onTemplateNilaiUrlReceived) // Callback baru
+      .withFailureHandler(onGagal)
+      .getNilaiTemplateData(kelasDipilih); // <-- Fungsi backend BARU
+  }
+
+  /**
+   * [BARU] Callback setelah data template nilai (Base64) diterima.
+   * Memicu download di sisi klien.
+   */
+  function onTemplateNilaiUrlReceived(response) {
+    setLoading(false);
+    
+    if (response.status === 'sukses') {
+      showMessage('template-nilai-message', 'Template berhasil dibuat. Mengunduh...', false);
+
+      try {
+        const dataUrl = `data:${response.mimeType};base64,${response.base64}`;
+        const link = document.createElement('a');
+        link.setAttribute('href', dataUrl);
+        link.setAttribute('download', response.fileName); // Nama file dari server
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {
+        showMessage('template-nilai-message', 'Gagal memproses unduhan: ' + e.message, true);
+      }
+
+    } else {
+      showMessage('template-nilai-message', response.message, true);
+    }
+  }
+
+  /**
+   * [BARU] Membaca file Excel nilai (Base64) dan mengirimkannya ke server.
+   */
+  function prosesUploadFileNilai() {
+    setLoading(true);
+    document.getElementById('import-nilai-results').style.display = 'none';
+    hideMessage('template-nilai-message');
+
+    const fileInput = document.getElementById('file-upload-nilai');
+    const file = fileInput.files[0];
+
+    if (!file) {
+      setLoading(false);
+      showMessage('template-nilai-message', 'Pilih file Excel terlebih dahulu.', true);
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const fileData = {
+        base64: e.target.result,
+        mimeType: file.type,
+        fileName: file.name
+      };
+      
+      // Kirim ke fungsi backend BARU
+      google.script.run
+        .withSuccessHandler(onUploadNilaiFinished) // Callback baru
+        .withFailureHandler(onGagal)
+        .prosesUploadExcelNilai(fileData); // <-- Fungsi backend BARU
+    };
+
+    reader.onerror = (e) => {
+      setLoading(false);
+      showMessage('template-nilai-message', 'Gagal membaca file: ' + e.target.error.name, true);
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  /**
+   * [BARU] Menampilkan hasil upload nilai yang dikembalikan oleh server.
+   */
+  function onUploadNilaiFinished(response) {
+    setLoading(false);
+    const resultsContainer = document.getElementById('import-nilai-results');
+
+    if (response.status !== 'sukses') {
+      // Error server, bukan error validasi
+      showMessage('template-nilai-message', response.message, true);
+      resultsContainer.style.display = 'none';
+      return;
+    }
+
+    // Set flag agar bisa diambil tindakan saat modal ditutup
+    if (response.berhasilDiUpload > 0) {
+      nilaiTelahDiUpload = true;
+    }
+
+    // Bangun HTML untuk laporan
+    let html = '<h4><i class="fas fa-check-circle"></i>Proses Upload Selesai</h4>';
+    html += `<p>Total nilai terdeteksi: <strong>${response.totalDitemukan}</strong></p>`;
+    html += `<p style="color: var(--success-color);">Berhasil disimpan/diperbarui: <strong>${response.berhasilDiUpload}</strong></p>`;
+    html += `<p style="color: var(--danger-color);">Gagal/Dilewati: <strong>${response.gagalDiUpload}</strong></p>`;
+
+    // Jika ada data yang gagal, tampilkan tabel
+    if (response.dataGagal && response.dataGagal.length > 0) {
+      html += `<hr><p><strong>Detail Data yang Gagal:</strong></p>`;
+      html += '<table class="import-gagal-table">';
+      html += '<tr><th>Sheet</th><th>Baris</th><th>Info</th><th>Alasan Gagal</th></tr>';
+      
+      response.dataGagal.forEach(item => {
+        html += `
+          <tr>
+            <td>${item.sheet || 'N/A'}</td>
+            <td>${item.baris || 'N/A'}</td>
+            <td>${item.info || 'N/A'}</td>
+            <td>${item.alasan}</td>
+          </tr>
+        `;
+      });
+      html += '</table>';
+    }
+
+    resultsContainer.innerHTML = html;
+    resultsContainer.style.display = 'block';
+
+    // Reset input file
+    document.getElementById('file-upload-nilai').value = null;
+    document.getElementById('btn-proses-upload-nilai').disabled = true;
+    
+    // [BARU] Reset teks file upload zone
+    const fileUploadText = document.getElementById('file-upload-text-nilai');
+    fileUploadText.innerText = 'Klik untuk memilih file atau seret & letakkan di sini.';
+    fileUploadText.classList.remove('file-chosen');
   }
 
   // ===========================================
