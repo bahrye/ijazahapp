@@ -240,6 +240,90 @@
     modal.onOk = null; // Hapus callback setelah dijalankan
   }
 
+  // ===========================================
+  // FUNGSI UTILITAS (Tambahan Tooltip)
+  // ===========================================
+
+  let dynamicTooltipTimer = null; // [BARU] Variabel global untuk timer tooltip
+
+  /**
+   * [DIUBAH] Menyembunyikan tooltip dinamis yang sedang aktif.
+   */
+  function hideDynamicTooltip() {
+    if (dynamicTooltipTimer) {
+      clearTimeout(dynamicTooltipTimer);
+      dynamicTooltipTimer = null;
+    }
+    // [DIUBAH] Ganti ID selector
+    const existingTooltip = document.getElementById('dynamic-tooltip'); 
+    if (existingTooltip) {
+      existingTooltip.classList.remove('show');
+      setTimeout(() => {
+         const currentTooltip = document.getElementById('dynamic-tooltip');
+         if(currentTooltip) {
+           currentTooltip.remove();
+         }
+      }, 200);
+    }
+  }
+
+  /**
+   * [DIUBAH] Menampilkan tooltip dinamis di atas elemen target.
+   */
+  function showDynamicTooltip(targetElement, textToShow) {
+    // 1. Sembunyikan tooltip lama
+    hideDynamicTooltip();
+
+    // 2. Buat elemen baru
+    const tooltip = document.createElement('div');
+    tooltip.id = 'dynamic-tooltip'; // [DIUBAH] Ganti ID
+    tooltip.className = 'dynamic-tooltip'; // [DIUBAH] Ganti class
+    tooltip.innerText = textToShow; // [DIUBAH] Gunakan parameter
+
+    // 3. Tambahkan listener klik untuk menutup
+    tooltip.addEventListener('click', (e) => {
+      e.stopPropagation(); 
+      hideDynamicTooltip(); // [DIUBAH] Panggil fungsi baru
+    });
+
+    // 4. Tambahkan ke body
+    document.body.appendChild(tooltip);
+
+    // 5. Kalkulasi Posisi (Logika ini tetap sama)
+    const rect = targetElement.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+
+    let top = rect.top + scrollY - tooltipRect.height - 8;
+    let left = rect.left + scrollX + (rect.width / 2) - (tooltipRect.width / 2);
+
+    if (left < scrollX + 8) left = scrollX + 8;
+    if (left + tooltipRect.width > scrollX + window.innerWidth - 8) {
+      left = scrollX + window.innerWidth - tooltipRect.width - 8;
+    }
+    
+    if (top < scrollY + 8) {
+      top = rect.bottom + scrollY + 8;
+      tooltip.classList.add('bottom');
+    } else {
+      tooltip.classList.add('top');
+    }
+
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${left}px`;
+
+    // 6. Tampilkan
+    requestAnimationFrame(() => {
+      tooltip.classList.add('show');
+    });
+
+    // 7. Set timer
+    dynamicTooltipTimer = setTimeout(() => {
+      hideDynamicTooltip(); // [DIUBAH] Panggil fungsi baru
+    }, 3000); 
+  }
+
   /**
   * Helper untuk membuka halaman berdasarkan ID tersimpan.
   */
@@ -463,19 +547,43 @@
       }
     });
 
-    // [BARU] Listener untuk klik nama siswa (menampilkan NISN)
-    document.getElementById('halaman-input-nilai-detail').addEventListener('click', (e) => {
-      // Cek apakah yang diklik adalah elemen nama
+    // [DIUBAH] Listener untuk klik nama siswa DAN header mapel (Rekap Nilai)
+    document.getElementById('halaman-rekap-nilai').addEventListener('click', (e) => {
+      e.stopPropagation(); // Hentikan event agar tidak memicu listener window
+      
+      // 1. Cek apakah yang diklik adalah elemen nama
       const targetNama = e.target.closest('.clickable-nama-siswa');
       if (targetNama) {
         const nisn = targetNama.dataset.nisn;
-        const namaLengkap = targetNama.dataset.namaLengkap; 
-        
-        const title = `Info Siswa: ${toProperCase(namaLengkap)}`;
-        const message = `NISN untuk siswa ini adalah:\n<strong>${nisn}</strong>`;
-        
-        // Panggil modal info yang sudah ada
-        showInfoModal(title, message, false, null); // false = bukan error
+        showDynamicTooltip(targetNama, `NISN: ${nisn}`); // [DIUBAH] Panggil fungsi generik
+        return; 
+      }
+
+      // 2. [BARU] Cek apakah yang diklik adalah header mapel
+      const targetMapel = e.target.closest('.clickable-mapel-header');
+      if (targetMapel) {
+        const namaMapel = targetMapel.dataset.mapelNama;
+        showDynamicTooltip(targetMapel, namaMapel); // [DIUBAH] Panggil fungsi generik
+      }
+    });
+
+    // [DIUBAH] Listener untuk klik nama siswa DAN header mapel (Input Nilai)
+    document.getElementById('halaman-input-nilai-detail').addEventListener('click', (e) => {
+      e.stopPropagation(); // Hentikan event agar tidak memicu listener window
+      
+      // 1. Cek apakah yang diklik adalah elemen nama
+      const targetNama = e.target.closest('.clickable-nama-siswa');
+      if (targetNama) {
+        const nisn = targetNama.dataset.nisn;
+        showDynamicTooltip(targetNama, `NISN: ${nisn}`); // [DIUBAH] Panggil fungsi generik
+        return; 
+      }
+
+      // 2. [BARU] Cek apakah yang diklik adalah header mapel
+      const targetMapel = e.target.closest('.clickable-mapel-header');
+      if (targetMapel) {
+        const namaMapel = targetMapel.dataset.mapelNama;
+        showDynamicTooltip(targetMapel, namaMapel); // [DIUBAH] Panggil fungsi generik
       }
     });
 
@@ -782,6 +890,16 @@
     });
     // === [MODIFIKASI BARU SELESAI] ===
 
+    // [DIUBAH] Listener global untuk menutup tooltip jika klik di luar
+    window.addEventListener('click', (e) => {
+      // [DIUBAH] Ganti ID selector dan nama fungsi
+      if (!e.target.closest('#dynamic-tooltip') && !e.target.closest('.clickable-nama-siswa') && !e.target.closest('.clickable-mapel-header')) {
+        hideDynamicTooltip();
+      }
+    });
+
+    // [DIUBAH] Listener global untuk menutup tooltip jika scroll
+    window.addEventListener('scroll', hideDynamicTooltip, true);
 
     // === PEMERIKSAAN TOKEN & HALAMAN TERAKHIR SAAT LOAD ===
     const token = localStorage.getItem('sessionToken');
@@ -809,7 +927,6 @@
       tampilHalaman('halaman-login');
     }
   });
-
 
   // ===========================================
   // HANDLER (Callback Functions)
@@ -2361,7 +2478,7 @@
   }
 
   /**
-   * [BARU] Merender tabel grid nilai berdasarkan data di cache global
+   * [DIUBAH] Merender tabel grid nilai berdasarkan data di cache global
    * dan filter yang dipilih.
    */
   function renderNilaiGridTable() {
@@ -2408,7 +2525,14 @@
     html += '<thead><tr>';
     html += '<th>Nama Siswa</th>';
     mapelList.forEach(mapel => {
-      html += `<th class="col-mapel" title="${mapel.nama}">${mapel.id}</th>`;
+      // [MODIFIKASI] Tambahkan class, data-attribute, dan title baru
+      html += `<th 
+                class="col-mapel clickable-mapel-header" 
+                data-mapel-nama="${mapel.nama}" 
+                title="Klik untuk lihat nama mapel"
+              >
+                ${mapel.id}
+              </th>`;
     });
     html += '<th class="th-total th-total-jumlah">Jumlah</th>';
     html += '<th class="th-total th-total-rata">Rata-Rata</th>';
@@ -2421,6 +2545,8 @@
       
       const namaProper = toProperCase(siswa.nama);
       const namaFormatted = formatNamaSiswa(namaProper);
+      
+      // [MODIFIKASI] Tambahkan class dan atribut untuk tooltip NISN
       html += `
         <td>
           <span 
@@ -2653,9 +2779,8 @@
     selectKelas.value = selectedValue || 'semua'; // Set kembali
   }
 
-
   /**
-   * [BARU] Merender tabel rekapitulasi nilai (read-only).
+   * [DIUBAH] Merender tabel rekapitulasi nilai (read-only).
    */
   function renderRekapNilaiTable() {
     const container = document.getElementById('rekap-nilai-table-container');
@@ -2696,7 +2821,14 @@
     html += '<th>Nama Siswa</th>';
     // Tampilkan *semua* mapel
     mapelList.forEach(mapel => {
-      html += `<th class="col-mapel" title="${mapel.nama}">${mapel.id}</th>`;
+      // [MODIFIKASI] Tambahkan class, data-attribute, dan title baru
+      html += `<th 
+                class="col-mapel clickable-mapel-header" 
+                data-mapel-nama="${mapel.nama}" 
+                title="Klik untuk lihat nama mapel"
+              >
+                ${mapel.id}
+              </th>`;
     });
     html += '<th class="th-total th-total-jumlah">Jumlah</th>';
     html += '<th class="th-total th-total-rata">Rata-Rata</th>';
@@ -2709,8 +2841,19 @@
       
       const namaProper = toProperCase(siswa.nama);
       const namaFormatted = formatNamaSiswa(namaProper);
-      // Read-only, tidak perlu klik
-      html += `<td><span data-nisn="${siswa.nisn}">${namaFormatted}</span></td>`; 
+      
+      // [MODIFIKASI] Tambahkan class dan atribut untuk tooltip NISN
+      html += `
+        <td>
+          <span 
+            class="clickable-nama-siswa" 
+            data-nisn="${siswa.nisn}" 
+            data-nama-lengkap="${siswa.nama}"
+            title="Klik untuk lihat NISN"
+          >
+            ${namaFormatted}
+          </span>
+        </td>`; 
       
       let sum = 0;
       
