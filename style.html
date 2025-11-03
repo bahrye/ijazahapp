@@ -190,7 +190,6 @@
     margin-top: 0;
   }
   #btn-logout { 
-    /* [DIUBAH] Meniru style tombol 'Kembali' */
     width: auto;
     padding: 8px 12px;
     font-size: 14px;
@@ -277,22 +276,17 @@
   /* Tombol Aksi di Tabel */
   .btn-aksi {
     display: inline-flex;
-    /* width: 100%; */ /* [DIUBAH] Dihapus, biarkan auto */
-    width: auto; /* [BARU] Lebar otomatis */
+    width: auto; /* Lebar otomatis */
     box-sizing: border-box;
     padding: 5px 10px;
     font-size: 12px;
     margin: 0;
-    margin-left: 5px; /* [DIUBAH] Kembalikan margin-left */
-    /* margin-bottom: 5px; */ /* [DIUBAH] Hapus margin-bottom */
+    margin-left: 5px; 
     border: none;
     border-radius: 5px;
     cursor: pointer;
     color: white;
     gap: 5px;
-  }
-  .btn-aksi:last-child {
-    /* margin-bottom: 0; */ /* [DIUBAH] Dihapus */
   }
   .btn-aksi:first-child {
     margin-left: 0;
@@ -300,7 +294,7 @@
   .btn-edit { background-color: var(--primary-color); }
   .btn-delete { background-color: var(--danger-color); }
 
-  /* [BARU] Atur ulang tombol di tabel mapel agar tetap vertikal */
+  /* Atur ulang tombol di tabel mapel agar tetap vertikal */
   .mapel-table .btn-aksi {
     width: 100%;
     margin-left: 0;
@@ -404,9 +398,9 @@
   }
   #btn-simpan-mapel, #btn-batal-modal,
   #btn-simpan-siswa, #btn-batal-modal-siswa,
-  #btn-proses-import-siswa, #btn-batal-modal-import-siswa { /* [DIUBAH] Tambahkan tombol import */
+  #btn-proses-import-siswa, #btn-batal-modal-import-siswa { 
     width: auto;
-    margin: 0; /* [DIUBAH] Hapus margin, kita pakai "gap" di footer */
+    margin: 0; 
   }
   #btn-batal-modal,
   #btn-batal-modal-siswa {
@@ -438,7 +432,7 @@
   #btn-hapus-semua,
   #btn-tambah-siswa-baru,
   #btn-hapus-semua-siswa,
-  #btn-import-siswa { /* [DIUBAH] Ditambahkan di sini */
+  #btn-import-siswa { 
     width: auto;
     padding: 10px 15px;
     font-size: 14px;
@@ -853,19 +847,11 @@
 
   /* Style untuk input file */
   input[type="file"] {
-    width: 100%;
-    padding: 12px;
-    font-size: 14px;
-    border: 2px dashed var(--border-color);
-    border-radius: 8px;
-    box-sizing: border-box;
-    background-color: var(--bg-light);
-    cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s;
-  }
-  input[type="file"]:hover {
-    background-color: #e9ecef;
-    border-color: var(--primary-color);
+    /* [DIUBAH] Akan disembunyikan oleh style 26 */
+    display: none !important;
+    border: none !important;
+    padding: 0 !important;
+    background-color: transparent !important;
   }
   
   /* Tombol proses di modal import */
@@ -1017,14 +1003,6 @@
   #file-upload-siswa {
     display: none;
   }
-  
-  /* Hapus style lama agar tidak konflik */
-  input[type="file"] {
-    display: none !important;
-    border: none !important;
-    padding: 0 !important;
-    background-color: transparent !important;
-  }
 
   /* 27. Perbaikan Jarak Pesan Download Template */
   .import-step-content p#template-message {
@@ -1076,11 +1054,19 @@
     color: white !important;
   }
 
-  /* 29. [BARU] Style Halaman Input Nilai Detail */
+  /* =======================================================
+    [PERBAIKAN] BAGIAN INPUT NILAI (SECTION 29, 35, 36, 37)
+    =======================================================
+    Logika sticky z-index di file asli salah (misal: td:first-child z-index: 2, 
+    sedangkan th z-index: 10, sehingga header menutupi kolom nama).
+    Ini disusun ulang agar logis.
+  */
+
+  /* 29. [DIUBAH] Style Halaman Input Nilai Detail (Styling Dasar) */
   .input-nilai-table-container {
     overflow-x: auto;
-    max-height: 500px; /* Batasi tinggi tabel agar bisa di-scroll */
     overflow-y: auto;
+    max-height: 60vh; /* Batasi tinggi tabel agar bisa di-scroll */
     border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-top: 20px;
@@ -1102,18 +1088,19 @@
   }
 
   .input-nilai-table th {
-    background-color: var(--bg-light);
     font-weight: 700;
-    position: sticky; /* Header tabel menempel di atas saat scroll */
-    top: 0;
-    z-index: 10;
+    white-space: nowrap; /* Mencegah header mapel terpotong */
+    /* [DIHAPUS] Properti sticky dipindah ke section 35 */
   }
 
   .input-nilai-table tr:last-child td {
     border-bottom: none; /* Hapus border di baris terakhir */
   }
 
-  .input-nilai-table td:first-child { font-weight: 500; }
+  .input-nilai-table td:first-child { 
+    font-weight: 500; 
+    /* [DIHAPUS] Properti sticky dipindah ke section 35 */
+  }
 
   /* Kolom input nilai */
   .input-nilai-table th:last-child {
@@ -1290,8 +1277,6 @@
     margin-bottom: 0;
   }
 
-  /* [BARU] Tambahkan di paling akhir file */
-
   /* 34. [BARU] Style Toolbar di Atas Tabel (Mapel & Siswa) */
   .table-toolbar {
     display: flex;
@@ -1315,53 +1300,48 @@
     font-size: 14px;
   }
 
-  /* 35. [BARU] Style untuk Grid Input Nilai */
-  .input-nilai-table-container {
-    max-height: 60vh; /* Batasi tinggi tabel agar bisa di-scroll */
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-top: 20px;
-    /* overflow-x: auto; sudah ada */
-    /* overflow-y: auto; sudah ada */
-  }
+  /* =======================================================
+    [PERBAIKAN] SECTION 35 - 37 (Logika Sticky z-index)
+    =======================================================
+  */
+  
+  /* 35. [DIUBAH] Style untuk Grid Input Nilai (STICKY BEHAVIOR) */
 
-  .input-nilai-table th {
-    background-color: var(--bg-light);
-    /* position, top, dan z-index dipindahkan ke thead */
-    white-space: nowrap; /* Mencegah header mapel terpotong */
-  }
-
-  /* [BARU] Buat seluruh header row sticky */
+  /* Buat seluruh header row (thead) sticky di atas */
   .input-nilai-table thead {
     position: sticky;
     top: 0;
-    z-index: 1; /* [BARU] Atur sebagai lapisan 1 (di bawah) */
+    z-index: 10; /* [PERBAIKAN] Header row jadi layer 10 */
+  }
+  
+  /* Beri background pada th (sel header) */
+  .input-nilai-table th {
+    background-color: var(--bg-light);
   }
 
   .input-nilai-table td:first-child {
-    /* Hanya untuk sel data (tbody) */
     position: sticky;
-    z-index: 2; /* [DIUBAH] Atur sebagai lapisan 2 (di atas thead) */
+    left: 0;
+    z-index: 5; 
     background-color: var(--bg-white);
-    border-right: 2px solid var(--border-color); /* [BARU] Garis pemisah */
+    border-right: 2px solid var(--secondary-color); /* [DIUBAH] Ganti jadi lebih gelap */
+    width: 200px;
+    white-space: normal; 
+    line-height: 1.4;
   }
   
   .input-nilai-table th:first-child {
-    /* Hanya untuk sel header (thead) */
     position: sticky;
-    z-index: 3; /* [DIUBAH] Atur sebagai lapisan 3 (paling atas) */
-    background-color: var(--bg-light); /* Samakan dgn header lain */
-    border-right: 2px solid var(--border-color); /* [BARU] Garis pemisah */
-  }
-  .input-nilai-table tr:nth-child(even) td:first-child {
-     background-color: var(--bg-light); /* Jaga warna zebra */
-  }
-
-  .input-nilai-table th:first-child,
-  .input-nilai-table td:first-child {
-    left: 0; /* Kolom pertama menempel di kiri */
+    left: 0;
+    z-index: 12; 
+    border-right: 2px solid var(--secondary-color); /* [DIUBAH] Ganti jadi lebih gelap */
     width: 200px;
-    white-space: normal; /* Nama siswa boleh wrap */
+    white-space: normal; 
+  }
+  
+  /* Pastikan background zebra-striping ikut untuk kolom nama */
+  .input-nilai-table tr:nth-child(even) td:first-child {
+     background-color: var(--bg-light); 
   }
   
   /* Kolom Mapel */
@@ -1373,17 +1353,16 @@
   }
   
   .input-nilai-table .col-mapel input.input-nilai {
-    width: 80px; /* [DIUBAH] Samakan lebar */
+    width: 80px; 
     padding: 8px;
-    font-size: 16px; /* [BARU] Pastikan font 16px */
+    font-size: 16px; 
   }
 
-  /* 36. [DIUBAH] Style untuk Kolom Jumlah & Rata-Rata (Tidak Sticky) */
+  /* 36. [DIUBAH] Style untuk Kolom Jumlah & Rata-Rata (Styling Dasar) */
   .input-nilai-table .th-total,
   .input-nilai-table .col-total {
-    /* HAPUS: position: sticky; */
-    /* HAPUS: z-index: 6; */
-    background-color: #f4f6f8; /* Latar abu-abu muda */
+    /* [DIHAPUS] Hapus semua properti sticky dari sini */
+    background-color: #f4f6f8; /* Latar abu-abu muda (sel data) */
     font-weight: 700;
     text-align: center;
     width: 90px;
@@ -1394,19 +1373,6 @@
   /* Style Header */
   .input-nilai-table th.th-total {
     background-color: var(--bg-light); /* Samakan dengan header lain */
-    /* HAPUS: z-index: 11; */
-  }
-  
-  /* Kolom Rata-Rata (Paling Kanan) */
-  .input-nilai-table .th-total-rata,
-  .input-nilai-table .col-total-rata {
-    /* HAPUS: right: 0; */
-  }
-
-  /* Kolom Jumlah (Kanan, sebelah Rata-Rata) */
-  .input-nilai-table .th-total-jumlah,
-  .input-nilai-table .col-total-jumlah {
-    /* HAPUS: right: 90px; */
   }
   
   /* Jaga warna zebra untuk kolom kalkulasi */
@@ -1414,19 +1380,19 @@
     background-color: #e9ecef;
   }
 
-  /* 37. [BARU] Membuat Kolom Total Sticky HANYA di Desktop */
+  /* 37. [DIUBAH] Membuat Kolom Total Sticky HANYA di Desktop */
   @media (min-width: 768px) {
   
     /* Terapkan STICKY ke kolom total */
     .input-nilai-table .th-total,
     .input-nilai-table .col-total {
       position: sticky;
-      z-index: 6; /* Di atas sel mapel */
+      z-index: 6; /* [PERBAIKAN] Layer 6 (di atas sel mapel & sel nama) */
     }
   
-    /* Pastikan z-index header total lebih tinggi dari header mapel */
+    /* Pastikan z-index header total lebih tinggi */
     .input-nilai-table th.th-total {
-      z-index: 11; /* Di atas header mapel (10), di bawah header Nama Siswa (12) */
+      z-index: 11; /* [PERBAIKAN] Layer 11 (di atas header mapel, di bawah header nama) */
     }
 
     /* Atur posisi menempel di KANAN */
@@ -1454,12 +1420,6 @@
   .clickable-nama-siswa:hover {
     text-decoration: underline;
     color: var(--primary-dark);
-  }
-
-  /* Perbaikan kecil agar nama yang panjang tidak menabrak input */
-  .input-nilai-table td:first-child {
-      white-space: normal; /* Izinkan nama untuk wrap (jika panjang) */
-      line-height: 1.4;
   }
 
 </style>
