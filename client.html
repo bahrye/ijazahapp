@@ -2381,14 +2381,19 @@
 
   function onNilaiUjianSaved(response) {
     if (response.status === 'sukses') {
+      setLoading(false); // PERUBAHAN: Matikan loading di sini
       showMessage('input-nilai-message', response.message, false);
       
+      // PERUBAHAN: Blok di bawah ini dinonaktifkan untuk
+      // menghentikan pemuatan ulang data yang tidak perlu.
+      /*
       const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
       
       google.script.run
         .withSuccessHandler(onNilaiGridLoaded)
         .withFailureHandler(onGagal) 
         .getNilaiUjianGridData(tipeUjian);
+      */
 
     } else {
       setLoading(false);
@@ -2799,13 +2804,19 @@
 
   function onNilaiRaporSaved(response) {
     if (response.status === 'sukses') {
+      setLoading(false); // PERUBAHAN: Matikan loading di sini
       showMessage('input-rapor-message', response.message, false);
+      
+      // PERUBAHAN: Blok di bawah ini dinonaktifkan untuk
+      // menghentikan pemuatan ulang data yang tidak perlu.
+      /*
       const semesterId = document.getElementById('judul-halaman-input-rapor').dataset.semesterId;
       
       google.script.run
         .withSuccessHandler(onNilaiRaporGridLoaded)
         .withFailureHandler(onGagal) 
         .getNilaiRaporGridData(semesterId);
+      */
     } else {
       setLoading(false);
       showMessage('input-rapor-message', response.message, true);
