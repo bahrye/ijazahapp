@@ -1822,11 +1822,15 @@
           <td>${siswa.nisn}</td>
           <td>${siswa.kelas}</td>
           <td>
-            ${moveButtonsHtml}
-            <button class="btn-aksi btn-edit btn-edit-siswa"
-              data-id="${siswa.id}" data-nama="${siswa.nama}" data-nisn="${siswa.nisn}" data-nis-lokal="${siswa.nisLokal}" data-jk="${siswa.jk}" data-tempat-lahir="${siswa.tempatLahir}" data-tgl-lahir="${siswa.tglLahir}" data-kelas="${siswa.kelas}"
-            ><i class="fas fa-pencil-alt"></i>Edit</button>
-            <button class="btn-aksi btn-delete btn-delete-siswa" data-id="${siswa.id}" data-nama="${siswa.nama}"><i class="fas fa-trash-alt"></i>Hapus</button>
+            <div class="btn-grup-gerak">
+              ${moveButtonsHtml}
+            </div>
+            <div class="btn-grup-aksi">
+              <button class="btn-aksi btn-edit btn-edit-siswa"
+                data-id="${siswa.id}" data-nama="${siswa.nama}" data-nisn="${siswa.nisn}" data-nis-lokal="${siswa.nisLokal}" data-jk="${siswa.jk}" data-tempat-lahir="${siswa.tempatLahir}" data-tgl-lahir="${siswa.tglLahir}" data-kelas="${siswa.kelas}"
+              ><i class="fas fa-pencil-alt"></i>Edit</button>
+              <button class="btn-aksi btn-delete btn-delete-siswa" data-id="${siswa.id}" data-nama="${siswa.nama}"><i class="fas fa-trash-alt"></i>Hapus</button>
+            </div>
           </td>
         </tr>
       `;
