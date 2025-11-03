@@ -7,6 +7,11 @@
   let globalSiswaList = []; // [BARU] Cache untuk daftar siswa
   let isSiswaOrderDirty = false; // [BARU] Flag jika ada urutan yg diubah
   let isMapelTipeDirty = false; // [BARU] Flag jika ada tipe ujian yg diubah
+  let globalGridData = { // [BARU] Cache untuk data grid nilai
+    siswaList: [],
+    mapelList: [],
+    nilaiData: {}
+  };
 
   // ===========================================
   // FUNGSI UTILITAS
@@ -454,6 +459,9 @@
       }
     });
 
+    // [BARU] Listener untuk filter di halaman input nilai
+    document.getElementById('input-nilai-filter-kelas').addEventListener('change', renderNilaiGridTable); // Panggil fungsi render ulang
+
     // Listener untuk tombol 'Kelola Mapel'
     document.getElementById('btn-buka-mapel').addEventListener('click', () => {
       bukaHalamanMapel();
@@ -836,6 +844,10 @@
     }
     else if (document.getElementById('halaman-siswa').style.display !== 'none') {
       showMessage('siswa-message', 'Error: ' + errorMsg, true); // Halaman siswa tidak punya form utama yg perlu di-enable
+    }
+    // [BARU] Tambahkan penanganan error untuk halaman input nilai
+    else if (document.getElementById('halaman-input-nilai-detail').style.display !== 'none') {
+      showMessage('input-nilai-message', 'Error: ' + errorMsg, true);
     }
     else {
       // Fallback
@@ -1966,6 +1978,8 @@
     // 1. Reset tampilan
     tableContainer.innerHTML = '<p>Memuat data siswa dan mata pelajaran...</p>';
     btnSimpan.disabled = true;
+    document.getElementById('input-nilai-filter-kelas').innerHTML = '<option value="semua">-- Tampilkan Semua Kelas --</option>'; // [BARU] Reset filter
+    globalGridData = { siswaList: [], mapelList: [], nilaiData: {} }; // [BARU] Reset cache
 
     // 2. Atur Judul Halaman dan simpan tipe ujian di 'data-' attribute
     if (tipeUjian === 'UM') {
@@ -1987,8 +2001,29 @@
   }
 
   /**
-   * [DIUBAH] Menampilkan tabel grid nilai.
-   * Menghapus kolom NISN, memformat nama, dan membuat nama bisa diklik.
+   * [BARU] Mengisi dropdown filter kelas di halaman input nilai.
+   */
+  function populateNilaiFilter(siswaList) {
+    const selectKelas = document.getElementById('input-nilai-filter-kelas');
+    const selectedValue = selectKelas.value; // Simpan value yg mungkin sudah dipilih
+  
+    // Kumpulkan semua nama kelas unik dari siswaList
+    const kelasSet = new Set(siswaList.map(siswa => siswa.kelas));
+    const kelasList = Array.from(kelasSet).sort(); // Urutkan A-Z
+  
+    // Buat HTML untuk opsi
+    let optionsHtml = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
+    kelasList.forEach(kelas => {
+      optionsHtml += `<option value="${kelas}">${kelas}</option>`;
+    });
+  
+    selectKelas.innerHTML = optionsHtml;
+    selectKelas.value = selectedValue || 'semua'; // Set kembali
+  }
+
+  /**
+   * [DIUBAH] Menjadi handler untuk data yang di-fetch.
+   * Sekarang mendelegasikan rendering ke renderNilaiGridTable().
    */
   function onNilaiGridLoaded(response) {
     setLoading(false);
@@ -1998,15 +2033,44 @@
     if (response.status !== 'sukses') {
       container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat data: ${response.message}</p>`;
       btnSimpan.disabled = true;
+      globalGridData = { siswaList: [], mapelList: [], nilaiData: {} }; // [BARU] Reset cache
       return;
     }
 
-    const { siswaList, mapelList, nilaiData } = response.data;
+    // 1. [DIUBAH] Simpan data ke cache global
+    globalGridData = response.data;
     
-    // Validasi data
+    // 2. [BARU] Isi dropdown filter kelas
+    populateNilaiFilter(globalGridData.siswaList);
+
+    // 3. [BARU] Panggil fungsi render (yang akan membaca dari cache)
+    renderNilaiGridTable(); 
+    
+    // 4. [DIUBAH] Aktifkan tombol simpan HANYA jika ada siswa & mapel
+    const { siswaList, mapelList } = globalGridData;
+    if (siswaList && siswaList.length > 0 && mapelList && mapelList.length > 0) {
+      btnSimpan.disabled = false;
+    } else {
+      btnSimpan.disabled = true;
+    }
+  }
+
+  /**
+   * [BARU] Merender tabel grid nilai berdasarkan data di cache global
+   * dan filter yang dipilih.
+   */
+  function renderNilaiGridTable() {
+    const container = document.getElementById('input-nilai-table-container');
+    
+    // 1. Ambil data dari cache global
+    const { siswaList, mapelList, nilaiData } = globalGridData;
+    
+    // 2. Ambil filter yang dipilih
+    const selectedKelas = document.getElementById('input-nilai-filter-kelas').value;
+    
+    // 3. Validasi data (seperti di onNilaiGridLoaded)
     if (!siswaList || siswaList.length === 0) {
       container.innerHTML = '<p style="text-align: center; padding: 20px;">Belum ada data siswa. Harap isi di menu "Kelola Data Siswa".</p>';
-      btnSimpan.disabled = true;
       return;
     }
     
@@ -2014,17 +2078,30 @@
       const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
       const pesan = `Tidak ada mapel yang diatur untuk ${tipeUjian === 'UM' ? 'Ujian Sekolah/Madrasah' : 'Ujian Praktek'}. Harap centang di menu "Kelola Mapel".`;
       container.innerHTML = `<p style="text-align: center; padding: 20px;">${pesan}</p>`;
-      btnSimpan.disabled = true;
       return;
     }
-    
-    // Mulai bangun tabel
+
+    // 4. [BARU] Filter siswaList berdasarkan kelas yang dipilih
+    const filteredSiswaList = (selectedKelas === 'semua')
+      ? siswaList
+      : siswaList.filter(siswa => siswa.kelas === selectedKelas);
+
+    // 5. [BARU] Cek jika hasil filter kosong
+    if (filteredSiswaList.length === 0 && selectedKelas !== 'semua') {
+        container.innerHTML = '<p style="text-align: center; padding: 20px;">Tidak ada siswa di kelas yang dipilih.</p>';
+        return;
+    } else if (filteredSiswaList.length === 0 && selectedKelas === 'semua') {
+       // Ini seharusnya sudah ditangani oleh validasi #3, tapi sebagai pengaman
+       container.innerHTML = '<p style="text-align: center; padding: 20px;">Tidak ada data siswa.</p>';
+       return;
+    }
+
+    // 6. Mulai bangun tabel (Logika ini disalin dari onNilaiGridLoaded)
     let html = '<table class="input-nilai-table">';
     
-    // 1. Buat Header
+    // Header
     html += '<thead><tr>';
     html += '<th>Nama Siswa</th>';
-    // HAPUS: html += '<th>NISN</th>';
     mapelList.forEach(mapel => {
       html += `<th class="col-mapel" title="${mapel.nama}">${mapel.id}</th>`;
     });
@@ -2032,14 +2109,13 @@
     html += '<th class="th-total th-total-rata">Rata-Rata</th>';
     html += '</tr></thead>';
     
-    // 2. Buat Body
+    // Body (Gunakan filteredSiswaList)
     html += '<tbody>';
-    siswaList.forEach(siswa => {
+    filteredSiswaList.forEach(siswa => { // [DIUBAH] Gunakan filteredSiswaList
       html += '<tr>';
       
-      // [DIUBAH] Kolom Info Siswa (Nama Saja)
-      const namaProper = toProperCase(siswa.nama); // Format nama
-      const namaFormatted = formatNamaSiswa(namaProper); // [DIUBAH] Panggil fungsi format
+      const namaProper = toProperCase(siswa.nama);
+      const namaFormatted = formatNamaSiswa(namaProper);
       html += `
         <td>
           <span 
@@ -2051,9 +2127,7 @@
             ${namaFormatted}
           </span>
         </td>`;
-      // HAPUS: html += `<td>${siswa.nisn}</td>`;
       
-      // Kolom Input Nilai Mapel
       mapelList.forEach(mapel => {
         const key = `${siswa.id}_${mapel.id}`;
         const nilai = nilaiData[key] || '';
@@ -2071,7 +2145,6 @@
             >
           </td>`;
       });
-      // Kolom Jumlah & Rata-Rata
       html += `<td class="col-total col-total-jumlah" id="jumlah_${siswa.id}">0</td>`;
       html += `<td class="col-total col-total-rata" id="rata_${siswa.id}">0.00</td>`;
       html += '</tr>';
@@ -2079,16 +2152,16 @@
     html += '</tbody></table>';
 
     container.innerHTML = html;
-    btnSimpan.disabled = false;
 
-    // Hitung total awal untuk semua baris setelah tabel dirender
+    // 7. Hitung total awal (Gunakan filteredSiswaList)
     const mapelCount = mapelList.length;
     if (mapelCount > 0) {
-      siswaList.forEach(siswa => {
+      filteredSiswaList.forEach(siswa => { // [DIUBAH] Gunakan filteredSiswaList
         updateRowTotals(siswa.id, mapelCount);
       });
     }
   }
+
 
   /**
    * [BARU] Menghitung dan memperbarui sel Jumlah & Rata-Rata untuk satu baris siswa.
