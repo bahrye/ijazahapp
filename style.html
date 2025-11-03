@@ -380,26 +380,44 @@
 
   /* 12. Modal (Popup Form) */
   .modal {
-    display: none;
+    display: flex; /* [DIUBAH] Ganti dari 'none' ke 'flex' */
+    align-items: center; /* [BARU] Menengahkan vertikal */
+    justify-content: center; /* [BARU] Menengahkan horizontal */
+
     position: fixed;
     z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: auto; /* Biarkan ini agar modal bisa di-scroll jika SANGAT tinggi */
     background-color: rgba(0,0,0,0.4);
-    padding-top: 60px;
+
+    /* [BARU] Logika show/hide baru untuk transisi fade-in/out */
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.2s ease, visibility 0s 0.2s;
+
+    /* [DIUBAH] Ganti padding-top dengan padding umum untuk jarak di HP */
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  /* [BARU] Class ini akan ditambahkan oleh JavaScript untuk menampilkan modal */
+  .modal.show {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.2s ease, visibility 0s 0s;
   }
   .modal-content {
     background-color: var(--bg-white);
-    margin: 5% auto;
+    margin: 0; /* [DIUBAH] Hapus margin, flexbox sudah menangani centering */
     padding: 0;
     border: 1px solid #888;
     width: 90%;
     max-width: 500px;
     border-radius: 8px;
     box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    flex-shrink: 0; /* [BARU] Mencegah modal "menyusut" */
   }
   .modal-header {
     padding: 15px 20px;
@@ -1034,7 +1052,8 @@
   }
 
   /* 27. Perbaikan Jarak Pesan Download Template */
-  .import-step-content p#template-message {
+  .import-step-content p#template-message,
+  .import-step-content p#template-nilai-message {
     margin-top: 15px; /* Beri jarak 15px dari tombol di atasnya */
     margin-bottom: 0; /* Hapus margin bawah agar rapi */
   }
