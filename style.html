@@ -1,8 +1,6 @@
 <style>
-  /* 1. Import Font Profesional (Roboto) */
   @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
-  /* 2. Definisikan Palet Warna (CSS Variables) */
   :root {
     --primary-color: #0d6efd;
     --primary-dark: #0b5ed7;
@@ -16,7 +14,6 @@
     --danger-color: #dc3545;
   }
 
-  /* 3. Reset Dasar & Body */
   body {
     font-family: 'Roboto', sans-serif;
     margin: 0;
@@ -31,7 +28,6 @@
     box-sizing: border-box;
   }
 
-  /* 4. Layout "Card" Utama */
   .container {
     width: 100%;
     max-width: 450px;
@@ -47,7 +43,6 @@
     border: 1px solid var(--border-color);
   }
 
-  /* 5. Header Aplikasi */
   .app-header {
     text-align: center;
     margin-bottom: 25px;
@@ -57,7 +52,6 @@
   .app-header h1 { margin: 0; color: var(--primary-color); font-size: 24px; font-weight: 700; }
   .app-header p { margin: 5px 0 0; font-size: 14px; color: var(--text-light); }
 
-  /* 6. Form (Input & Button) */
   .form-group { margin-bottom: 20px; }
   .form-group label {
     display: block;
@@ -113,14 +107,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px; /* Jarak default ikon & teks */
+    gap: 8px;
   }
 
   button:hover {
     background-color: var(--primary-dark);
   }
 
-  /* 7. Link Navigasi (Login/Daftar) */
   .nav-link {
     display: block;
     text-align: center;
@@ -135,7 +128,6 @@
     text-decoration: underline;
   }
 
-  /* 8. Pesan Error / Sukses */
   .message {
     font-size: 14px;
     padding: 12px;
@@ -155,7 +147,6 @@
     border: 1px solid rgba(25, 135, 84, 0.2);
   }
 
-  /* 9. Spinner Loading Profesional */
   #loader {
     position: fixed;
     top: 0;
@@ -181,7 +172,6 @@
     to { transform: rotate(360deg); }
   }
 
-  /* 10. Dashboard (Halaman Utama) */
   #halaman-utama h2 {
     color: var(--text-dark);
     font-weight: 500;
@@ -194,19 +184,18 @@
     padding: 8px 12px;
     font-size: 14px;
     font-weight: 700;
-    margin: 0; /* Hapus margin-top */
-    background-color: var(--danger-color); /* Tetap merah */
+    margin: 0;
+    background-color: var(--danger-color);
     color: white;
     border: none;
     border-radius: 6px;
     gap: 8px; 
   }
   #btn-logout:hover { 
-    background-color: #b02a37; /* Tetap hover merah tua */
+    background-color: #b02a37;
     color: white;
   }
 
-  /* 11. Halaman Mapel & Tabel */
   .page-header {
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 10px;
@@ -222,7 +211,6 @@
     margin-bottom: 10px;
   }
 
-  /* [MODIFIKASI BARU] Style untuk tombol upload nilai di halaman input */
   .page-sub-header {
     display: flex;
     justify-content: space-between;
@@ -237,14 +225,13 @@
     width: auto;
     margin: 0;
     flex-shrink: 0;
-    background-color: var(--primary-color); /* Biru seperti import siswa */
+    background-color: var(--primary-color);
     padding: 10px 15px;
     font-size: 14px;
   }
   .page-sub-header button#btn-buka-upload-nilai:hover {
     background-color: var(--primary-dark);
   }
-  /* [MODIFIKASI BARU SELESAI] */
 
 
   #btn-tambah-mapel-baru,
@@ -295,10 +282,9 @@
     text-align: right;
   }
 
-  /* Tombol Aksi di Tabel */
   .btn-aksi {
     display: inline-flex;
-    width: auto; /* Lebar otomatis */
+    width: auto;
     box-sizing: border-box;
     padding: 5px 10px;
     font-size: 12px;
@@ -316,7 +302,6 @@
   .btn-edit { background-color: var(--primary-color); }
   .btn-delete { background-color: var(--danger-color); }
 
-  /* Atur ulang tombol di tabel mapel agar tetap vertikal */
   .mapel-table .btn-aksi {
     width: 100%;
     margin-left: 0;
@@ -326,14 +311,16 @@
     margin-bottom: 0;
   }
 
-  /* Tombol "Kembali ke Dashboard" */
   #btn-kembali-ke-dashboard,
   #btn-kembali-ke-dashboard-2,
   #btn-kembali-ke-dashboard-3,
   #btn-kembali-ke-dashboard-4,
   #btn-kembali-ke-dashboard-5,
   #btn-kembali-ke-dashboard-6,
-  #btn-kembali-ke-dashboard-7 {
+  #btn-kembali-ke-dashboard-7,
+  #btn-kembali-ke-dashboard-8,
+  #btn-kembali-ke-input-rapor,
+  #btn-kembali-ke-input-rapor-2 {
     width: auto;
     padding: 8px 12px;
     font-size: 14px;
@@ -343,7 +330,7 @@
     color: white;
     border: none;
     border-radius: 6px;
-    gap: 8px; /* Atur gap ikon & teks */
+    gap: 8px;
   }
 
   #btn-kembali-ke-dashboard:hover,
@@ -352,7 +339,10 @@
   #btn-kembali-ke-dashboard-4:hover,
   #btn-kembali-ke-dashboard-5:hover,
   #btn-kembali-ke-dashboard-6:hover,
-  #btn-kembali-ke-dashboard-7:hover {
+  #btn-kembali-ke-dashboard-7:hover,
+  #btn-kembali-ke-dashboard-8:hover,
+  #btn-kembali-ke-input-rapor:hover,
+  #btn-kembali-ke-input-rapor-2:hover {
      background-color: #5a6268;
      color: white;
   }
@@ -379,11 +369,10 @@
 
 
 
-  /* 12. Modal (Popup Form) */
   .modal {
-    display: flex; /* [DIUBAH] Ganti dari 'none' ke 'flex' */
-    align-items: center; /* [BARU] Menengahkan vertikal */
-    justify-content: center; /* [BARU] Menengahkan horizontal */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     position: fixed;
     z-index: 1000;
@@ -391,19 +380,16 @@
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto; /* Biarkan ini agar modal bisa di-scroll jika SANGAT tinggi */
+    overflow: auto;
     background-color: rgba(0,0,0,0.4);
 
-    /* [BARU] Logika show/hide baru untuk transisi fade-in/out */
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.2s ease, visibility 0s 0.2s;
 
-    /* [DIUBAH] Ganti padding-top dengan padding umum untuk jarak di HP */
     padding: 20px;
     box-sizing: border-box;
   }
-  /* [BARU] Class ini akan ditambahkan oleh JavaScript untuk menampilkan modal */
   .modal.show {
     visibility: visible;
     opacity: 1;
@@ -411,14 +397,14 @@
   }
   .modal-content {
     background-color: var(--bg-white);
-    margin: 0; /* [DIUBAH] Hapus margin, flexbox sudah menangani centering */
+    margin: 0;
     padding: 0;
     border: 1px solid #888;
     width: 90%;
     max-width: 500px;
     border-radius: 8px;
     box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-    flex-shrink: 0; /* [BARU] Mencegah modal "menyusut" */
+    flex-shrink: 0;
   }
   .modal-header {
     padding: 15px 20px;
@@ -440,7 +426,7 @@
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
-    gap: 10px; /* [BARU] Memberi jarak antar tombol */
+    gap: 10px;
   }
   #btn-simpan-mapel, #btn-batal-modal,
   #btn-simpan-siswa, #btn-batal-modal-siswa,
@@ -450,11 +436,10 @@
   }
   #btn-batal-modal,
   #btn-batal-modal-siswa,
-  #btn-batal-modal-import-siswa { /* [DIUBAH] Tambahkan tombol batal import */
+  #btn-batal-modal-import-siswa {
     background-color: var(--secondary-color);
   }
 
-  /* 13. Tampilan Desktop (Lebih Lebar) */
   @media (min-width: 768px) {
     #halaman-utama,
     #halaman-mapel,
@@ -465,11 +450,13 @@
     #halaman-input-ujian,
     #halaman-input-nilai-detail,
     #halaman-rekap-nilai,
-    #halaman-semester {
+    #halaman-semester,
+    #halaman-input-rapor,
+    #halaman-input-rapor-detail,
+    #halaman-rekap-rapor {
       max-width: 960px;
     }
 
-    /* ▼▼▼ TAMBAHKAN BLOK BARU INI ▼▼▼ */
     .page-header {
       display: flex;
       justify-content: space-between;
@@ -477,16 +464,14 @@
     }
 
     .header-buttons {
-      margin-top: 0; /* Hapus margin-top di desktop */
+      margin-top: 0;
     }
-    /* ▲▲▲ SAMPAI SINI ▲▲▲ */
   }
 
-  /* 14. Penataan Tombol Header */
   .header-buttons {
     display: flex;
     gap: 10px;
-    margin-top: 15px; /* [TAMBAHKAN INI] */
+    margin-top: 15px;
   }
 
   #btn-tambah-mapel-baru,
@@ -527,7 +512,6 @@
     background-color: #157347;
   }
 
-  /* 15. Modal Konfirmasi Kustom */
   #confirmation-modal .modal-content {
     max-width: 450px;
   }
@@ -557,7 +541,6 @@
     background-color: #5a6268;
   }
 
-  /* 16. Modal Info (Alert) Kustom */
   #info-modal .modal-content {
     max-width: 450px;
   }
@@ -584,7 +567,6 @@
     background-color: var(--primary-dark);
   }
 
-  /* 17. Fitur Toggle Password (Font Awesome) */
   .form-group-password {
     position: relative;
   }
@@ -612,7 +594,6 @@
     color: var(--primary-color);
   }
 
-  /* 18. Halaman Kelola Data Sekolah */
   .form-section-header {
     font-size: 18px;
     font-weight: 700;
@@ -695,14 +676,11 @@
     background-color: #157347;
   }
 
-  /* 19. Format Tampilan Uppercase */
   #reg-nama-sekolah,
   #data-nama-sekolah
   {
     text-transform: uppercase;
   }
-
-  /* 20. Style Tombol Bobot & Halaman Bobot */
 
   input[type="number"] {
     width: 100%;
@@ -727,8 +705,6 @@
     background-color: #157347;
   }
 
-  /* 21. Style Halaman Kelola Kelas */
-
   #btn-simpan-kelas {
     background-color: var(--success-color);
   }
@@ -736,7 +712,6 @@
     background-color: #157347;
   }
 
-  /* Styling baris input dinamis */
   .kelas-input-row {
     display: flex;
     gap: 10px;
@@ -748,7 +723,6 @@
     margin: 0;
   }
 
-  /* Styling tombol (+) dan (x) */
   .btn-aksi-kelas {
     width: 40px;
     padding: 10px 0;
@@ -774,8 +748,6 @@
     background-color: #b02a37;
   }
 
-  /* 22. Style Halaman Siswa */
-
   #btn-simpan-siswa {
      background-color: var(--success-color);
   }
@@ -783,8 +755,6 @@
     background-color: #157347;
   }
 
-
-  /* 23. Style Kartu Menu Dashboard (Multi-warna & Hover Fix) */
 
   .dashboard-menu-grid {
     display: grid;
@@ -794,9 +764,7 @@
     margin-bottom: 20px;
   }
 
-  /* [BARU] Paksa grid input nilai jadi 2 kolom di HP */
   .dashboard-grid-input {
-    /* [DIUBAH] Gunakan repeat(auto-fit) agar bisa 3 kolom jika muat */
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
   }
 
@@ -812,7 +780,7 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    background-color: var(--bg-white); /* Latar belakang awal selalu putih */
+    background-color: var(--bg-white);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 25px 15px;
@@ -826,58 +794,52 @@
     gap: 0;
   }
 
-  /* Warna Teks & Ikon AWAL (Per Kartu) */
   #btn-buka-data-sekolah { color: var(--primary-color); }
-  #btn-buka-siswa { color: #6f42c1; } /* Ungu */
-  #btn-buka-mapel { color: var(--success-color); } /* Hijau */
-  #btn-buka-bobot { color: #fd7e14; } /* Oranye */
-  #btn-buka-kelas { color: #0dcaf0; } /* Teal */
-  #btn-buka-semester { color: #dc3545; } /* [BARU] Merah */
+  #btn-buka-siswa { color: #6f42c1; }
+  #btn-buka-mapel { color: var(--success-color); }
+  #btn-buka-bobot { color: #fd7e14; }
+  #btn-buka-kelas { color: #0dcaf0; }
+  #btn-buka-semester { color: #dc3545; }
 
-  /* Aturan hover umum HANYA untuk efek visual */
   .dashboard-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
-  /* Aturan HOVER SPESIFIK: Set background DAN color jadi putih */
   #btn-buka-data-sekolah:hover {
     background-color: var(--primary-color) !important;
-    color: white !important; /* Paksa teks & ikon jadi putih */
+    color: white !important;
   }
   #btn-buka-siswa:hover {
     background-color: #6f42c1 !important;
-    color: white !important; /* Paksa teks & ikon jadi putih */
+    color: white !important;
   }
   #btn-buka-mapel:hover {
     background-color: var(--success-color) !important;
-    color: white !important; /* Paksa teks & ikon jadi putih */
+    color: white !important;
   }
   #btn-buka-bobot:hover {
     background-color: #fd7e14 !important;
-    color: white !important; /* Paksa teks & ikon jadi putih */
+    color: white !important;
   }
   #btn-buka-kelas:hover {
     background-color: #0dcaf0 !important;
-    color: white !important; /* Paksa teks & ikon jadi putih */
+    color: white !important;
   }
   #btn-buka-semester:hover {
     background-color: #dc3545 !important;
     color: white !important;
   }
 
-  /* Ikon di dalam kartu */
   .dashboard-card i {
     font-size: 30px;
     margin-bottom: 15px;
   }
 
-  /* Teks di dalam kartu */
   .dashboard-card span {
     line-height: 1.4;
   }
 
-  /* 24. Style Tombol Disabled */
   #btn-simpan-data-sekolah:disabled,
   #btn-simpan-bobot:disabled,
   #btn-simpan-kelas:disabled,
@@ -894,26 +856,24 @@
     pointer-events: none;
   }
 
-  /* 25. Style Halaman Import Siswa */
   #btn-import-siswa {
-    background-color: var(--primary-color); /* [DIUBAH] Ganti jadi biru */
+    background-color: var(--primary-color);
   }
   #btn-import-siswa:hover {
-    background-color: var(--primary-dark); /* [DIUBAH] Ganti jadi biru tua */
+    background-color: var(--primary-dark);
   }
 
   #btn-download-template-siswa {
     width: auto;
     background-color: var(--success-color);
-    padding: 10px 18px; /* [BARU] Dibuat lebih besar */
-    font-size: 15px; /* [BARU] Dibuat lebih besar */
+    padding: 10px 18px;
+    font-size: 15px;
     font-weight: 700;
   }
   #btn-download-template-siswa:hover {
     background-color: #157347;
   }
 
-  /* Header untuk langkah-langkah di modal */
   .import-step-header {
     font-size: 16px;
     font-weight: 700;
@@ -922,26 +882,22 @@
     margin-bottom: 5px;
   }
 
-  /* Style untuk input file */
   input[type="file"] {
-    /* [DIUBAH] Akan disembunyikan oleh style 26 */
     display: none !important;
     border: none !important;
     padding: 0 !important;
     background-color: transparent !important;
   }
   
-  /* Tombol proses di modal import */
   #btn-proses-import-siswa {
-    background-color: var(--success-color); /* [DIUBAH] Ganti jadi hijau */
+    background-color: var(--success-color);
   }
   #btn-proses-import-siswa:hover {
-    background-color: #157347; /* [DIUBAH] Ganti jadi hijau tua */
+    background-color: #157347;
   }
   
-  /* Area Hasil Import */
   #import-siswa-results,
-  #import-nilai-results { /* [DIUBAH] Terapkan juga ke modal nilai */
+  #import-nilai-results {
     margin-top: 20px;
     padding: 15px;
     border: 1px solid var(--border-color);
@@ -951,7 +907,7 @@
     overflow-y: auto;
   }
   #import-siswa-results h4,
-  #import-nilai-results h4 { /* [DIUBAH] Terapkan juga ke modal nilai */
+  #import-nilai-results h4 {
     margin-top: 0;
     color: var(--text-dark);
   }
@@ -971,19 +927,17 @@
     background-color: #e9ecef;
   }
 
-  /* 26. Perbaikan Modal Import Profesional */
   #import-siswa-modal .modal-content,
-  #upload-nilai-modal .modal-content { /* [DIUBAH] Terapkan juga ke modal nilai */
-    max-width: 480px; /* [DIUBAH] Dibuat lebih ramping */
+  #upload-nilai-modal .modal-content {
+    max-width: 480px;
   }
 
   #import-siswa-modal .modal-body,
-  #upload-nilai-modal .modal-body { /* [DIUBAH] Terapkan juga ke modal nilai */
-    background-color: var(--bg-light); /* Latar belakang body modal sedikit abu-abu */
+  #upload-nilai-modal .modal-body {
+    background-color: var(--bg-light);
     padding: 20px 25px;
   }
 
-  /* Box untuk setiap langkah */
   .import-step-box {
     display: flex;
     gap: 20px;
@@ -996,7 +950,6 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   }
 
-  /* Nomor langkah (Lingkaran) */
   .import-step-number {
     flex-shrink: 0;
     width: 40px;
@@ -1017,11 +970,10 @@
     flex-grow: 1;
   }
   
-  /* Mengubah style header langkah */
   .import-step-header {
-    font-size: 18px; /* Sedikit lebih besar */
+    font-size: 18px;
     font-weight: 700;
-    color: var(--text-dark); /* Ganti jadi hitam, bukan biru */
+    color: var(--text-dark);
     margin-top: 0;
     margin-bottom: 8px;
   }
@@ -1033,7 +985,6 @@
     margin-bottom: 15px;
   }
 
-  /* Custom File Upload Zone (Drag & Drop) */
   .file-upload-zone {
     display: flex;
     flex-direction: column;
@@ -1047,11 +998,11 @@
     cursor: pointer;
     text-align: center;
     transition: background-color 0.2s, border-color 0.2s;
-    box-sizing: border-box; /* [BARU] Ini akan memperbaiki masalah lebar */
+    box-sizing: border-box;
   }
   
   .file-upload-zone:hover,
-  .file-upload-zone.drag-over { /* State saat file diseret di atasnya */
+  .file-upload-zone.drag-over {
     background-color: #e9ecef;
     border-color: var(--primary-color);
   }
@@ -1068,26 +1019,22 @@
     color: var(--text-light);
     line-height: 1.4;
   }
-  /* Style teks saat file sudah dipilih */
   .file-upload-zone span.file-chosen {
     color: var(--success-color);
     font-weight: 700;
   }
 
-  /* Sembunyikan input file asli */
   #file-upload-siswa,
-  #file-upload-nilai { /* [DIUBAH] Terapkan juga ke input nilai */
+  #file-upload-nilai {
     display: none;
   }
 
-  /* 27. Perbaikan Jarak Pesan Download Template */
   .import-step-content p#template-message,
   .import-step-content p#template-nilai-message {
-    margin-top: 15px; /* Beri jarak 15px dari tombol di atasnya */
-    margin-bottom: 0; /* Hapus margin bawah agar rapi */
+    margin-top: 15px;
+    margin-bottom: 0;
   }
 
-  /* 28. [BARU] Style Dashboard (Pembatas & Header) */
   .dashboard-section-header {
     font-size: 18px;
     font-weight: 700;
@@ -1108,26 +1055,21 @@
     margin-bottom: 0px;
   }
 
-  /* [DIUBAH] Mengatur grid untuk halaman input nilai */
   .dashboard-grid-input {
-    /* Mobile: 2 kolom (sesuai gambar) */
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
-  /* Desktop: 3 kolom (menggunakan media query yang sama dengan grid dashboard utama) */
   @media (min-width: 500px) {
     .dashboard-grid-input {
       grid-template-columns: repeat(3, 1fr) !important;
     }
   }
 
-  /* [BARU] Warna kartu input nilai */
-  #btn-buka-input-ujian { color: #d63384; } /* Pink */
+  #btn-buka-input-ujian { color: #d63384; }
   #btn-buka-input-ujian:hover {
     background-color: #d63384 !important;
     color: white !important;
   }
-  /* Kartu Pilihan Ujian */
   #btn-buka-input-um { color: var(--primary-color); } 
   #btn-buka-input-um:hover {
     background-color: var(--primary-color) !important;
@@ -1139,23 +1081,16 @@
     color: white !important;
   }
 
-  /* [BARU] Warna kartu rekapitulasi */
-  #btn-buka-rekap-nilai { color: #6f42c1; } /* Ungu */
+  #btn-buka-rekap-nilai { color: #6f42c1; }
   #btn-buka-rekap-nilai:hover {
     background-color: #6f42c1 !important;
     color: white !important;
   }
 
-  /* =======================================================
-    [PERBAIKAN] BAGIAN INPUT NILAI (SECTION 29, 35, 36, 37)
-    =======================================================
-  */
-
-  /* 29. [DIUBAH] Style Halaman Input Nilai Detail (Styling Dasar) */
   .input-nilai-table-container {
     overflow-x: auto;
     overflow-y: auto;
-    max-height: 60vh; /* Batasi tinggi tabel agar bisa di-scroll */
+    max-height: 60vh;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-top: 20px;
@@ -1178,18 +1113,17 @@
 
   .input-nilai-table th {
     font-weight: 700;
-    white-space: nowrap; /* Mencegah header mapel terpotong */
+    white-space: nowrap;
   }
 
   .input-nilai-table tr:last-child td {
-    border-bottom: none; /* Hapus border di baris terakhir */
+    border-bottom: none;
   }
 
   .input-nilai-table td:first-child { 
     font-weight: 500; 
   }
 
-  /* Kolom input nilai */
   .input-nilai-table th:last-child {
     text-align: center;
   }
@@ -1199,7 +1133,6 @@
     text-align: center;
   }
 
-  /* Input nilai di dalam tabel */
   .input-nilai {
     width: 80px;
     padding: 8px;
@@ -1208,10 +1141,9 @@
     border-radius: 6px;
     box-sizing: border-box;
     text-align: center;
-    -moz-appearance: textfield; /* Sembunyikan panah di Firefox */
+    -moz-appearance: textfield;
   }
 
-  /* Sembunyikan panah di Chrome/Safari */
   .input-nilai::-webkit-outer-spin-button,
   .input-nilai::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -1234,7 +1166,6 @@
     background-color: var(--secondary-color) !important;
   }
 
-  /* [BARU] Style untuk tombol Bersihkan Nilai */
   #btn-bersihkan-input-nilai {
     background-color: var(--danger-color);
   }
@@ -1242,9 +1173,8 @@
     background-color: #b02a37;
   }
 
-  /* Tombol kembali di halaman input-nilai */
   #btn-kembali-ke-input-ujian,
-  #btn-kembali-ke-input-ujian-2 { /* [DIUBAH] Tambahkan ID baru */
+  #btn-kembali-ke-input-ujian-2 {
       width: auto;
       padding: 8px 12px;
       font-size: 14px;
@@ -1257,12 +1187,11 @@
       gap: 8px; 
   }
   #btn-kembali-ke-input-ujian:hover,
-  #btn-kembali-ke-input-ujian-2:hover { /* [DIUBAH] Tambahkan ID baru */
+  #btn-kembali-ke-input-ujian-2:hover {
       background-color: #5a6268;
       color: white;
   }
 
-  /* 30. [BARU] Style Filter Bar (Halaman Siswa & Input Nilai) */
   .filter-bar {
     display: flex;
     flex-wrap: wrap;
@@ -1270,8 +1199,8 @@
     background-color: var(--bg-light);
     padding: 15px;
     border-radius: 8px;
-    margin-top: 10px; /* Jarak dari paragraf di atas */
-    margin-bottom: 0px; /* [DIUBAH] Hapus margin bawah agar nempel ke tabel */
+    margin-top: 10px;
+    margin-bottom: 0px;
   }
   .filter-bar .form-group {
     margin-bottom: 0;
@@ -1284,16 +1213,15 @@
     font-weight: 500;
   }
   .filter-bar select {
-    padding: 12px; /* Dibuat sedikit lebih kecil dari form utama */
+    padding: 12px;
     font-size: 14px;
   }
 
-  /* 31. [BARU] Style Tombol Aksi Naik/Turun Siswa */
   .btn-aksi.btn-move-up {
-    background-color: var(--success-color); /* Hijau */
+    background-color: var(--success-color);
   }
   .btn-aksi.btn-move-down {
-    background-color: #fd7e14; /* Oranye */
+    background-color: #fd7e14;
   }
   
   .btn-aksi:disabled {
@@ -1302,18 +1230,17 @@
     cursor: not-allowed;
   }
 
-  /* 32. [BARU] Style untuk Tombol Aksi di Filter Bar */
   .filter-bar .form-group.filter-bar-action {
-    flex-grow: 0; /* Jangan membesar */
-    min-width: 0; /* Jangan membesar */
-    align-self: flex-end; /* Posisikan di bawah (sejajar dengan input) */
+    flex-grow: 0;
+    min-width: 0;
+    align-self: flex-end;
   }
 
   #btn-simpan-urutan-siswa {
-    width: auto; /* Lebar otomatis */
-    padding: 12px 18px; /* Samakan padding dengan select */
+    width: auto;
+    padding: 12px 18px;
     font-size: 14px;
-    background-color: var(--success-color); /* Warna hijau */
+    background-color: var(--success-color);
   }
   
   #btn-simpan-urutan-siswa:hover {
@@ -1326,52 +1253,49 @@
     cursor: not-allowed;
   }
   
-  /* [BARU] Penataan tombol aksi di tabel */
   .siswa-table .btn-aksi.btn-move-up,
   .siswa-table .btn-aksi.btn-move-down {
-    width: 40px; /* Buat tombol panah jadi kotak kecil */
+    width: 40px;
     padding: 5px 0;
     font-size: 12px;
-    margin: 0; /* Hapus margin, kita akan gunakan 'gap' */
+    margin: 0;
   }
   
-  /* [BARU] Tetapkan lebar kolom Aksi di tabel Siswa */
   .siswa-table th:last-child {
     width: 210px;
-    text-align: left; /* Pastikan header "AKSI" tetap rata kiri */
+    text-align: left;
   }
 
   .siswa-table td:last-child {
     display: flex;
     align-items: center;
-    justify-content: flex-end; /* Tombol rata kanan */
+    justify-content: flex-end;
     gap: 8px; 
-    width: 210px; /* [DIUBAH] Tetapkan lebar kolom */
-    box-sizing: border-box; /* [PENTING] Agar padding 15px terhitung */
+    width: 210px;
+    box-sizing: border-box;
   }
 
   .btn-grup-gerak {
-    display: inline-flex; /* Tombol naik/turun tetap horizontal */
+    display: inline-flex;
     flex-shrink: 0;
-    gap: 5px; /* Jarak antar tombol naik & turun */
+    gap: 5px;
   }
   
   .btn-grup-aksi {
     display: flex;
-    flex-direction: column; /* Tombol edit/hapus jadi vertikal */
-    gap: 5px; /* Jarak antar tombol edit & hapus */
-    width: 80px; /* Tetapkan lebar grup edit/hapus */
+    flex-direction: column;
+    gap: 5px;
+    width: 80px;
   }
   
   .btn-grup-aksi .btn-aksi {
-    width: 100%; /* Tombol edit/hapus mengisi lebar grupnya */
+    width: 100%;
     margin-left: 0;
   }
 
-  /* 33. [BARU] Style Kolom Checkbox Tipe Ujian di Tabel Mapel */
   .mapel-table th.col-cek,
   .mapel-table td.col-cek {
-    width: 60px; /* Lebar kolom US/UM */
+    width: 60px;
     text-align: center;
     padding-left: 5px;
     padding-right: 5px;
@@ -1379,7 +1303,7 @@
   
   .mapel-table th.col-up,
   .mapel-table td.col-up {
-     width: 40px; /* Lebar kolom UP (lebih sempit) */
+     width: 40px;
   }
 
   .mapel-table td.col-cek input[type="checkbox"] {
@@ -1389,10 +1313,9 @@
   }
   
   .mapel-table td:last-child {
-      width: 120px; /* Pastikan kolom aksi tetap */
+      width: 120px;
   }
 
-  /* [DIUBAH] Perbarui styling tombol aksi di tabel mapel */
   .mapel-table td:last-child .btn-aksi {
     width: 100%;
     margin-left: 0;
@@ -1402,44 +1325,33 @@
     margin-bottom: 0;
   }
 
-  /* 34. [BARU] Style Toolbar di Atas Tabel (Mapel & Siswa) */
   .table-toolbar {
     display: flex;
-    justify-content: space-between; /* Mendorong item ke ujung */
-    align-items: center; /* Menyejajarkan teks & tombol */
-    margin-bottom: 20px; /* Jarak ke tabel di bawahnya */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
   }
 
   .table-toolbar p {
-    margin: 0; /* Hapus margin default paragraf */
+    margin: 0;
     color: var(--text-dark);
   }
 
-  /* Pastikan tombol di toolbar tidak memakan lebar penuh */
   .table-toolbar #btn-simpan-tipe-ujian,
   .table-toolbar #btn-simpan-urutan-siswa {
     width: auto;
-    margin: 0; /* Hapus margin jika ada */
-    flex-shrink: 0; /* Jangan biarkan tombol mengecil */
-    padding: 10px 15px; /* Samakan dengan tombol header */
+    margin: 0;
+    flex-shrink: 0;
+    padding: 10px 15px;
     font-size: 14px;
   }
 
-  /* =======================================================
-    [PERBAIKAN] SECTION 35 - 37 (Logika Sticky z-index)
-    =======================================================
-  */
-  
-  /* 35. [DIUBAH] Style untuk Grid Input Nilai (STICKY BEHAVIOR) */
-
-  /* Buat seluruh header row (thead) sticky di atas */
   .input-nilai-table thead {
     position: sticky;
     top: 0;
-    z-index: 10; /* [PERBAIKAN] Header row jadi layer 10 */
+    z-index: 10;
   }
   
-  /* Beri background pada th (sel header) */
   .input-nilai-table th {
     background-color: var(--bg-light);
   }
@@ -1450,11 +1362,11 @@
     z-index: 5; 
     background-color: var(--bg-white);
     border-right: 2px solid var(--secondary-color);
-    width: 180px; /* DIUBAH */
+    width: 180px;
     white-space: normal; 
-    line-height: 1.3; /* DIUBAH (dibuat lebih rapat) */
-    padding-top: 10px; /* DIUBAH */
-    padding-bottom: 10px; /* DIUBAH */
+    line-height: 1.3;
+    padding-top: 10px;
+    padding-bottom: 10px;
   }
   
   .input-nilai-table th:first-child {
@@ -1462,64 +1374,51 @@
     left: 0;
     z-index: 12; 
     border-right: 2px solid var(--secondary-color); 
-    width: 180px; /* DIUBAH (samakan dengan td) */
+    width: 180px;
     white-space: normal; 
   }
   
-  /* Pastikan background zebra-striping ikut untuk kolom nama */
   .input-nilai-table tr:nth-child(even) td:first-child {
      background-color: var(--bg-light); 
   }
   
-  /* Kolom Mapel */
   .input-nilai-table .col-mapel {
-    width: 70px; /* DIUBAH */
-    min-width: 70px; /* DIUBAH */
+    width: 70px;
+    min-width: 70px;
     text-align: center;
-    padding: 8px 5px; /* DIUBAH (padding horizontal dikurangi) */
+    padding: 8px 5px;
   }
   
   .input-nilai-table .col-mapel input.input-nilai {
-    width: 55px; /* DIUBAH (lebih ramping) */
+    width: 55px;
     padding: 8px;
     font-size: 16px; 
   }
 
-  /* 36. [DIUBAH] Style untuk Kolom Jumlah & Rata-Rata (Styling Dasar) */
   .input-nilai-table .th-total,
   .input-nilai-table .col-total,
-  .input-nilai-table .th-total-bulat,  /* [BARU] Tambahkan selector pembulatan */
-  .input-nilai-table .col-total-bulat { /* [BARU] Tambahkan selector pembulatan */
-    /* [DIHAPUS] Hapus semua properti sticky dari sini */
-    background-color: #f4f6f8; /* Latar abu-abu muda (sel data) */
+  .input-nilai-table .th-total-bulat,
+  .input-nilai-table .col-total-bulat {
+    background-color: #f4f6f8;
     font-weight: 700;
     text-align: center;
-    width: 70px; /* DIUBAH */
-    min-width: 70px; /* DIUBAH */
+    width: 70px;
+    min-width: 70px;
     border-left: 2px solid var(--border-color);
   }
 
-  /* Style Header */
   .input-nilai-table th.th-total,
-  .input-nilai-table th.th-total-bulat { /* [BARU] Tambahkan selector pembulatan */
-    background-color: var(--bg-light); /* Samakan dengan header lain */
+  .input-nilai-table th.th-total-bulat {
+    background-color: var(--bg-light);
   }
 
-  /* Jaga warna zebra untuk kolom kalkulasi */
   .input-nilai-table tr:nth-child(even) .col-total,
-  .input-nilai-table tr:nth-child(even) .col-total-bulat { /* [BARU] Tambahkan selector pembulatan */
+  .input-nilai-table tr:nth-child(even) .col-total-bulat {
     background-color: #e9ecef;
   }
 
-  /* 37. [DIUBAH TOTAL] Membuat Kolom Total Sticky HANYA di Desktop (Logika Terpisah) */
   @media (min-width: 768px) {
   
-    /* ===================================================================
-      [PERBAIKAN] Logika Sticky untuk Halaman REKAPITULASI (3 Kolom)
-      ===================================================================
-    */
-  
-    /* Terapkan STICKY ke kolom total di REKAP */
     #halaman-rekap-nilai .input-nilai-table .th-total,
     #halaman-rekap-nilai .input-nilai-table .col-total,
     #halaman-rekap-nilai .input-nilai-table .th-total-bulat,
@@ -1528,14 +1427,11 @@
       z-index: 6; 
     }
   
-    /* Z-index header REKAP */
     #halaman-rekap-nilai .input-nilai-table th.th-total,
     #halaman-rekap-nilai .input-nilai-table th.th-total-bulat {
       z-index: 11;
     }
 
-    /* Posisi menempel di KANAN (Halaman REKAP - 3 Kolom) */
-    
     #halaman-rekap-nilai .input-nilai-table .th-total-bulat,
     #halaman-rekap-nilai .input-nilai-table .col-total-bulat {
       right: 0; 
@@ -1543,52 +1439,90 @@
   
     #halaman-rekap-nilai .input-nilai-table .th-total-rata,
     #halaman-rekap-nilai .input-nilai-table .col-total-rata {
-      right: 70px; /* Geser 1 kolom (lebar .col-total-bulat) */
+      right: 70px;
     }
   
     #halaman-rekap-nilai .input-nilai-table .th-total-jumlah,
     #halaman-rekap-nilai .input-nilai-table .col-total-jumlah {
-      right: 140px; /* Geser 2 kolom */
+      right: 140px;
     }
     
-    /* ===================================================================
-      [PERBAIKAN BARU] Logika Sticky untuk Halaman INPUT NILAI (2 Kolom)
-      ===================================================================
-    */
-
-    /* Terapkan STICKY ke kolom total di INPUT NILAI */
     #halaman-input-nilai-detail .input-nilai-table .th-total,
     #halaman-input-nilai-detail .input-nilai-table .col-total {
       position: sticky;
       z-index: 6;
     }
     
-    /* Z-index header INPUT NILAI */
     #halaman-input-nilai-detail .input-nilai-table th.th-total {
       z-index: 11;
     }
 
-    /* Posisi menempel di KANAN (Halaman INPUT - 2 Kolom) */
-
     #halaman-input-nilai-detail .input-nilai-table .th-total-rata,
     #halaman-input-nilai-detail .input-nilai-table .col-total-rata {
-      right: 0; /* Menempel di paling kanan */
+      right: 0;
     }
     
     #halaman-input-nilai-detail .input-nilai-table .th-total-jumlah,
     #halaman-input-nilai-detail .input-nilai-table .col-total-jumlah {
-      right: 70px; /* Geser 1 kolom (lebar .col-total-rata) */
+      right: 70px;
+    }
+
+    #halaman-rekap-rapor .input-nilai-table .th-total,
+    #halaman-rekap-rapor .input-nilai-table .col-total,
+    #halaman-rekap-rapor .input-nilai-table .th-total-bulat,
+    #halaman-rekap-rapor .input-nilai-table .col-total-bulat { 
+      position: sticky;
+      z-index: 6; 
+    }
+  
+    #halaman-rekap-rapor .input-nilai-table th.th-total,
+    #halaman-rekap-rapor .input-nilai-table th.th-total-bulat {
+      z-index: 11;
+    }
+
+    #halaman-rekap-rapor .input-nilai-table .th-total-bulat,
+    #halaman-rekap-rapor .input-nilai-table .col-total-bulat {
+      right: 0; 
+    }
+  
+    #halaman-rekap-rapor .input-nilai-table .th-total-rata,
+    #halaman-rekap-rapor .input-nilai-table .col-total-rata {
+      right: 70px;
+    }
+  
+    #halaman-rekap-rapor .input-nilai-table .th-total-jumlah,
+    #halaman-rekap-rapor .input-nilai-table .col-total-jumlah {
+      right: 140px;
+    }
+    
+    #halaman-input-rapor-detail .input-nilai-table .th-total,
+    #halaman-input-rapor-detail .input-nilai-table .col-total {
+      position: sticky;
+      z-index: 6;
+    }
+    
+    #halaman-input-rapor-detail .input-nilai-table th.th-total {
+      z-index: 11;
+    }
+
+    #halaman-input-rapor-detail .input-nilai-table .th-total-rata,
+    #halaman-input-rapor-detail .input-nilai-table .col-total-rata {
+      right: 0;
+    }
+    
+    #halaman-input-rapor-detail .input-nilai-table .th-total-jumlah,
+    #halaman-input-rapor-detail .input-nilai-table .col-total-jumlah {
+      right: 70px;
     }
   }
 
-  /* 38. [BARU] Style untuk Nama Siswa yang Bisa Diklik */
   .clickable-nama-siswa {
     cursor: pointer;
     color: var(--primary-color);
-    font-weight: 500; /* Sedikit tebal */
+    font-weight: 500;
     text-decoration: none;
     display: inline-block;
-    padding: 2px 0; /* Beri sedikit ruang napas */
+    padding: 2px 0;
   }
   
   .clickable-nama-siswa:hover {
@@ -1596,22 +1530,18 @@
     color: var(--primary-dark);
   }
 
-  /* [MODIFIKASI BARU] Style untuk modal upload nilai */
-  
-  /* Style untuk tombol download template nilai */
   #btn-download-template-nilai {
     width: auto;
     background-color: var(--success-color);
     padding: 10px 18px;
     font-size: 15px;
     font-weight: 700;
-    margin-top: 10px; /* Beri jarak dari dropdown */
+    margin-top: 10px;
   }
   #btn-download-template-nilai:hover {
     background-color: #157347;
   }
 
-  /* Style untuk dropdown di dalam modal upload nilai */
   #upload-nilai-modal .form-group {
     margin-bottom: 15px;
   }
@@ -1627,7 +1557,6 @@
     font-size: 14px;
   }
 
-  /* Tombol proses & batal di modal upload nilai */
   #btn-proses-upload-nilai {
     background-color: var(--success-color);
   }
@@ -1637,12 +1566,8 @@
   #btn-batal-modal-upload-nilai {
     background-color: var(--secondary-color);
   }
-  /* [MODIFIKASI BARU SELESAI] */
 
-  /* =======================================================
-      [DIUBAH] STYLE UNTUK TOOLTIP DINAMIS (NISN & MAPEL)
-    ======================================================= */
-  .dynamic-tooltip { /* [DIUBAH] Ganti nama class */
+  .dynamic-tooltip {
     position: absolute;
     background-color: #333; 
     color: white;
@@ -1658,15 +1583,14 @@
     pointer-events: none; 
   }
 
-  .dynamic-tooltip.show { /* [DIUBAH] Ganti nama class */
+  .dynamic-tooltip.show {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
     pointer-events: auto; 
   }
 
-  /* Panah (Arrow) */
-  .dynamic-tooltip::after { /* [DIUBAH] Ganti nama class */
+  .dynamic-tooltip::after {
     content: '';
     position: absolute;
     left: 50%;
@@ -1675,22 +1599,18 @@
     border-style: solid;
   }
 
-  /* Panah di bawah (untuk tooltip.top) */
-  .dynamic-tooltip.top::after { /* [DIUBAH] Ganti nama class */
+  .dynamic-tooltip.top::after {
     top: 100%; 
     border-color: #333 transparent transparent transparent;
   }
 
-  /* Panah di atas (untuk tooltip.bottom) */
-  .dynamic-tooltip.bottom::after { /* [DIUBAH] Ganti nama class */
+  .dynamic-tooltip.bottom::after {
     bottom: 100%; 
     border-color: transparent transparent #333 transparent;
   }
 
-  /* [BARU] Style untuk header mapel yang bisa diklik */
   .clickable-mapel-header {
     cursor: pointer;
-    /* Beri garis bawah putus-putus agar terlihat interaktif */
     text-decoration: underline dashed;
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
@@ -1698,7 +1618,40 @@
   }
   .clickable-mapel-header:hover {
     color: var(--primary-color);
-    text-decoration: underline solid; /* Ubah jadi solid saat hover */
+    text-decoration: underline solid;
   }
 
+  #btn-buka-input-rapor { color: #d63384; } 
+  #btn-buka-input-rapor:hover {
+    background-color: #d63384 !important;
+    color: white !important;
+  }
+
+  #btn-buka-rekap-rapor { color: #6f42c1; } 
+  #btn-buka-rekap-rapor:hover {
+    background-color: #6f42c1 !important;
+    color: white !important;
+  }
+  
+  #btn-bersihkan-input-rapor {
+    background-color: var(--danger-color);
+  }
+  #btn-bersihkan-input-rapor:hover {
+    background-color: #b02a37;
+  }
+  
+  #btn-simpan-input-rapor {
+    background-color: var(--success-color);
+  }
+  #btn-simpan-input-rapor:hover {
+    background-color: #157347;
+  }
+  
+  #btn-bersihkan-input-rapor:disabled,
+  #btn-simpan-input-rapor:disabled {
+    background-color: var(--secondary-color) !important;
+    opacity: 0.65;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
 </style>
