@@ -531,6 +531,9 @@
     });
     // [BARU] Listener untuk tombol simpan nilai (akan kita buat fungsinya di bawah)
     document.getElementById('btn-simpan-input-nilai').addEventListener('click', simpanInputNilai);
+    
+    // [MODIFIKASI BARU] Listener untuk tombol bersihkan nilai
+    document.getElementById('btn-bersihkan-input-nilai').addEventListener('click', konfirmasiBersihkanNilai);
 
     // [BARU] Listener untuk menghitung Jumlah/Rata-rata secara real-time
     document.getElementById('halaman-input-nilai-detail').addEventListener('input', (e) => {
@@ -2396,10 +2399,12 @@
     const judulHalaman = document.getElementById('judul-halaman-input-nilai');
     const tableContainer = document.getElementById('input-nilai-table-container');
     const btnSimpan = document.getElementById('btn-simpan-input-nilai');
+    const btnBersihkan = document.getElementById('btn-bersihkan-input-nilai'); // [BARU]
 
     // 1. Reset tampilan
     tableContainer.innerHTML = '<p>Memuat data siswa dan mata pelajaran...</p>';
     btnSimpan.disabled = true;
+    btnBersihkan.disabled = true; // [BARU]
     document.getElementById('input-nilai-filter-kelas').innerHTML = '<option value="semua">-- Tampilkan Semua Kelas --</option>'; // [BARU] Reset filter
     globalGridData = { siswaList: [], mapelList: [], nilaiData: {} }; // [BARU] Reset cache
 
@@ -2451,10 +2456,12 @@
     setLoading(false);
     const container = document.getElementById('input-nilai-table-container');
     const btnSimpan = document.getElementById('btn-simpan-input-nilai');
+    const btnBersihkan = document.getElementById('btn-bersihkan-input-nilai'); // [BARU]
     
     if (response.status !== 'sukses') {
       container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat data: ${response.message}</p>`;
       btnSimpan.disabled = true;
+      btnBersihkan.disabled = true; // [BARU]
       globalGridData = { siswaList: [], mapelList: [], nilaiData: {} }; // [BARU] Reset cache
       return;
     }
@@ -2472,8 +2479,10 @@
     const { siswaList, mapelList } = globalGridData;
     if (siswaList && siswaList.length > 0 && mapelList && mapelList.length > 0) {
       btnSimpan.disabled = false;
+      btnBersihkan.disabled = false; // [BARU]
     } else {
       btnSimpan.disabled = true;
+      btnBersihkan.disabled = true; // [BARU]
     }
   }
 
@@ -2897,6 +2906,48 @@
     html += '</tbody></table>';
 
     container.innerHTML = html;
+  }
+
+  /**
+   * [BARU] Menampilkan modal konfirmasi sebelum membersihkan nilai di layar.
+   */
+  function konfirmasiBersihkanNilai() {
+    const title = "Konfirmasi Bersihkan Formulir";
+    const message = "Ingin memulai lembar baru? 📝<br><br>Ini akan <strong>mengosongkan semua nilai</strong> yang tampil di layar. Data yang sudah tersimpan di server <strong>tetap aman</strong>.";
+    
+    // Panggil modal konfirmasi
+    // Jika user klik OK, modal akan memanggil fungsi 'bersihkanInputNilai'
+    showConfirmationModal(title, message, bersihkanInputNilai, 'danger');
+  }
+
+  /**
+   * [BARU] Mengosongkan semua input nilai di tabel dan menghitung ulang total.
+   */
+  function bersihkanInputNilai() {
+    // 1. Ambil semua input nilai yang terlihat
+    const inputs = document.querySelectorAll('#input-nilai-table-container .input-nilai');
+    
+    // 2. Ambil jumlah mapel dari cache global
+    const mapelCount = globalGridData.mapelList.length;
+    
+    // 3. Buat Set untuk menampung ID siswa yang perlu di-update totalnya
+    const siswaIdsToUpdate = new Set();
+
+    // 4. Loop semua input
+    inputs.forEach(input => {
+      input.value = ''; // Kosongkan nilai input
+      siswaIdsToUpdate.add(input.dataset.siswaId); // Tambahkan ID siswa ke Set
+    });
+
+    // 5. Hitung ulang total untuk setiap siswa yang terdampak
+    if (mapelCount > 0) {
+      siswaIdsToUpdate.forEach(siswaId => {
+        updateRowTotals(siswaId, mapelCount);
+      });
+    }
+
+    // 6. Tampilkan pesan sukses
+    showMessage('input-nilai-message', 'Semua nilai di formulir telah dibersihkan.', false); // false = sukses
   }
 
 </script>
