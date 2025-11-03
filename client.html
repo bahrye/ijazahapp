@@ -98,7 +98,7 @@
       'auth-container', 'halaman-utama', 'halaman-mapel',
       'halaman-data-sekolah', 'halaman-bobot', 'halaman-kelas', 'halaman-siswa',
       'halaman-input-ujian', 'halaman-input-nilai-detail',
-      'halaman-rekap-nilai' // [BARU] Tambahkan ID halaman baru
+      'halaman-rekap-nilai', 'halaman-semester'
     ];
     const authSubPages = ['halaman-login', 'halaman-registrasi'];
 
@@ -115,9 +115,10 @@
     hideMessage('siswa-message');
     hideMessage('input-nilai-message');
     hideMessage('mapel-message');
-    hideMessage('template-message'); // [DIUBAH]
-    hideMessage('template-nilai-message'); // [BARU]
-    hideMessage('rekap-nilai-message'); // [BARU] Sembunyikan pesan error
+    hideMessage('template-message');
+    hideMessage('template-nilai-message');
+    hideMessage('rekap-nilai-message');
+    hideMessage('semester-message');
 
     // Tentukan halaman yang akan ditampilkan
     const targetElement = document.getElementById(idHalaman);
@@ -351,14 +352,13 @@
             bukaHalamanInputUjian();
             break;
         case 'halaman-input-nilai-detail':
-            // Jika di-refresh, kembalikan ke menu input, bukan halaman detail
             bukaHalamanInputUjian(); 
             break;
-        // [BARU] Tambahkan case untuk halaman rekap
         case 'halaman-rekap-nilai':
-            // Jika di-refresh, kembalikan ke menu input, bukan halaman detail
-            // bukaHalamanRekapNilai(); // Anda bisa pilih ini
-            bukaHalamanInputUjian(); // Atau ini (lebih aman)
+            bukaHalamanInputUjian();
+            break;
+        case 'halaman-semester':
+            bukaHalamanSemester();
             break;
         default:
             console.warn("ID halaman tersimpan tidak valid:", pageId, ". Menampilkan dashboard.");
@@ -528,6 +528,17 @@
     // [BARU] Listener untuk kartu rekap
     document.getElementById('btn-buka-rekap-nilai').addEventListener('click', () => {
       bukaHalamanRekapNilai();
+    });
+    // [BARU] Listener untuk Halaman Kelola Semester
+    document.getElementById('btn-buka-semester').addEventListener('click', () => {
+      bukaHalamanSemester();
+    });
+    document.getElementById('btn-kembali-ke-dashboard-7').addEventListener('click', () => {
+      tampilHalaman('halaman-utama');
+    });
+    document.getElementById('form-semester').addEventListener('submit', (e) => {
+      e.preventDefault();
+      simpanSemester();
     });
     // [BARU] Listener untuk tombol simpan nilai (akan kita buat fungsinya di bawah)
     document.getElementById('btn-simpan-input-nilai').addEventListener('click', simpanInputNilai);
@@ -1372,10 +1383,16 @@
         select.innerHTML += `<option value="${opt}">${opt}</option>`;
       });
 
-      // Set nilai yang tersimpan
+      // [MODIFIKASI DIMULAI]
+      // Set nilai yang tersimpan ATAU default ke pilihan kedua (MI/MTS/MA)
       if (selectedValue) {
+        // Jika ada nilai tersimpan (misal "SD"), gunakan itu.
         select.value = selectedValue;
+      } else if (options.length > 1) {
+        // Jika tidak ada nilai tersimpan, dan ada opsi kedua (MI/MTS/MA)
+        select.value = options[1]; // options[1] adalah 'MI', 'MTS', or 'MA'
       }
+      // [MODIFIKASI SELESAI]
   }
 
   function updateTampilanNSM() {
@@ -1496,6 +1513,7 @@
       }
       document.getElementById('bobot-rapor').value = response.bobotRapor;
       document.getElementById('bobot-ujian').value = response.bobotUjian;
+      document.getElementById('bobot-kkm').value = response.kkm; // [BARU]
   }
 
   function simpanBobot() {
@@ -1504,17 +1522,25 @@
 
       const bobotRapor = parseInt(document.getElementById('bobot-rapor').value, 10) || 0;
       const bobotUjian = parseInt(document.getElementById('bobot-ujian').value, 10) || 0;
+      const kkm = parseInt(document.getElementById('bobot-kkm').value, 10); // [BARU]
 
       if ((bobotRapor + bobotUjian) !== 100) {
         setLoading(false);
         showMessage('bobot-message', 'Total bobot harus 100%. Silakan periksa kembali isian Anda.', true);
         return;
       }
+      
+      // [BARU] Validasi KKM di client
+      if (isNaN(kkm) || kkm < 0 || kkm > 100) {
+        setLoading(false);
+        showMessage('bobot-message', 'Nilai KKM harus angka yang valid antara 0 dan 100.', true);
+        return;
+      }
 
       google.script.run
         .withSuccessHandler(onBobotSaved)
         .withFailureHandler(onGagal)
-        .saveBobotData(bobotRapor, bobotUjian);
+        .saveBobotData(bobotRapor, bobotUjian, kkm); // [DIUBAH] Kirim kkm
   }
 
   function onBobotSaved(response) {
@@ -2995,6 +3021,74 @@
 
     // 6. Tampilkan pesan sukses
     showMessage('input-nilai-message', 'Semua nilai di formulir telah dibersihkan.', false); // false = sukses
+  }
+
+  // ===========================================
+  // [BARU] FUNGSI & HANDLER KELOLA SEMESTER
+  // ===========================================
+
+  function bukaHalamanSemester() {
+    tampilHalaman('halaman-semester'); // tampilHalaman akan menyimpan ID
+    hideMessage('semester-message');
+    document.getElementById('form-semester').reset();
+    setFormDisabled('form-semester', true); // Nonaktifkan form saat memuat
+    document.getElementById('pilihan-semester').innerHTML = '<option value="">Memuat...</option>'; // Tampilkan status memuat di select
+    
+    google.script.run
+      .withSuccessHandler(onSemesterSettingLoaded)
+      .withFailureHandler(onGagal)
+      .getSemesterSetting();
+  }
+
+  function onSemesterSettingLoaded(response) {
+    setFormDisabled('form-semester', false); // Aktifkan form
+    const select = document.getElementById('pilihan-semester');
+    select.innerHTML = ''; // Kosongkan opsi "Memuat..."
+    select.disabled = false; // Aktifkan select
+    document.getElementById('btn-simpan-semester').disabled = false; // Aktifkan tombol simpan
+
+    if (response.status !== 'sukses') {
+      showMessage('semester-message', response.message, true);
+      return;
+    }
+
+    const jenjang = response.jenjang;
+    const setting = response.setting || 5; // Default ke 5 jika null
+
+    // 1. Tentukan opsi berdasarkan jenjang
+    if (jenjang === 'SD/MI') {
+      select.innerHTML = '<option value="5">5 Semester (Default)</option>';
+      select.innerHTML += '<option value="3">3 Semester</option>';
+    } else {
+      // Untuk SMP/MTS, SMA/MA, atau jenjang lain
+      select.innerHTML = '<option value="5">5 Semester (Otomatis)</option>';
+      select.disabled = true; // Nonaktifkan dropdown jika bukan SD/MI
+      document.getElementById('btn-simpan-semester').disabled = true; // Nonaktifkan tombol simpan juga
+    }
+    
+    // 2. Set nilai yang aktif
+    select.value = setting;
+  }
+
+  function simpanSemester() {
+    setLoading(true);
+    hideMessage('semester-message');
+
+    const nilaiSemester = document.getElementById('pilihan-semester').value;
+
+    google.script.run
+      .withSuccessHandler(onSemesterSettingSaved)
+      .withFailureHandler(onGagal)
+      .saveSemesterSetting(nilaiSemester);
+  }
+
+  function onSemesterSettingSaved(response) {
+    setLoading(false);
+    if (response.status === 'sukses') {
+      showMessage('semester-message', 'Pengaturan semester berhasil disimpan!', false); // false = sukses
+    } else {
+      showMessage('semester-message', response.message, true);
+    }
   }
 
 </script>
