@@ -129,8 +129,39 @@
             <i class="fas fa-flask"></i>
             <span>Ujian Praktek</span>
           </button>
+          <button class="dashboard-card" id="btn-buka-rekap-nilai">
+            <i class="fas fa-chart-bar"></i>
+            <span>Rekapitulasi Nilai</span>
+          </button>
         </div>
       </div>
+    </div>
+
+    <div class="container" id="halaman-rekap-nilai" style="display: none;">
+      <div class="page">
+        <div class="page-top-nav">
+          <button type="button" id="btn-kembali-ke-input-ujian-2"><i class="fas fa-arrow-circle-left"></i>Kembali ke Pilihan Ujian</button>
+        </div>
+
+        <div class="page-header">
+          <h2 id="judul-halaman-rekap-nilai">Rekapitulasi Nilai Ujian</h2> 
+        </div>
+
+        <p id="rekap-nilai-message" class="message" style="display: none;"></p>
+        
+        <div class="filter-bar">
+          <div class="form-group">
+            <label for="rekap-nilai-filter-kelas">Tampilkan Kelas</label>
+            <select id="rekap-nilai-filter-kelas">
+              <option value="semua">-- Tampilkan Semua Kelas --</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-nilai-table-container" id="rekap-nilai-table-container">
+          <p>Memuat data...</p>
+        </div>
+        
+        </div>
     </div>
 
     <div class="container" id="halaman-input-nilai-detail" style="display: none;">
