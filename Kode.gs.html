@@ -207,6 +207,8 @@ function prosesRegistrasi(namaSekolah, jenjang, email, password) {
     sheetSetting.appendRow(['Setting', 'Value']);
     sheetSetting.appendRow(['Bobot_Rapor', 60]);
     sheetSetting.appendRow(['Bobot_Ujian', 40]);
+    sheetSetting.appendRow(['Jumlah_Semester', 5]);
+    sheetSetting.appendRow(['KKM', 76]);
 
     // Tambahkan sheet Data_Sekolah
     const sheetDataSekolah = newSpreadsheet.insertSheet('Data_Sekolah');
@@ -216,12 +218,25 @@ function prosesRegistrasi(namaSekolah, jenjang, email, password) {
       'KabKot', 'PilihanKabKot', 'Kecamatan', 'KelDes', 'PilihanKelDes', 
       'KodePos', 'Telepon', 'Email', 'Website', 'NamaKepsek', 'NIPKepsek'
     ]);
+    // [MODIFIKASI DIMULAI]
+    // Tentukan nilai default untuk JenjangPilihan berdasarkan jenjang utama
+    let jenjangPilihanDefault = '';
+    if (jenjang === 'SD/MI') {
+      jenjangPilihanDefault = 'MI';
+    } else if (jenjang === 'SMP/MTS') {
+      jenjangPilihanDefault = 'MTS';
+    } else if (jenjang === 'SMA/MA') {
+      jenjangPilihanDefault = 'MA';
+    }
+    
     sheetDataSekolah.appendRow([
       // Data Default (A2:P2)
-      '', '', '', '', '', 
+      jenjangPilihanDefault, // <-- INI DIA PERUBAHANNYA (sebelumnya '')
+      '', '', '', '', 
       '', 'Kabupaten', '', '', 'Kelurahan', 
       '', '', '', '', '', ''
     ]);
+    // [MODIFIKASI SELESAI]
     // Set baris data (baris 2) agar formatnya Teks Biasa (@)
     sheetDataSekolah.getRange('A2:P2').setNumberFormat('@');
 
@@ -1121,8 +1136,34 @@ function getPengaturanSheet(ss) {
     sheet.appendRow(['Setting', 'Value']);
     sheet.appendRow(['Bobot_Rapor', 60]); // Default
     sheet.appendRow(['Bobot_Ujian', 40]); // Default
+    sheet.appendRow(['Jumlah_Semester', 5]);
+    sheet.appendRow(['KKM', 76]); // [BARU] Default KKM
     SpreadsheetApp.flush();
   }
+  
+  // [BARU] Pastikan kolom KKM ada untuk akun lama
+  try {
+    const data = sheet.getRange('A1:A' + sheet.getLastRow()).getValues();
+    let foundSemester = false;
+    let foundKKM = false;
+    for (let i = 0; i < data.length; i++) {
+      if (data[i][0] === 'Jumlah_Semester') {
+        foundSemester = true;
+      }
+      if (data[i][0] === 'KKM') {
+        foundKKM = true;
+      }
+    }
+    if (!foundSemester) {
+      sheet.appendRow(['Jumlah_Semester', 5]);
+    }
+    if (!foundKKM) {
+      sheet.appendRow(['KKM', 76]); // [BARU] Tambahkan KKM jika tidak ada
+    }
+  } catch (e) {
+    Logger.log("Gagal mengecek/membuat setting: " + e.message);
+  }
+  
   return sheet;
 }
 
@@ -1139,6 +1180,7 @@ function getBobotData() {
     const data = sheet.getRange('A1:B' + sheet.getLastRow()).getValues();
     let bobotRapor = 60; // Default
     let bobotUjian = 40; // Default
+    let kkm = 76; // [BARU] Default KKM
 
     // Loop untuk mencari berdasarkan nama (lebih kuat drpd B2/B3)
     for (let i = 0; i < data.length; i++) {
@@ -1146,10 +1188,12 @@ function getBobotData() {
         bobotRapor = data[i][1];
       } else if (data[i][0] === 'Bobot_Ujian') {
         bobotUjian = data[i][1];
+      } else if (data[i][0] === 'KKM') { // [BARU]
+        kkm = data[i][1];
       }
     }
     
-    return { status: "sukses", bobotUjian: bobotUjian, bobotRapor: bobotRapor };
+    return { status: "sukses", bobotUjian: bobotUjian, bobotRapor: bobotRapor, kkm: kkm };
     
   } catch (e) {
     Logger.log(e);
@@ -1158,14 +1202,21 @@ function getBobotData() {
 }
 
 /**
+/**
  * [SERVER] Menyimpan data bobot ke sheet 'Pengaturan'.
  */
-function saveBobotData(bobotRapor, bobotUjian) {
+function saveBobotData(bobotRapor, bobotUjian, kkm) { // [DIUBAH] Tambah parameter kkm
   try {
     validateAndRefreshSession(); // Validasi sesi
     
     if ((bobotRapor + bobotUjian) !== 100) {
       return { status: "gagal", message: "Total bobot harus 100." };
+    }
+    
+    // [BARU] Validasi KKM
+    const kkmValue = parseInt(kkm, 10);
+    if (isNaN(kkmValue) || kkmValue < 0 || kkmValue > 100) {
+      return { status: "gagal", message: "KKM harus angka antara 0 dan 100." };
     }
 
     const userProperties = PropertiesService.getUserProperties();
@@ -1176,6 +1227,7 @@ function saveBobotData(bobotRapor, bobotUjian) {
     const data = sheet.getRange('A1:B' + sheet.getLastRow()).getValues();
     let foundRapor = false;
     let foundUjian = false;
+    let foundKKM = false; // [BARU]
 
     // Loop untuk update berdasarkan nama
     for (let i = 0; i < data.length; i++) {
@@ -1186,6 +1238,9 @@ function saveBobotData(bobotRapor, bobotUjian) {
       } else if (data[i][0] === 'Bobot_Ujian') {
         sheet.getRange('B' + rowIdx).setValue(bobotUjian);
         foundUjian = true;
+      } else if (data[i][0] === 'KKM') { // [BARU]
+        sheet.getRange('B' + rowIdx).setValue(kkmValue);
+        foundKKM = true;
       }
     }
     
@@ -1195,6 +1250,9 @@ function saveBobotData(bobotRapor, bobotUjian) {
     }
     if (!foundUjian) {
       sheet.appendRow(['Bobot_Ujian', bobotUjian]);
+    }
+    if (!foundKKM) { // [BARU]
+      sheet.appendRow(['KKM', kkmValue]);
     }
 
     return { status: "sukses" };
@@ -2347,6 +2405,82 @@ function getRekapitulasiNilaiData() {
         nilaiRekapData: nilaiRekapData // Kirim data rekap
       }
     };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
+}
+
+/**
+ * [SERVER BARU] Mengambil data semester dari sheet 'Pengaturan' dan jenjang user.
+ */
+function getSemesterSetting() {
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const jenjang = userProperties.getProperty('jenjang'); // "SD/MI", "SMP/MTS", dll.
+    
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheet = getPengaturanSheet(ss); // Helper ini sudah ada dan aman
+    
+    const data = sheet.getRange('A1:B' + sheet.getLastRow()).getValues();
+    let jumlahSemester = 5; // Default
+
+    for (let i = 0; i < data.length; i++) {
+      if (data[i][0] === 'Jumlah_Semester') {
+        jumlahSemester = data[i][1];
+        break;
+      }
+    }
+    
+    return { status: "sukses", jenjang: jenjang, setting: jumlahSemester };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
+}
+
+/**
+ * [SERVER BARU] Menyimpan data semester ke sheet 'Pengaturan'.
+ */
+function saveSemesterSetting(jumlahSemester) {
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const jenjang = userProperties.getProperty('jenjang');
+    
+    // Validasi
+    const settingAngka = parseInt(jumlahSemester, 10);
+    if (settingAngka !== 3 && settingAngka !== 5) {
+      return { status: "gagal", message: "Nilai tidak valid. Hanya 3 atau 5 yang diizinkan." };
+    }
+    
+    if (jenjang !== 'SD/MI' && settingAngka === 3) {
+      return { status: "gagal", message: "Pilihan 3 semester hanya untuk jenjang SD/MI." };
+    }
+
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheet = getPengaturanSheet(ss);
+
+    const data = sheet.getRange('A1:B' + sheet.getLastRow()).getValues();
+    let found = false;
+
+    for (let i = 0; i < data.length; i++) {
+      const rowIdx = i + 1;
+      if (data[i][0] === 'Jumlah_Semester') {
+        sheet.getRange('B' + rowIdx).setValue(settingAngka);
+        found = true;
+        break;
+      }
+    }
+    
+    if (!found) {
+      sheet.appendRow(['Jumlah_Semester', settingAngka]);
+    }
+
+    return { status: "sukses" };
     
   } catch (e) {
     Logger.log(e);
