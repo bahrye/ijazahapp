@@ -2036,3 +2036,123 @@ function prosesUploadExcelNilai(fileData) {
     return { status: "gagal", message: "Terjadi error di server: " + e.message };
   }
 }
+
+// ===========================================
+// [BARU] FUNGSI REKAPITULASI NILAI
+// ===========================================
+
+/**
+ * [HELPER BARU] Memproses nilai UM dan UP berdasarkan logika rekapitulasi.
+ * @param {*} nilaiUM - Nilai Ujian Madrasah/Sekolah (bisa null, string, atau angka)
+ * @param {*} nilaiUP - Nilai Ujian Praktek (bisa null, string, atau angka)
+ * @returns {number|null} Nilai rekapitulasi atau null jika tidak ada data.
+ */
+function hitungNilaiRekap(nilaiUM, nilaiUP) {
+  // Ubah nilai jadi Angka atau null
+  // parseFloat akan menangani string ('80.5', '0') dan angka (80, 0)
+  const um = (nilaiUM === null || nilaiUM === undefined || nilaiUM === "") ? null : parseFloat(nilaiUM);
+  const up = (nilaiUP === null || nilaiUP === undefined || nilaiUP === "") ? null : parseFloat(nilaiUP);
+  
+  // Cek apakah hasil parseFloat adalah angka valid (termasuk 0)
+  const umIsValid = (um !== null && !isNaN(um));
+  const upIsValid = (up !== null && !isNaN(up));
+  
+  if (umIsValid && upIsValid) {
+    // 1. Keduanya valid (termasuk 0): (89 + 0) / 2 = 44.5
+    return (um + up) / 2;
+  } else if (umIsValid) {
+    // 2. Hanya UM yang valid: 89
+    return um;
+  } else if (upIsValid) {
+    // 3. Hanya UP yang valid: 89
+    return up;
+  } else {
+    // 4. Keduanya tidak valid (kosong/null)
+    return null;
+  }
+}
+
+/**
+ * [BARU] Mengambil semua data yang diperlukan untuk rekapitulasi nilai.
+ */
+function getRekapitulasiNilaiData() {
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    
+    // 1. Ambil Daftar Siswa (sudah terurut)
+    const siswaData = getSiswa(); // Ini memanggil fungsi di atas
+    if (siswaData.status !== 'sukses') {
+      throw new Error("Gagal mengambil data siswa: " + siswaData.message);
+    }
+    // Ekstrak hanya data yang perlu ditampilkan di tabel
+    const siswaList = siswaData.siswa.map(s => ({
+      id: s.id,
+      nama: s.nama,
+      nisn: s.nisn,
+      kelas: s.kelas
+    }));
+    
+    // 2. Ambil *SEMUA* Daftar Mapel
+    const mapelData = getMapel(); // Ini memanggil fungsi cache/sheet
+    if (mapelData.status !== 'sukses') {
+      throw new Error("Gagal mengambil data mapel: " + mapelData.message);
+    }
+    // Ekstrak hanya ID dan Nama
+    const mapelList = mapelData.mapel.map(m => ({ id: m.id, nama: m.nama }));
+    
+    // 3. Ambil Nilai Ujian yang Sudah Ada
+    const sheetNilai = getNilaiUjianSheet(ss);
+    const dataNilai = sheetNilai.getDataRange().getValues();
+    dataNilai.shift(); // Hapus header
+    
+    // Buat Peta (Map) untuk pencarian nilai cepat
+    // Kunci: "SiswaID_MapelID", Nilai: { um: 70, up: 80 }
+    const nilaiMap = new Map();
+    dataNilai.forEach(row => {
+      const siswaId = row[0];
+      const mapelId = row[1];
+      // Ambil nilai mentah (bisa jadi '0, 80.5, null, dll)
+      const nilaiUM = row[2];
+      const nilaiUP = row[3];
+      const key = `${siswaId}_${mapelId}`;
+      nilaiMap.set(key, { um: nilaiUM, up: nilaiUP });
+    });
+    
+    // 4. Susun Nilai Rekapitulasi
+    // Format: { "SiswaID_MapelID": nilaiRekap }
+    const nilaiRekapData = {};
+    siswaList.forEach(siswa => {
+      mapelList.forEach(mapel => {
+        const key = `${siswa.id}_${mapel.id}`;
+        const storedNilai = nilaiMap.get(key);
+        
+        let nilaiRekap = null;
+        if (storedNilai) {
+          // Panggil helper baru untuk menerapkan logika
+          nilaiRekap = hitungNilaiRekap(storedNilai.um, storedNilai.up);
+        }
+        
+        if (nilaiRekap !== null) {
+            nilaiRekapData[key] = nilaiRekap;
+        }
+        // Jika null, biarkan kosong (tidak perlu diisi)
+      });
+    });
+
+    // 5. Kembalikan paket data lengkap
+    return { 
+      status: "sukses", 
+      data: {
+        siswaList: siswaList,
+        mapelList: mapelList,
+        nilaiRekapData: nilaiRekapData // Kirim data rekap
+      }
+    };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
+}
