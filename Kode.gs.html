@@ -98,7 +98,7 @@ function prosesLogin(email, password) {
 
 /**
  * Memproses registrasi sekolah baru.
- * [UPDATE] Menyimpan nama sekolah sbg uppercase.
+ * [UPDATE] Menyimpan nama sekolah sbg uppercase dan menambahkan kelas default.
  */
 function prosesRegistrasi(namaSekolah, jenjang, email, password) {
   let newSSID = null; // Variabel untuk menyimpan ID sheet baru jika terjadi error
@@ -161,8 +161,34 @@ function prosesRegistrasi(namaSekolah, jenjang, email, password) {
     // [BARU] Set format kolom C (NISN) dan D (NIS_Lokal) ke Teks
     sheetSiswa.getRange('C:D').setNumberFormat('@');
       
-    newSpreadsheet.insertSheet('Kelas')
-      .appendRow(['NamaKelas']);
+    
+    // ==========================================================
+    // [MODIFIKASI DIMULAI] Menambahkan kelas default berdasarkan jenjang
+    // ==========================================================
+    const sheetKelas = newSpreadsheet.insertSheet('Kelas');
+    sheetKelas.appendRow(['NamaKelas']); // Tetap tambahkan header
+
+    let defaultKelas = '';
+    switch (jenjang) {
+      case 'SD/MI':
+        defaultKelas = 'VI';
+        break;
+      case 'SMP/MTS':
+        defaultKelas = 'IX';
+        break;
+      case 'SMA/MA':
+        defaultKelas = 'XII';
+        break;
+    }
+    
+    // Jika ada kelas default, tambahkan ke sheet
+    if (defaultKelas) {
+      sheetKelas.appendRow([defaultKelas]);
+    }
+    // ==========================================================
+    // [MODIFIKASI SELESAI]
+    // ==========================================================
+
     
     const sheetMapel = newSpreadsheet.insertSheet('Mapel');
     // [DIUBAH] Header sekarang 4 kolom
@@ -296,18 +322,14 @@ function checkToken(tokenFromClient) {
   }
 }
 
-
-// [PERUBAHAN] Bagian "FUNGSI PENGOLAHAN NILAI (CONTOH)" telah dihapus
-
-
 // ===========================================
-// FUNGSI HELPER MAPEL DEFAULT (DINAMIS)
+// FUNGSI HELPER MAPel DEFAULT (DINAMIS)
 // ===========================================
 
 // GANTI FUNGSI INI
 /**
  * Mengambil daftar mapel default dari Master Sheet berdasarkan jenjang.
- * [DIUBAH] Mengembalikan 4 kolom [ID, Nama, isUS, isUP] (default false)
+ * [DIUBAH] Mengembalikan 4 kolom [ID, Nama, isUS, isUP] berdasarkan data di master.
  */
 function getDynamicDefaultMapel(jenjang, masterSpreadsheet) {
   try {
@@ -324,15 +346,49 @@ function getDynamicDefaultMapel(jenjang, masterSpreadsheet) {
     
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
-      const jenjangData = row[0]; // Kolom Jenjang
-      const mapelID = row[1];     // Kolom MapelID
-      const namaMapel = row[2];   // Kolom NamaMapel
+      const jenjangData = row[0]; // Kolom A: Jenjang
+      const mapelID = row[1];     // Kolom B: MapelID
+      const namaMapel = row[2];   // Kolom C: NamaMapel
+      
+      // ==========================================================
+      // [PERBAIKAN] Logika pengecekan boolean yang lebih kuat
+      // ==========================================================
+      
+      const val_us = row[3]; // Kolom D (Default UM/US)
+      const val_up = row[4]; // Kolom E (Default UP)
+
+      let isUS_default = false;
+      let isUP_default = false;
+
+      // Pengecekan untuk Kolom D (UM/US)
+      if (val_us === true) {
+        // 1. Cek jika nilainya adalah boolean 'true'
+        isUS_default = true;
+      } else if (typeof val_us === 'string') {
+        // 2. Cek jika nilainya adalah string "TRUE" (setelah dibersihkan dari spasi)
+        isUS_default = val_us.trim().toUpperCase() === 'TRUE';
+      }
+
+      // Pengecekan untuk Kolom E (UP)
+      if (val_up === true) {
+        // 1. Cek jika nilainya adalah boolean 'true'
+        isUP_default = true;
+      } else if (typeof val_up === 'string') {
+        // 2. Cek jika nilainya adalah string "TRUE" (setelah dibersihkan dari spasi)
+        isUP_default = val_up.trim().toUpperCase() === 'TRUE';
+      }
+      
+      // ==========================================================
+      // [PERBAIKAN SELESAI]
+      // ==========================================================
+
 
       // Filter: jika jenjangnya cocok ATAU jenjangnya "UMUM"
       if (jenjangData === jenjang || jenjangData === 'UMUM') {
         if (mapelID && namaMapel) { // Pastikan data tidak kosong
-          // [DIUBAH] Tambahkan 2 kolom default 'false'
-          defaultMapel.push([mapelID, namaMapel, false, false]);
+          
+          // Gunakan nilai default yang baru dibaca
+          defaultMapel.push([mapelID, namaMapel, isUS_default, isUP_default]);
         }
       }
     }
@@ -481,50 +537,86 @@ function deleteMapel(mapelID) {
 
 // GANTI FUNGSI INI
 /**
- * [SINKRONISASI] Menambahkan mapel default yang hilang ke sheet Mapel sekolah.
+ * [SINKRONISASI] Menambahkan mapel default yang hilang DAN MEMPERBARUI mapel yang ada.
  */
 function syncDefaultMapel() {
   try {
     const userProperties = validateAndRefreshSession();
     const jenjang = userProperties.getProperty('jenjang');
     
-    // 1. Ambil daftar mapel default (sekarang 4 kolom)
+    // 1. Ambil daftar mapel default (sumber)
     const masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
-    const defaultMapelList = getDynamicDefaultMapel(jenjang, masterSS); // Array [ [ID, Nama, false, false], ... ]
+    const sourceData = getDynamicDefaultMapel(jenjang, masterSS); // Array [ [ID, Nama, bool, bool], ... ]
     
-    // 2. Ambil daftar mapel yang ada di sheet sekolah
-    const sheetMapel = getMapelSheet(); // Ini sudah memvalidasi sesi
-    const dataMapel = sheetMapel.getDataRange().getValues();
-    dataMapel.shift(); // Hapus header
-    
-    // Buat Set (untuk pencarian cepat) dari MapelID yang sudah ada
-    const existingMapelIDs = new Set();
-    dataMapel.forEach(row => {
-      if (row[0]) {
-        existingMapelIDs.add(row[0].toUpperCase()); // Simpan dalam huruf besar
-      }
+    // Buat Peta (Map) dari data sumber agar mudah dicari
+    // Peta: "MTK" -> { name: "Matematika", isUS: true, isUP: true }
+    const sourceMap = new Map();
+    sourceData.forEach(row => {
+      sourceMap.set(row[0], { name: row[1], isUS: row[2], isUP: row[3] });
     });
 
-    // 3. Filter mapel default yang BELUM ADA
-    const mapelToAdd = [];
-    defaultMapelList.forEach(mapel => { // 'mapel' sekarang array 4-elemen
-      const mapelID = mapel[0];
-      if (!existingMapelIDs.has(mapelID.toUpperCase())) {
-        // [DIUBAH] Langsung push 'mapel' (karena sudah 4 kolom)
-        mapelToAdd.push(mapel); 
-      }
-    });
+    // 2. Ambil daftar mapel yang ada di sheet sekolah (target)
+    const sheetMapel = getMapelSheet(); // Ini sudah memvalidasi sesi
+    const targetRange = sheetMapel.getDataRange();
+    const targetValues = targetRange.getValues();
+    const targetHeader = targetValues.shift(); // Ambil header
     
-    // 4. Tambahkan mapel yang hilang ke sheet
+    // Buat Set (untuk pencarian cepat) dari MapelID yang sudah ada
+    const targetIdSet = new Set(targetValues.map(row => row[0]));
+
+    // 3. Siapkan variabel untuk perubahan
+    const mapelToAdd = [];
+    let changesMade = false;
+
+    // 4. LOOP 1: Perbarui mapel yang sudah ada
+    for (let i = 0; i < targetValues.length; i++) {
+      const targetId = targetValues[i][0]; // ID mapel di sheet
+      const sourceRowData = sourceMap.get(targetId); // Cari di data default
+
+      // Jika mapel ini ada di data default (artinya mapel ini adalah mapel 'resmi')
+      if (sourceRowData) {
+        // Cek apakah isUS (kolom 2) atau isUP (kolom 3) berbeda
+        if (targetValues[i][2] !== sourceRowData.isUS || 
+            targetValues[i][3] !== sourceRowData.isUP) 
+        {
+          // Perbarui nilainya di array
+          targetValues[i][2] = sourceRowData.isUS;
+          targetValues[i][3] = sourceRowData.isUP;
+          changesMade = true;
+        }
+      }
+      // Jika tidak ada di 'sourceRowData', berarti itu mapel kustom, biarkan saja.
+    }
+
+    // 5. LOOP 2: Tambahkan mapel default yang hilang
+    for (const [sourceId, sourceData] of sourceMap.entries()) {
+      // Jika ID dari master-default TIDAK ADA di sheet target
+      if (!targetIdSet.has(sourceId)) {
+        mapelToAdd.push([sourceId, sourceData.name, sourceData.isUS, sourceData.isUP]);
+      }
+    }
+    
+    // 6. Terapkan perubahan ke Sheet
+    let message = "";
+    if (changesMade) {
+      // Tulis ulang data yang diperbarui (mulai baris 2, kolom 1)
+      sheetMapel.getRange(2, 1, targetValues.length, 4).setValues(targetValues);
+      message += "Data mapel yang ada telah diperbarui. ";
+    }
+    
     if (mapelToAdd.length > 0) {
-      // Rentang 4 kolom (ini sudah benar dari sebelumnya)
+      // Tambahkan baris baru di akhir
       sheetMapel.getRange(sheetMapel.getLastRow() + 1, 1, mapelToAdd.length, 4)
                 .setValues(mapelToAdd);
-      clearMapelCache();
-      return { status: "sukses", message: `Berhasil menambahkan ${mapelToAdd.length} mapel default yang hilang.` };
-    } else {
-      return { status: "sukses", message: "Data mapel Anda sudah sinkron. Tidak ada yang ditambahkan." };
+      message += `Berhasil menambahkan ${mapelToAdd.length} mapel default yang hilang.`;
     }
+
+    if (!changesMade && mapelToAdd.length === 0) {
+      message = "Data mapel Anda sudah sinkron. Tidak ada yang diubah.";
+    }
+
+    clearMapelCache();
+    return { status: "sukses", message: message };
     
   } catch (e) {
     return { status: "gagal", message: e.message };
