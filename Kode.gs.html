@@ -2381,7 +2381,16 @@ function saveNilaiRaporBatch(dataToSave) {
            .setValues(rowsToAppend);
     }
     
-    clearNilaiRaporCache();
+    const userCache = CacheService.getUserCache();
+    const semesterIdsToClear = new Set(dataToSave.map(item => item.semesterId));
+    semesterIdsToClear.forEach(semId => {
+      if (semId) {
+        userCache.remove(NILAI_RAPOR_GRID_CACHE_KEY_PREFIX + semId);
+        Logger.log("Membersihkan cache grid rapor untuk: " + semId);
+      }
+    });
+    
+    clearRekapNilaiRaporCache();
     
     return { status: "sukses", message: "Data nilai rapor berhasil disimpan!" };
     
