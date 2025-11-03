@@ -357,7 +357,7 @@
 
   .mapel-table th:last-child,
   .siswa-table th:last-child {
-    text-align: right;
+    text-align: left;
   }
 
   .mapel-table td:first-child,
@@ -1323,12 +1323,33 @@
     width: 40px; /* Buat tombol panah jadi kotak kecil */
     padding: 5px 0;
     font-size: 12px;
-    margin: 0 2px; /* Beri jarak horizontal */
+    margin: 0; /* Hapus margin, kita akan gunakan 'gap' */
   }
   
   .siswa-table td:last-child {
-    width: 210px; /* Perlebar kolom aksi */
-    white-space: nowrap; /* Jangan biarkan tombol turun baris */
+    /* width: 210px; <-- HAPUS BARIS INI */
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; 
+    gap: 8px; 
+  }
+
+  .btn-grup-gerak {
+    display: inline-flex; /* Tombol naik/turun tetap horizontal */
+    flex-shrink: 0;
+    gap: 5px; /* Jarak antar tombol naik & turun */
+  }
+  
+  .btn-grup-aksi {
+    display: flex;
+    flex-direction: column; /* Tombol edit/hapus jadi vertikal */
+    gap: 5px; /* Jarak antar tombol edit & hapus */
+    width: 80px; /* Tetapkan lebar grup edit/hapus */
+  }
+  
+  .btn-grup-aksi .btn-aksi {
+    width: 100%; /* Tombol edit/hapus mengisi lebar grupnya */
+    margin-left: 0;
   }
 
   /* 33. [BARU] Style Kolom Checkbox Tipe Ujian di Tabel Mapel */
