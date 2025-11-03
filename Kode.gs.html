@@ -1710,3 +1710,288 @@ function saveNilaiUjianBatch(dataToSave) {
     return { status: "gagal", message: e.message };
   }
 }
+
+/**
+ * [BARU & DIPERBAIKI] Membuat dan mengirim file template nilai .xlsx (sebagai Base64)
+ * yang diisi secara dinamis berdasarkan siswa dan mapel.
+ * @param {string} kelasDipilih - Nama kelas spesifik atau "semua"
+ * @returns {object} Objek status {status, base64, mimeType, fileName}
+ */
+function getNilaiTemplateData(kelasDipilih) {
+  let tempSpreadsheetId = null; // Untuk melacak file temporer
+
+  try {
+    const userProperties = validateAndRefreshSession();
+    const namaSekolah = userProperties.getProperty('namaSekolah');
+
+    // 1. Ambil Data Siswa (dari fungsi yang ada)
+    const siswaResponse = getSiswa();
+    if (siswaResponse.status !== 'sukses') {
+      throw new Error(siswaResponse.message);
+    }
+    
+    // 2. Filter Siswa berdasarkan kelas yang dipilih
+    const siswaList = siswaResponse.siswa;
+    const filteredSiswa = (kelasDipilih === 'semua')
+      ? siswaList
+      : siswaList.filter(s => s.kelas === kelasDipilih);
+
+    if (filteredSiswa.length === 0) {
+      return { status: "gagal", message: `Tidak ada siswa yang ditemukan untuk kelas '${kelasDipilih}'.` };
+    }
+    
+    // 3. Ambil Data Mapel (dari fungsi yang ada)
+    const mapelResponse = getMapel();
+    if (mapelResponse.status !== 'sukses') {
+      throw new Error(mapelResponse.message);
+    }
+    
+    // 4. Pisahkan Mapel US/UM dan Praktek
+    const mapelUS = mapelResponse.mapel.filter(m => m.isUS === true);
+    const mapelUP = mapelResponse.mapel.filter(m => m.isUP === true);
+
+    // 5. Buat Spreadsheet Temporer
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd_HHmmss");
+    const tempFileName = `[TEMP] Template Nilai - ${namaSekolah} - ${timestamp}`;
+    const ss = SpreadsheetApp.create(tempFileName);
+    tempSpreadsheetId = ss.getId();
+
+    // Data validasi 0-100 (sesuai permintaan)
+    const rule = SpreadsheetApp.newDataValidation()
+      .requireNumberBetween(0, 100)
+      .setAllowInvalid(true) 
+      .setHelpText("Nilai harus angka antara 0 dan 100.")
+      .build();
+
+    // 6. Buat Sheet 1: Ujian Sekolah/Madrasah
+    const sheetUS = ss.getSheetByName('Sheet1'); // Ambil sheet default
+    const jenjangPilihan = userProperties.getProperty('jenjangPilihan');
+    const namaSheetUS = (jenjangPilihan === 'MI' || jenjangPilihan === 'MTS' || jenjangPilihan === 'MA') ? 'Ujian Madrasah' : 'Ujian Sekolah';
+    sheetUS.setName(namaSheetUS);
+
+    // [PERBAIKAN] Set format kolom B (NISN) ke Teks Murni
+    sheetUS.getRange("B:B").setNumberFormat("@");
+
+    if (mapelUS.length > 0) {
+      // Buat Header
+      const headersUS = ["Nama Siswa", "NISN", "Kelas", ...mapelUS.map(m => m.id)];
+      sheetUS.getRange(1, 1, 1, headersUS.length).setValues([headersUS]);
+      
+      // Buat Data Siswa
+      // [PERBAIKAN] Paksa NISN menjadi string
+      const dataSiswaRows = filteredSiswa.map(s => [s.nama, String(s.nisn), s.kelas]);
+      sheetUS.getRange(2, 1, dataSiswaRows.length, 3).setValues(dataSiswaRows);
+      
+      // Terapkan Validasi Data
+      const nilaiRangeUS = sheetUS.getRange(2, 4, dataSiswaRows.length, mapelUS.length);
+      nilaiRangeUS.setDataValidation(rule);
+      
+      sheetUS.autoResizeColumns(1, 3); // Resize kolom Nama, NISN, Kelas
+    } else {
+      sheetUS.getRange('A1').setValue(`Tidak ada mapel yang ditandai untuk ${namaSheetUS}.`);
+    }
+
+    // 7. Buat Sheet 2: Ujian Praktek
+    const sheetUP = ss.insertSheet('Ujian Praktek');
+
+    // [PERBAIKAN] Set format kolom B (NISN) ke Teks Murni
+    sheetUP.getRange("B:B").setNumberFormat("@");
+    
+    if (mapelUP.length > 0) {
+      // Buat Header
+      const headersUP = ["Nama Siswa", "NISN", "Kelas", ...mapelUP.map(m => m.id)];
+      sheetUP.getRange(1, 1, 1, headersUP.length).setValues([headersUP]);
+      
+      // Buat Data Siswa (data yang sama)
+      // [PERBAIKAN] Paksa NISN menjadi string
+      const dataSiswaRows = filteredSiswa.map(s => [s.nama, String(s.nisn), s.kelas]);
+      sheetUP.getRange(2, 1, dataSiswaRows.length, 3).setValues(dataSiswaRows);
+      
+      // Terapkan Validasi Data
+      const nilaiRangeUP = sheetUP.getRange(2, 4, dataSiswaRows.length, mapelUP.length);
+      nilaiRangeUP.setDataValidation(rule);
+      
+      sheetUP.autoResizeColumns(1, 3);
+    } else {
+      sheetUP.getRange('A1').setValue('Tidak ada mapel yang ditandai untuk Ujian Praktek.');
+    }
+
+    // 8. Konversi ke .xlsx (Excel) dan kirim
+    SpreadsheetApp.flush(); // Pastikan semua perubahan disimpan
+    const url = "https://docs.google.com/spreadsheets/d/" + tempSpreadsheetId + "/export?format=xlsx";
+    const token = ScriptApp.getOAuthToken();
+    const response = UrlFetchApp.fetch(url, {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    });
+
+    const blob = response.getBlob().setName("template_nilai_ujian.xlsx");
+    const base64Data = Utilities.base64Encode(blob.getBytes());
+
+    return {
+      status: "sukses",
+      base64: base64Data,
+      mimeType: MimeType.MICROSOFT_EXCEL,
+      fileName: "template_nilai_ujian.xlsx"
+    };
+
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: "Gagal membuat template: " + e.message };
+  } finally {
+    // 10. HAPUS file temporer, APAPUN YANG TERJADI
+    if (tempSpreadsheetId) {
+      DriveApp.getFileById(tempSpreadsheetId).setTrashed(true);
+    }
+  }
+}
+
+/**
+ * [BARU] Memproses file Excel nilai yang di-upload, memvalidasi,
+ * dan menyimpan data menggunakan saveNilaiUjianBatch().
+ * @param {object} fileData Objek {base64, mimeType, fileName}
+ * @returns {object} Objek laporan {status, totalDitemukan, ...}
+ */
+function prosesUploadExcelNilai(fileData) {
+  let tempExcelFileId = null;
+  let tempConvertedSheetId = null;
+
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+
+    // 1. Dapatkan Data Master untuk Validasi
+    // Peta NISN -> SiswaID (mis: "00123" -> "SIS-1")
+    const sheetSiswa = getSiswaSheet(ss);
+    const dataSiswa = sheetSiswa.getDataRange().getValues();
+    dataSiswa.shift(); // Hapus header
+    const nisnToSiswaIdMap = new Map(dataSiswa.map(row => [String(row[2]), row[0]])); // row[2] = NISN, row[0] = SiswaID
+    
+    // Set MapelID (mis: "MTK", "BIN")
+    const sheetMapel = getMapelSheet(ss);
+    const dataMapel = sheetMapel.getDataRange().getValues();
+    dataMapel.shift();
+    const mapelIdSet = new Set(dataMapel.map(row => row[0])); // row[0] = MapelID
+
+    // 2. Konversi File Excel (sama seperti import siswa)
+    const { base64, mimeType, fileName } = fileData;
+    const decodedData = Utilities.base64Decode(base64.split(',')[1]);
+    const blob = Utilities.newBlob(decodedData, mimeType, fileName);
+    
+    const tempExcelFile = DriveApp.createFile(blob);
+    tempExcelFileId = tempExcelFile.getId();
+
+    const conversionResource = { title: `[TEMP] Upload Nilai - ${fileName}`, mimeType: MimeType.GOOGLE_SHEETS };
+    const convertedFile = Drive.Files.copy(conversionResource, tempExcelFileId, { convert: true });
+    tempConvertedSheetId = convertedFile.id;
+    
+    const tempSheet = SpreadsheetApp.openById(tempConvertedSheetId);
+    
+    // 3. Siapkan Variabel Laporan
+    const gagalList = [];
+    const dataToSave = []; // Ini akan diisi untuk dikirim ke saveNilaiUjianBatch()
+    let totalDitemukan = 0;
+    
+    // 4. Proses Tiap Sheet (US/UM dan Praktek)
+    const jenjangPilihan = userProperties.getProperty('jenjangPilihan');
+    const namaSheetUS = (jenjangPilihan === 'MI' || jenjangPilihan === 'MTS' || jenjangPilihan === 'MA') ? 'Ujian Madrasah' : 'Ujian Sekolah';
+    
+    const sheetsToProcess = [
+      { name: namaSheetUS, type: 'UM' },
+      { name: 'Ujian Praktek', type: 'Praktek' }
+    ];
+
+    sheetsToProcess.forEach(sheetInfo => {
+      const sheet = tempSheet.getSheetByName(sheetInfo.name);
+      if (!sheet) {
+        gagalList.push({ sheet: sheetInfo.name, baris: 'N/A', info: 'Sheet Tidak Ditemukan', alasan: 'Sheet dengan nama ini tidak ada di file.' });
+        return; // Lanjut ke sheet berikutnya
+      }
+      
+      const data = sheet.getDataRange().getValues();
+      if (data.length <= 1) return; // Skip sheet kosong
+      
+      const header = data.shift(); // Ambil header
+      const mapelHeaders = header.slice(3); // Mapel dimulai dari kolom ke-4 (index 3)
+
+      // Loop tiap baris siswa
+      data.forEach((row, rowIndex) => {
+        const barisKe = rowIndex + 2; // 1-based index + header
+        const namaSiswa = row[0];
+        const nisn = String(row[1]).trim(); // Kolom NISN
+        
+        // Validasi Siswa
+        const siswaId = nisnToSiswaIdMap.get(nisn);
+        if (!siswaId) {
+          gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: `Siswa: ${namaSiswa || nisn}`, alasan: `NISN '${nisn}' tidak terdaftar di database.` });
+          return; // Lanjut ke siswa berikutnya
+        }
+        
+        // Loop tiap kolom mapel
+        mapelHeaders.forEach((mapelId, mapelIndex) => {
+          mapelId = String(mapelId).trim(); // Pastikan kode mapel di-trim
+          const nilai = row[mapelIndex + 3]; // +3 karena 3 kolom info siswa
+          
+          // Lewati sel kosong, tidak perlu dilaporkan
+          if (nilai === null || nilai === "") {
+            return; 
+          }
+          
+          totalDitemukan++; // Hitung sel yang TIDAK kosong
+          const info = `Siswa: ${namaSiswa} (Mapel: ${mapelId})`;
+          
+          // Validasi Mapel
+          if (!mapelIdSet.has(mapelId)) {
+            gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: info, alasan: `Kode Mapel '${mapelId}' di header tidak dikenal.` });
+            return; // Lanjut ke mapel berikutnya
+          }
+          
+          // Validasi Nilai (0-100 atau angka)
+          const numNilai = parseFloat(nilai);
+          if (isNaN(numNilai) || numNilai < 0 || numNilai > 100) {
+            gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: info, alasan: `Nilai '${nilai}' tidak valid (harus 0-100).` });
+            return; // Lanjut ke mapel berikutnya
+          }
+          
+          // LOLOS SEMUA VALIDASI
+          dataToSave.push({
+            siswaId: siswaId,
+            mapelId: mapelId,
+            tipeUjian: sheetInfo.type, // 'UM' atau 'Praktek'
+            nilai: numNilai
+          });
+        });
+      });
+    });
+    
+    // 5. Simpan Data (menggunakan fungsi batch yang sudah ada)
+    if (dataToSave.length > 0) {
+      const saveResult = saveNilaiUjianBatch(dataToSave); // Panggil fungsi .gs yang ada
+      if (saveResult.status !== 'sukses') {
+        throw new Error("Gagal menyimpan data batch: " + saveResult.message);
+      }
+    }
+    
+    // 6. Hapus file sementara
+    DriveApp.getFileById(tempExcelFileId).setTrashed(true);
+    DriveApp.getFileById(tempConvertedSheetId).setTrashed(true);
+
+    // 7. Kembalikan Laporan
+    return { 
+      status: "sukses", 
+      totalDitemukan: totalDitemukan, 
+      berhasilDiUpload: dataToSave.length, // Jumlah nilai yg lolos validasi
+      gagalDiUpload: gagalList.length, // Jumlah nilai yg GAGAL validasi
+      dataGagal: gagalList 
+    };
+
+  } catch (e) {
+    Logger.log(e);
+    // Hapus file sementara jika terjadi error
+    if (tempExcelFileId) { DriveApp.getFileById(tempExcelFileId).setTrashed(true); }
+    if (tempConvertedSheetId) { DriveApp.getFileById(tempConvertedSheetId).setTrashed(true); }
+    return { status: "gagal", message: "Terjadi error di server: " + e.message };
+  }
+}
