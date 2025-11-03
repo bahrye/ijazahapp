@@ -1536,4 +1536,66 @@
   }
   /* [MODIFIKASI BARU SELESAI] */
 
+  /* =======================================================
+      [DIUBAH] STYLE UNTUK TOOLTIP DINAMIS (NISN & MAPEL)
+    ======================================================= */
+  .dynamic-tooltip { /* [DIUBAH] Ganti nama class */
+    position: absolute;
+    background-color: #333; 
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: translateY(5px); 
+    pointer-events: none; 
+  }
+
+  .dynamic-tooltip.show { /* [DIUBAH] Ganti nama class */
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto; 
+  }
+
+  /* Panah (Arrow) */
+  .dynamic-tooltip::after { /* [DIUBAH] Ganti nama class */
+    content: '';
+    position: absolute;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+  }
+
+  /* Panah di bawah (untuk tooltip.top) */
+  .dynamic-tooltip.top::after { /* [DIUBAH] Ganti nama class */
+    top: 100%; 
+    border-color: #333 transparent transparent transparent;
+  }
+
+  /* Panah di atas (untuk tooltip.bottom) */
+  .dynamic-tooltip.bottom::after { /* [DIUBAH] Ganti nama class */
+    bottom: 100%; 
+    border-color: transparent transparent #333 transparent;
+  }
+
+  /* [BARU] Style untuk header mapel yang bisa diklik */
+  .clickable-mapel-header {
+    cursor: pointer;
+    /* Beri garis bawah putus-putus agar terlihat interaktif */
+    text-decoration: underline dashed;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    transition: color 0.2s;
+  }
+  .clickable-mapel-header:hover {
+    color: var(--primary-color);
+    text-decoration: underline solid; /* Ubah jadi solid saat hover */
+  }
+
 </style>
