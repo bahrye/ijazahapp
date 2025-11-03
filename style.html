@@ -1440,7 +1440,9 @@
 
   /* 36. [DIUBAH] Style untuk Kolom Jumlah & Rata-Rata (Styling Dasar) */
   .input-nilai-table .th-total,
-  .input-nilai-table .col-total {
+  .input-nilai-table .col-total,
+  .input-nilai-table .th-total-bulat,  /* [BARU] Tambahkan selector pembulatan */
+  .input-nilai-table .col-total-bulat { /* [BARU] Tambahkan selector pembulatan */
     /* [DIHAPUS] Hapus semua properti sticky dari sini */
     background-color: #f4f6f8; /* Latar abu-abu muda (sel data) */
     font-weight: 700;
@@ -1451,39 +1453,84 @@
   }
 
   /* Style Header */
-  .input-nilai-table th.th-total {
+  .input-nilai-table th.th-total,
+  .input-nilai-table th.th-total-bulat { /* [BARU] Tambahkan selector pembulatan */
     background-color: var(--bg-light); /* Samakan dengan header lain */
   }
-  
+
   /* Jaga warna zebra untuk kolom kalkulasi */
-  .input-nilai-table tr:nth-child(even) .col-total {
+  .input-nilai-table tr:nth-child(even) .col-total,
+  .input-nilai-table tr:nth-child(even) .col-total-bulat { /* [BARU] Tambahkan selector pembulatan */
     background-color: #e9ecef;
   }
 
-  /* 37. [DIUBAH] Membuat Kolom Total Sticky HANYA di Desktop */
+  /* 37. [DIUBAH TOTAL] Membuat Kolom Total Sticky HANYA di Desktop (Logika Terpisah) */
   @media (min-width: 768px) {
   
-    /* Terapkan STICKY ke kolom total */
-    .input-nilai-table .th-total,
-    .input-nilai-table .col-total {
+    /* ===================================================================
+      [PERBAIKAN] Logika Sticky untuk Halaman REKAPITULASI (3 Kolom)
+      ===================================================================
+    */
+  
+    /* Terapkan STICKY ke kolom total di REKAP */
+    #halaman-rekap-nilai .input-nilai-table .th-total,
+    #halaman-rekap-nilai .input-nilai-table .col-total,
+    #halaman-rekap-nilai .input-nilai-table .th-total-bulat,
+    #halaman-rekap-nilai .input-nilai-table .col-total-bulat { 
       position: sticky;
-      z-index: 6; /* [PERBAIKAN] Layer 6 (di atas sel mapel & sel nama) */
+      z-index: 6; 
     }
   
-    /* Pastikan z-index header total lebih tinggi */
-    .input-nilai-table th.th-total {
-      z-index: 11; /* [PERBAIKAN] Layer 11 (di atas header mapel, di bawah header nama) */
+    /* Z-index header REKAP */
+    #halaman-rekap-nilai .input-nilai-table th.th-total,
+    #halaman-rekap-nilai .input-nilai-table th.th-total-bulat {
+      z-index: 11;
     }
 
-    /* Atur posisi menempel di KANAN */
-    .input-nilai-table .th-total-rata,
-    .input-nilai-table .col-total-rata {
-      right: 0; /* Menempel di paling kanan */
+    /* Posisi menempel di KANAN (Halaman REKAP - 3 Kolom) */
+    
+    #halaman-rekap-nilai .input-nilai-table .th-total-bulat,
+    #halaman-rekap-nilai .input-nilai-table .col-total-bulat {
+      right: 0; 
     }
   
-    .input-nilai-table .th-total-jumlah,
-    .input-nilai-table .col-total-jumlah {
-      right: 70px; /* DIUBAH (menyesuaikan lebar baru kolom rata-rata) */
+    #halaman-rekap-nilai .input-nilai-table .th-total-rata,
+    #halaman-rekap-nilai .input-nilai-table .col-total-rata {
+      right: 70px; /* Geser 1 kolom (lebar .col-total-bulat) */
+    }
+  
+    #halaman-rekap-nilai .input-nilai-table .th-total-jumlah,
+    #halaman-rekap-nilai .input-nilai-table .col-total-jumlah {
+      right: 140px; /* Geser 2 kolom */
+    }
+    
+    /* ===================================================================
+      [PERBAIKAN BARU] Logika Sticky untuk Halaman INPUT NILAI (2 Kolom)
+      ===================================================================
+    */
+
+    /* Terapkan STICKY ke kolom total di INPUT NILAI */
+    #halaman-input-nilai-detail .input-nilai-table .th-total,
+    #halaman-input-nilai-detail .input-nilai-table .col-total {
+      position: sticky;
+      z-index: 6;
+    }
+    
+    /* Z-index header INPUT NILAI */
+    #halaman-input-nilai-detail .input-nilai-table th.th-total {
+      z-index: 11;
+    }
+
+    /* Posisi menempel di KANAN (Halaman INPUT - 2 Kolom) */
+
+    #halaman-input-nilai-detail .input-nilai-table .th-total-rata,
+    #halaman-input-nilai-detail .input-nilai-table .col-total-rata {
+      right: 0; /* Menempel di paling kanan */
+    }
+    
+    #halaman-input-nilai-detail .input-nilai-table .th-total-jumlah,
+    #halaman-input-nilai-detail .input-nilai-table .col-total-jumlah {
+      right: 70px; /* Geser 1 kolom (lebar .col-total-rata) */
     }
   }
 
