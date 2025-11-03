@@ -378,6 +378,8 @@
     background-color: #e9ecef;
   }
 
+
+
   /* 12. Modal (Popup Form) */
   .modal {
     display: flex; /* [DIUBAH] Ganti dari 'none' ke 'flex' */
@@ -462,7 +464,8 @@
     #halaman-bobot,
     #halaman-kelas,
     #halaman-input-ujian,
-    #halaman-input-nilai-detail {
+    #halaman-input-nilai-detail,
+    #halaman-rekap-nilai { /* [DIUBAH] Tambahkan ID ini */
       max-width: 960px;
     }
   }
@@ -778,6 +781,12 @@
     margin-bottom: 20px;
   }
 
+  /* [BARU] Paksa grid input nilai jadi 2 kolom di HP */
+  .dashboard-grid-input {
+    /* [DIUBAH] Gunakan repeat(auto-fit) agar bisa 3 kolom jika muat */
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+  }
+
   @media (min-width: 500px) {
     .dashboard-menu-grid {
       grid-template-columns: repeat(3, 1fr);
@@ -1079,9 +1088,17 @@
     margin-bottom: 0px;
   }
 
-  /* [BARU] Paksa grid input nilai jadi 2 kolom di HP */
+  /* [DIUBAH] Mengatur grid untuk halaman input nilai */
   .dashboard-grid-input {
+    /* Mobile: 2 kolom (sesuai gambar) */
     grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Desktop: 3 kolom (menggunakan media query yang sama dengan grid dashboard utama) */
+  @media (min-width: 500px) {
+    .dashboard-grid-input {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
   }
 
   /* [BARU] Warna kartu input nilai */
@@ -1099,6 +1116,13 @@
   #btn-buka-input-praktek { color: var(--success-color); }
   #btn-buka-input-praktek:hover {
     background-color: var(--success-color) !important;
+    color: white !important;
+  }
+
+  /* [BARU] Warna kartu rekapitulasi */
+  #btn-buka-rekap-nilai { color: #6f42c1; } /* Ungu */
+  #btn-buka-rekap-nilai:hover {
+    background-color: #6f42c1 !important;
     color: white !important;
   }
 
@@ -1191,7 +1215,8 @@
   }
 
   /* Tombol kembali di halaman input-nilai */
-  #btn-kembali-ke-input-ujian {
+  #btn-kembali-ke-input-ujian,
+  #btn-kembali-ke-input-ujian-2 { /* [DIUBAH] Tambahkan ID baru */
       width: auto;
       padding: 8px 12px;
       font-size: 14px;
@@ -1203,7 +1228,8 @@
       border-radius: 6px;
       gap: 8px; 
   }
-  #btn-kembali-ke-input-ujian:hover {
+  #btn-kembali-ke-input-ujian:hover,
+  #btn-kembali-ke-input-ujian-2:hover { /* [DIUBAH] Tambahkan ID baru */
       background-color: #5a6268;
       color: white;
   }
