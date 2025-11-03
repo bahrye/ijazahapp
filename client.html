@@ -190,7 +190,7 @@
     // Simpan fungsi callback di elemen modal untuk dipanggil nanti
     modal.onConfirm = onConfirmCallback;
 
-    modal.style.display = 'block';
+    modal.classList.add('show'); // [PERUBAHAN]
   }
 
   /**
@@ -198,7 +198,7 @@
    */
   function hideConfirmationModal() {
     const modal = document.getElementById('confirmation-modal');
-    modal.style.display = 'none';
+    modal.classList.remove('show'); // [PERUBAHAN]
     modal.onConfirm = null; // Hapus callback setelah ditutup
   }
 
@@ -221,7 +221,7 @@
     // Simpan callback di elemen modal
     modal.onOk = onOkCallback || null;
 
-    modal.style.display = 'block';
+    modal.classList.add('show'); // [PERUBAHAN]
   }
 
   /**
@@ -229,7 +229,7 @@
    */
   function hideInfoModal() {
     const modal = document.getElementById('info-modal');
-    modal.style.display = 'none';
+    modal.classList.remove('show'); // [PERUBAHAN]
 
     // Periksa dan jalankan callback JIKA ADA
     if (typeof modal.onOk === 'function') {
@@ -875,7 +875,6 @@
     }
   }
 
-
   function onGagal(error) {
     setLoading(false);
     const errorMsg = error.message;
@@ -890,19 +889,21 @@
       showMessage('login-error', 'Error: ' + errorMsg, true);
     } else if (document.getElementById('halaman-registrasi').style.display !== 'none') {
       showMessage('reg-message', 'Error: ' + errorMsg, true);
-    } else if (document.getElementById('mapel-modal').style.display !== 'none') {
+    
+    // [PERUBAHAN] Menggunakan classList.contains('show') untuk mengecek modal
+    } else if (document.getElementById('mapel-modal').classList.contains('show')) {
       showMessage('modal-mapel-error', 'Error: ' + errorMsg, true);
-    } else if (document.getElementById('siswa-modal').style.display !== 'none') {
+    } else if (document.getElementById('siswa-modal').classList.contains('show')) {
       showMessage('modal-siswa-error', 'Error: ' + errorMsg, true);
     }
-    // [MODIFIKASI BARU] Tambahkan penanganan error untuk modal
-    else if (document.getElementById('import-siswa-modal').style.display !== 'none') {
+    else if (document.getElementById('import-siswa-modal').classList.contains('show')) {
       showMessage('template-message', 'Error: ' + errorMsg, true);
     }
-    else if (document.getElementById('upload-nilai-modal').style.display !== 'none') {
+    else if (document.getElementById('upload-nilai-modal').classList.contains('show')) {
       showMessage('template-nilai-message', 'Error: ' + errorMsg, true);
+    // [PERUBAHAN SELESAI]
+    
     }
-    // [MODIFIKASI BARU SELESAI]
     else if (document.getElementById('halaman-data-sekolah').style.display !== 'none') {
       setFormDisabled('form-data-sekolah', false); // Aktifkan form saat gagal
       showMessage('data-sekolah-message', 'Error: ' + errorMsg, true);
@@ -918,7 +919,6 @@
     else if (document.getElementById('halaman-siswa').style.display !== 'none') {
       showMessage('siswa-message', 'Error: ' + errorMsg, true); // Halaman siswa tidak punya form utama yg perlu di-enable
     }
-    // [BARU] Tambahkan penanganan error untuk halaman input nilai
     else if (document.getElementById('halaman-input-nilai-detail').style.display !== 'none') {
       showMessage('input-nilai-message', 'Error: ' + errorMsg, true);
     }
@@ -1009,11 +1009,11 @@
         document.getElementById('modal-mapel-nama').value = nama;
       }
 
-      document.getElementById('mapel-modal').style.display = 'block';
+      document.getElementById('mapel-modal').classList.add('show'); // [PERUBAHAN]
   }
 
   function tutupModalMapel() {
-      document.getElementById('mapel-modal').style.display = 'none';
+      document.getElementById('mapel-modal').classList.remove('show'); // [PERUBAHAN]
   }
 
   function simpanMapel() {
@@ -1665,7 +1665,7 @@
   }
 
   function tutupModalSiswa() {
-      document.getElementById('siswa-modal').style.display = 'none';
+      document.getElementById('siswa-modal').classList.remove('show'); // [PERUBAHAN]
   }
 
   function showModalSiswa(mode, siswaData) {
@@ -1703,7 +1703,7 @@
         document.getElementById('modal-siswa-tgl-lahir').value = siswaData.tglLahir;
       }
 
-      document.getElementById('siswa-modal').style.display = 'block';
+      document.getElementById('siswa-modal').classList.add('show'); // [PERUBAHAN]
 
       // 2. Muat kelas
       google.script.run
@@ -1849,7 +1849,7 @@
     siswaTelahDiImport = false;
     
     // Tampilkan modal
-    document.getElementById('import-siswa-modal').style.display = 'block';
+    document.getElementById('import-siswa-modal').classList.add('show'); // [PERUBAHAN]
   }
 
   /**
@@ -1857,7 +1857,7 @@
    * Akan me-refresh tabel siswa jika ada data baru yang berhasil di-import.
    */
   function tutupModalImportSiswa() {
-    document.getElementById('import-siswa-modal').style.display = 'none';
+    document.getElementById('import-siswa-modal').classList.remove('show'); // [PERUBAHAN]
     if (siswaTelahDiImport) {
       siswaTelahDiImport = false; // Reset flag
       bukaHalamanSiswa(); // Muat ulang tabel siswa
@@ -2038,7 +2038,7 @@
     nilaiTelahDiUpload = false;
     
     // 2. Tampilkan modal
-    document.getElementById('upload-nilai-modal').style.display = 'block';
+    document.getElementById('upload-nilai-modal').classList.add('show'); // [PERUBAHAN]
 
     // 3. Muat daftar kelas untuk dropdown
     const selectKelas = document.getElementById('upload-nilai-filter-kelas');
@@ -2072,7 +2072,7 @@
    * [BARU] Menutup modal upload nilai.
    */
   function tutupModalUploadNilai() {
-    document.getElementById('upload-nilai-modal').style.display = 'none';
+    document.getElementById('upload-nilai-modal').classList.remove('show'); // [PERUBAHAN]
     if (nilaiTelahDiUpload) {
       nilaiTelahDiUpload = false; // Reset flag
       // Tidak perlu refresh, pesan sukses sudah ditampilkan di modal
@@ -2415,7 +2415,25 @@
       
       mapelList.forEach(mapel => {
         const key = `${siswa.id}_${mapel.id}`;
-        const nilai = nilaiData[key] || '';
+        
+        // ==========================================================
+        // [PERBAIKAN DIMULAI]
+        // Logika baru yang lebih eksplisit untuk menampilkan nilai
+        
+        const storedNilai = nilaiData[key];
+        let nilai = ''; // Default ke string kosong
+        
+        // Cek eksplisit untuk 0 (angka) ATAU "0" (teks)
+        if (storedNilai === 0 || storedNilai === '0') {
+            nilai = 0;
+        } else if (storedNilai) {
+            // Ini akan menangkap angka lain (misal 80) atau teks lain
+            nilai = storedNilai;
+        }
+        // Jika storedNilai adalah null, undefined, atau "", nilai akan tetap ""
+        
+        // [PERBAIKAN SELESAI]
+        // ==========================================================
         
         html += `<td class="col-mapel">
             <input 
@@ -2423,7 +2441,7 @@
               class="input-nilai" 
               min="0" 
               max="100" 
-              placeholder="0"
+              placeholder="-"
               value="${nilai}"
               data-siswa-id="${siswa.id}" 
               data-mapel-id="${mapel.id}"
@@ -2446,7 +2464,6 @@
       });
     }
   }
-
 
   /**
    * [BARU] Menghitung dan memperbarui sel Jumlah & Rata-Rata untuk satu baris siswa.
@@ -2512,14 +2529,34 @@
   }
 
   /**
-   * Callback setelah nilai berhasil disimpan.
-   * (RANGKA)
+   * [PERBAIKAN] Callback setelah nilai berhasil disimpan.
+   * Sekarang akan memuat ulang data dari server untuk menyinkronkan cache.
    */
   function onNilaiUjianSaved(response) {
-    setLoading(false);
+    // setLoading(false); <-- DIHAPUS. Loading akan dimatikan oleh onNilaiGridLoaded
+    
     if (response.status === 'sukses') {
+      // Tampilkan pesan sukses. setLoading(true) tidak perlu dipanggil lagi
+      // karena sudah aktif dari 'simpanInputNilai'.
       showMessage('input-nilai-message', response.message, false); // false = sukses
+      
+      // [PERBAIKAN DIMULAI]
+      // Muat ulang data dari server untuk memastikan cache client 100% sinkron
+      
+      // 1. Ambil tipe ujian yang sedang aktif
+      const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
+      
+      // 2. Panggil ulang fungsi yang memuat semua data
+      // onNilaiGridLoaded akan mematikan spinner loading saat selesai.
+      google.script.run
+        .withSuccessHandler(onNilaiGridLoaded) // Handler ini akan me-render ulang tabel & mematikan loading
+        .withFailureHandler(onGagal) 
+        .getNilaiUjianGridData(tipeUjian);
+      // [PERBAIKAN SELESAI]
+
     } else {
+      // Jika GAGAL menyimpan, baru matikan loading
+      setLoading(false);
       showMessage('input-nilai-message', response.message, true);
     }
   }
