@@ -15,7 +15,6 @@
     </div>
 
     <div class="container" id="auth-container" style="display: none;">
-
       <div class="app-header">
         <h1>Nilai Ijazah</h1>
         <p>Aplikasi Pengolahan Nilai Sekolah</p>
@@ -61,7 +60,6 @@
         <p id="reg-message" class="message"></p>
         <a id="link-ke-login" class="nav-link">Sudah punya akun? Login</a>
       </div>
-
     </div>
 
     <div class="container" id="halaman-utama" style="display: none;">
@@ -105,7 +103,6 @@
             <span>Input Nilai Ujian</span>
           </button>
           </div>
-
       </div>
     </div>
 
@@ -119,8 +116,10 @@
           <h2>Input Nilai Ujian</h2>
         </div>
 
-        <p>Pilih jenis ujian yang akan diinput nilainya.</p>
-
+        <div class="page-sub-header">
+          <p>Pilih jenis ujian yang akan diinput nilainya.</p>
+          <button id="btn-buka-upload-nilai" class="btn-aksi"><i class="fas fa-upload"></i>Upload Nilai</button>
+        </div>
         <div class="dashboard-menu-grid dashboard-grid-input">
           <button class="dashboard-card" id="btn-buka-input-um">
             <i class="fas fa-graduation-cap"></i>
@@ -272,7 +271,6 @@
         </form>
       </div>
     </div>
-
     <div class="container" id="halaman-bobot" style="display: none;">
       <div class="page">
         <div class="page-top-nav">
@@ -306,7 +304,6 @@
         </form>
       </div>
     </div>
-
     <div class="container" id="halaman-kelas" style="display: none;">
       <div class="page">
         <div class="page-top-nav">
@@ -334,8 +331,6 @@
         </form>
       </div>
     </div>
-
-
     <div class="container" id="halaman-siswa" style="display: none;">
       <div class="page">
         <div class="page-top-nav">
@@ -382,7 +377,6 @@
         </div>
       </div>
     </div>
-
     <div class="container" id="halaman-mapel" style="display: none;">
       <div class="page">
         <div class="page-top-nav">
@@ -494,7 +488,6 @@
         </div>
       </div>
     </div>
-
     <div id="confirmation-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
@@ -509,7 +502,6 @@
         </div>
       </div>
     </div>
-
     <div id="info-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
@@ -523,7 +515,6 @@
         </div>
       </div>
     </div>
-
     <div id="import-siswa-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
@@ -569,6 +560,58 @@
       </div>
     </div>
 
+    <div id="upload-nilai-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-upload-nilai-title">Upload Nilai Ujian</h2>
+          <span class="close-button" id="btn-tutup-modal-upload-nilai">&times;</span>
+        </div>
+        <div class="modal-body">
+          <p>Upload nilai ujian menggunakan file Excel. Ikuti langkah-langkah di bawah ini:</p>
+          
+          <div class="import-step-box">
+            <div class="import-step-number">1</div>
+            <div class="import-step-content">
+              <h4 class="import-step-header">Unduh Template Nilai</h4>
+              <p>Pilih kelas untuk mengisi template, unduh, lalu isi nilai.</p>
+              
+              <div class="form-group">
+                <label for="upload-nilai-filter-kelas">Pilih Kelas untuk Template</label>
+                <select id="upload-nilai-filter-kelas">
+                  <option value="semua">-- Tampilkan Semua Kelas --</option>
+                  </select>
+              </div>
+              
+              <button id="btn-download-template-nilai" class="btn-aksi"><i class="fas fa-file-excel"></i>Unduh Template (.xlsx)</button>
+              <p id="template-nilai-message" class="message" style="display: none;"></p>
+            </div>
+          </div>
+
+          <div class="import-step-box">
+            <div class="import-step-number">2</div>
+            <div class="import-step-content">
+              <h4 class="import-step-header">Unggah File Nilai</h4>
+              <p>Pilih file Excel (`.xlsx` atau `.xls`) yang sudah Anda isi.</p>
+              
+              <label for="file-upload-nilai" class="file-upload-zone" id="file-upload-zone-nilai">
+                <input type="file" id="file-upload-nilai" accept=".xlsx, .xls, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span id="file-upload-text-nilai">Klik untuk memilih file atau seret & letakkan di sini.</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="import-nilai-results" style="display: none;">
+            </div>
+          
+        </div>
+        <div class="modal-footer">
+          <button id="btn-batal-modal-upload-nilai"><i class="fas fa-times"></i>Tutup</button>
+          <button id="btn-proses-upload-nilai" disabled><i class="fas fa-cogs"></i>Proses Upload Nilai</button>
+        </div>
+      </div>
+    </div>
     <?!= include('client'); ?>
   </body>
 </html>
