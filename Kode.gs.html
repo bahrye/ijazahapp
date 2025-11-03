@@ -1628,7 +1628,6 @@ function getNilaiUjianGridData(tipeUjian) {
   }
 }
 
-
 /**
  * [BARU] Menyimpan batch nilai dari grid Ujian.
  * Menerima array: [{ siswaId, mapelId, tipeUjian, nilai }, ...]
@@ -1660,19 +1659,50 @@ function saveNilaiUjianBatch(dataToSave) {
     // Loop data baru dari klien
     dataToSave.forEach(item => {
       const key = `${item.siswaId}_${item.mapelId}`;
-      const nilaiBaru = item.nilai || null; // Ubah "" jadi null
+      
+      // ==========================================================
+      // [PERBAIKAN DIMULAI] - Menerapkan 'Force Text' (Sesuai Ide Anda)
+      // ==========================================================
+      let nilaiClient = item.nilai;
+      let nilaiBaru;
+
+      if (nilaiClient === "" || nilaiClient === null || nilaiClient === undefined) {
+          // 1. Jika nilai benar-benar kosong, simpan null (untuk menghapus sel)
+          nilaiBaru = null;
+      } else {
+          // 2. Jika nilai TIDAK kosong (termasuk 0, "0", 80, "80")
+          //    Coba ubah jadi angka
+          let num = parseFloat(nilaiClient);
+          
+          if (!isNaN(num)) {
+              // 3. Jika berhasil (valid, misal 0 atau 80.5)
+              //    TAMBAHKAN TANDA PETIK SATU DI DEPANNYA
+              nilaiBaru = "'" + num; // Contoh: '0 atau '80.5
+          } else {
+              // 4. Jika gagal (invalid, misal "abc")
+              //    Simpan null (kosongkan sel)
+              nilaiBaru = null;
+          }
+      }
+      // ==========================================================
+      // [PERBAIKAN SELESAI]
+      // ==========================================================
+
       const existingEntry = dataMap.get(key);
       
       if (existingEntry) {
         // Data sudah ada, UPDATE di array 'data'
         const rowIndex = existingEntry.rowIndex;
         if (item.tipeUjian === 'UM') {
-          if (data[rowIndex][2] != nilaiBaru) {
+          
+          // Perbandingan strict (wajib) karena '0 (teks) tidak sama dengan 0 (angka)
+          if (data[rowIndex][2] !== nilaiBaru) { 
             data[rowIndex][2] = nilaiBaru;
             changesMade = true;
           }
         } else { // 'Praktek'
-          if (data[rowIndex][3] != nilaiBaru) {
+        
+          if (data[rowIndex][3] !== nilaiBaru) {
             data[rowIndex][3] = nilaiBaru;
             changesMade = true;
           }
