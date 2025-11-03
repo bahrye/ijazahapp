@@ -1667,7 +1667,15 @@ function saveNilaiUjianBatch(dataToSave) {
     let changesMade = false;
     const rowsToAppend = []; 
     
+    // PERUBAHAN: Dapatkan tipe ujian dari data pertama (semua sama dalam satu batch)
+    let tipeUjianDisimpan = null; 
+    
     dataToSave.forEach(item => {
+      // Simpan tipe ujian jika belum ada
+      if (!tipeUjianDisimpan) {
+        tipeUjianDisimpan = item.tipeUjian;
+      }
+
       const key = `${item.siswaId}_${item.mapelId}`;
       
       let nilaiClient = item.nilai;
@@ -1725,7 +1733,24 @@ function saveNilaiUjianBatch(dataToSave) {
            .setValues(rowsToAppend);
     }
     
-    clearNilaiUjianCache();
+    // --- PERUBAHAN DIMULAI DI SINI ---
+    // clearNilaiUjianCache(); // <-- Ganti baris ini
+
+    // Menjadi logika yang lebih cerdas:
+    if (tipeUjianDisimpan) {
+      const userCache = CacheService.getUserCache();
+      const cacheKey = NILAI_GRID_CACHE_KEY_PREFIX + tipeUjianDisimpan;
+      userCache.remove(cacheKey);
+      Logger.log("Membersihkan cache grid spesifik untuk: " + cacheKey);
+    } else {
+      // Fallback jika tidak ada data (seharusnya tidak terjadi)
+      clearNilaiUjianCache();
+      Logger.log("PERINGATAN: Menghapus semua cache ujian (fallback).");
+    }
+    
+    // Rekap tetap harus dihapus karena datanya berubah
+    clearRekapNilaiCache();
+    // --- PERUBAHAN SELESAI ---
     
     return { status: "sukses", message: "Data nilai berhasil disimpan!" };
     
