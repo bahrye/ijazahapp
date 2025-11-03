@@ -751,11 +751,15 @@ function createSiswa(dataSiswa) {
     const newSiswaID = "SIS-" + nextNum;
     const newUrutan = nextNum;
     
+    // [PERBAIKAN] Tambahkan tanda petik satu (') untuk memaksa format Teks
+    const formattedNisn = dataSiswa.nisn ? "'" + dataSiswa.nisn : null;
+    const formattedNisLokal = dataSiswa.nisLokal ? "'" + dataSiswa.nisLokal : null;
+    
     const newRow = [
       newSiswaID,
       dataSiswa.nama,
-      dataSiswa.nisn,
-      dataSiswa.nisLokal,
+      formattedNisn, // <-- Diubah
+      formattedNisLokal, // <-- Diubah
       dataSiswa.jk,
       dataSiswa.tempatLahir,
       dataSiswa.tglLahir || null, 
@@ -804,12 +808,16 @@ function updateSiswa(dataSiswa) {
       return { status: "gagal", message: "SiswaID '" + dataSiswa.id + "' tidak ditemukan." };
     }
     
+    // [PERBAIKAN] Tambahkan tanda petik satu (') untuk memaksa format Teks
+    const formattedNisn = dataSiswa.nisn ? "'" + dataSiswa.nisn : null;
+    const formattedNisLokal = dataSiswa.nisLokal ? "'" + dataSiswa.nisLokal : null;
+
     // Buat data baris untuk update
     const updatedRow = [
       dataSiswa.id, // Kolom A (SiswaID)
       dataSiswa.nama, // Kolom B (NamaSiswa)
-      dataSiswa.nisn, // Kolom C (NISN)
-      dataSiswa.nisLokal, // Kolom D
+      formattedNisn, // Kolom C (NISN) <-- Diubah
+      formattedNisLokal, // Kolom D <-- Diubah
       dataSiswa.jk, // Kolom E
       dataSiswa.tempatLahir, // Kolom F
       dataSiswa.tglLahir || null, // Kolom G
@@ -1224,7 +1232,6 @@ function getSiswaTemplateUrl() {
   }
 }
 
-
 /**
  * [SERVER] Memproses import siswa dari file EXCEL (Base64).
  * Ini menggunakan Drive API (Advanced Service).
@@ -1349,8 +1356,12 @@ function prosesImportExcelSiswa(fileData) {
       const newSiswaID = "SIS-" + nextNum;
       const newUrutan = nextNum;
       
+      // [PERBAIKAN] Tambahkan tanda petik satu (') untuk memaksa format Teks
+      const formattedNisn = nisn ? "'" + nisn : null;
+      const formattedNisLokal = nisLokal ? "'" + nisLokal : null;
+      
       const newRow = [
-        newSiswaID, nama, nisn, nisLokal, jk, 
+        newSiswaID, nama, formattedNisn, formattedNisLokal, jk, // <-- Diubah
         tempatLahir, (tglLahir || null), kelas,
         newUrutan // [PERBAIKAN] Tambahkan 'urutan' ke Kolom I
       ];
