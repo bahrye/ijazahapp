@@ -29,6 +29,23 @@
   }
 
   /**
+   * [BARU] Memformat nama siswa agar 2 kata di baris pertama.
+   * Contoh: "Muhammad Adrian Kurniawan" menjadi "Muhammad Adrian<br>Kurniawan".
+   */
+  function formatNamaSiswa(namaLengkap) {
+    if (!namaLengkap) return '';
+    const parts = namaLengkap.split(' ');
+    if (parts.length >= 3) {
+      const barisSatu = parts.slice(0, 2).join(' ');
+      const barisDua = parts.slice(2).join(' ');
+      // [DIUBAH] Tambahkan span dengan "white-space: nowrap" 
+      // agar 2 kata pertama tidak dipisah oleh browser
+      return `<span style="white-space: nowrap;">${barisSatu}</span><br>${barisDua}`;
+    }
+    return namaLengkap; // Kembalikan nama asli jika 1 atau 2 kata
+  }
+
+  /**
    * Menampilkan pesan error atau sukses.
    */
   function showMessage(elementId, message, isError) {
@@ -2022,6 +2039,7 @@
       
       // [DIUBAH] Kolom Info Siswa (Nama Saja)
       const namaProper = toProperCase(siswa.nama); // Format nama
+      const namaFormatted = formatNamaSiswa(namaProper); // [DIUBAH] Panggil fungsi format
       html += `
         <td>
           <span 
@@ -2030,7 +2048,7 @@
             data-nama-lengkap="${siswa.nama}"
             title="Klik untuk lihat NISN"
           >
-            ${namaProper}
+            ${namaFormatted}
           </span>
         </td>`;
       // HAPUS: html += `<td>${siswa.nisn}</td>`;
