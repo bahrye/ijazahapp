@@ -97,7 +97,8 @@
     const allPages = [
       'auth-container', 'halaman-utama', 'halaman-mapel',
       'halaman-data-sekolah', 'halaman-bobot', 'halaman-kelas', 'halaman-siswa',
-      'halaman-input-ujian', 'halaman-input-nilai-detail'
+      'halaman-input-ujian', 'halaman-input-nilai-detail',
+      'halaman-rekap-nilai' // [BARU] Tambahkan ID halaman baru
     ];
     const authSubPages = ['halaman-login', 'halaman-registrasi'];
 
@@ -116,6 +117,7 @@
     hideMessage('mapel-message');
     hideMessage('template-message'); // [DIUBAH]
     hideMessage('template-nilai-message'); // [BARU]
+    hideMessage('rekap-nilai-message'); // [BARU] Sembunyikan pesan error
 
     // Tentukan halaman yang akan ditampilkan
     const targetElement = document.getElementById(idHalaman);
@@ -268,6 +270,12 @@
             // Jika di-refresh, kembalikan ke menu input, bukan halaman detail
             bukaHalamanInputUjian(); 
             break;
+        // [BARU] Tambahkan case untuk halaman rekap
+        case 'halaman-rekap-nilai':
+            // Jika di-refresh, kembalikan ke menu input, bukan halaman detail
+            // bukaHalamanRekapNilai(); // Anda bisa pilih ini
+            bukaHalamanInputUjian(); // Atau ini (lebih aman)
+            break;
         default:
             console.warn("ID halaman tersimpan tidak valid:", pageId, ". Menampilkan dashboard.");
             tampilHalaman('halaman-utama'); // Fallback ke dashboard
@@ -417,7 +425,10 @@
     document.getElementById('btn-kembali-ke-input-ujian').addEventListener('click', () => {
       bukaHalamanInputUjian();
     });
-
+    // [BARU] Listener untuk tombol kembali di halaman rekap
+    document.getElementById('btn-kembali-ke-input-ujian-2').addEventListener('click', () => {
+      bukaHalamanInputUjian();
+    });
     // [BARU] Listener untuk tombol Upload Nilai
     document.getElementById('btn-buka-upload-nilai').addEventListener('click', bukaModalUploadNilai);
 
@@ -430,7 +441,10 @@
       // 'Praktek' = Ujian Praktek
       bukaHalamanInputNilaiDetail('Praktek'); 
     });
-
+    // [BARU] Listener untuk kartu rekap
+    document.getElementById('btn-buka-rekap-nilai').addEventListener('click', () => {
+      bukaHalamanRekapNilai();
+    });
     // [BARU] Listener untuk tombol simpan nilai (akan kita buat fungsinya di bawah)
     document.getElementById('btn-simpan-input-nilai').addEventListener('click', simpanInputNilai);
 
@@ -467,6 +481,8 @@
 
     // [BARU] Listener untuk filter di halaman input nilai
     document.getElementById('input-nilai-filter-kelas').addEventListener('change', renderNilaiGridTable); // Panggil fungsi render ulang
+    // [BARU] Listener untuk filter di halaman rekap
+    document.getElementById('rekap-nilai-filter-kelas').addEventListener('change', renderRekapNilaiTable);
 
     // Listener untuk tombol 'Kelola Mapel'
     document.getElementById('btn-buka-mapel').addEventListener('click', () => {
@@ -921,6 +937,10 @@
     }
     else if (document.getElementById('halaman-input-nilai-detail').style.display !== 'none') {
       showMessage('input-nilai-message', 'Error: ' + errorMsg, true);
+    }
+    // [BARU] Tambahkan else if untuk halaman rekap
+    else if (document.getElementById('halaman-rekap-nilai').style.display !== 'none') {
+      showMessage('rekap-nilai-message', 'Error: ' + errorMsg, true);
     }
     else {
       // Fallback
@@ -2559,6 +2579,181 @@
       setLoading(false);
       showMessage('input-nilai-message', response.message, true);
     }
+  }
+
+  // ===========================================
+  // [BARU] FUNGSI & HANDLER REKAPITULASI NILAI
+  // ===========================================
+
+  /**
+   * [BARU] Membuka halaman rekapitulasi nilai.
+   */
+  function bukaHalamanRekapNilai() {
+    tampilHalaman('halaman-rekap-nilai'); // tampilHalaman akan menyimpan ID
+    hideMessage('rekap-nilai-message');
+    
+    const tableContainer = document.getElementById('rekap-nilai-table-container');
+
+    // 1. Reset tampilan
+    tableContainer.innerHTML = '<p>Memuat data rekapitulasi nilai...</p>';
+    document.getElementById('rekap-nilai-filter-kelas').innerHTML = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
+    // Reset cache (gunakan cache globalGridData yg sama, toh halamannya mirip)
+    globalGridData = { siswaList: [], mapelList: [], nilaiRekapData: {} };
+
+    // 2. Muat semua data (siswa, mapel, nilai rekap)
+    setLoading(true);
+    google.script.run
+      .withSuccessHandler(onRekapNilaiLoaded) // Handler baru
+      .withFailureHandler(onGagal) 
+      .getRekapitulasiNilaiData(); // Fungsi backend baru
+  }
+
+  /**
+   * [BARU] Callback setelah data rekapitulasi dimuat.
+   */
+  function onRekapNilaiLoaded(response) {
+    setLoading(false);
+    const container = document.getElementById('rekap-nilai-table-container');
+    
+    if (response.status !== 'sukses') {
+      container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat data: ${response.message}</p>`;
+      globalGridData = { siswaList: [], mapelList: [], nilaiRekapData: {} };
+      return;
+    }
+
+    // 1. Simpan data ke cache global (response.data.nilaiRekapData)
+    globalGridData = response.data;
+    
+    // 2. Isi dropdown filter kelas (buat fungsi baru untuk ini)
+    populateRekapNilaiFilter(globalGridData.siswaList);
+
+    // 3. Panggil fungsi render
+    renderRekapNilaiTable();
+  }
+
+  /**
+   * [BARU] Mengisi dropdown filter kelas di halaman rekap nilai.
+   * (Mirip dengan populateNilaiFilter, tapi menargetkan ID yang benar)
+   */
+  function populateRekapNilaiFilter(siswaList) {
+    const selectKelas = document.getElementById('rekap-nilai-filter-kelas');
+    const selectedValue = selectKelas.value;
+  
+    // Kumpulkan semua nama kelas unik dari siswaList
+    const kelasSet = new Set(siswaList.map(siswa => siswa.kelas));
+    const kelasList = Array.from(kelasSet).sort(); // Urutkan A-Z
+  
+    // Buat HTML untuk opsi
+    let optionsHtml = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
+    kelasList.forEach(kelas => {
+      optionsHtml += `<option value="${kelas}">${kelas}</option>`;
+    });
+  
+    selectKelas.innerHTML = optionsHtml;
+    selectKelas.value = selectedValue || 'semua'; // Set kembali
+  }
+
+
+  /**
+   * [BARU] Merender tabel rekapitulasi nilai (read-only).
+   */
+  function renderRekapNilaiTable() {
+    const container = document.getElementById('rekap-nilai-table-container');
+    
+    // 1. Ambil data dari cache global
+    // Perhatikan: kita ambil 'nilaiRekapData'
+    const { siswaList, mapelList, nilaiRekapData } = globalGridData;
+    
+    // 2. Ambil filter yang dipilih
+    const selectedKelas = document.getElementById('rekap-nilai-filter-kelas').value;
+    
+    // 3. Validasi data
+    if (!siswaList || siswaList.length === 0) {
+      container.innerHTML = '<p style="text-align: center; padding: 20px;">Belum ada data siswa.</p>';
+      return;
+    }
+    if (!mapelList || mapelList.length === 0) {
+      container.innerHTML = '<p style="text-align: center; padding: 20px;">Belum ada data mata pelajaran.</p>';
+      return;
+    }
+
+    // 4. Filter siswaList
+    const filteredSiswaList = (selectedKelas === 'semua')
+      ? siswaList
+      : siswaList.filter(siswa => siswa.kelas === selectedKelas);
+
+    // 5. Cek jika hasil filter kosong
+    if (filteredSiswaList.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 20px;">Tidak ada siswa di kelas yang dipilih.</p>';
+        return;
+    }
+
+    // 6. Mulai bangun tabel
+    let html = '<table class="input-nilai-table">'; // Re-use styling
+    
+    // Header
+    html += '<thead><tr>';
+    html += '<th>Nama Siswa</th>';
+    // Tampilkan *semua* mapel
+    mapelList.forEach(mapel => {
+      html += `<th class="col-mapel" title="${mapel.nama}">${mapel.id}</th>`;
+    });
+    html += '<th class="th-total th-total-jumlah">Jumlah</th>';
+    html += '<th class="th-total th-total-rata">Rata-Rata</th>';
+    html += '</tr></thead>';
+    
+    // Body
+    html += '<tbody>';
+    filteredSiswaList.forEach(siswa => {
+      html += '<tr>';
+      
+      const namaProper = toProperCase(siswa.nama);
+      const namaFormatted = formatNamaSiswa(namaProper);
+      // Read-only, tidak perlu klik
+      html += `<td><span data-nisn="${siswa.nisn}">${namaFormatted}</span></td>`; 
+      
+      let sum = 0;
+      
+      mapelList.forEach(mapel => {
+        const key = `${siswa.id}_${mapel.id}`;
+        const nilai = nilaiRekapData[key]; // Ambil nilai rekap
+        
+        let nilaiTampil = '-';
+        if (nilai !== null && nilai !== undefined) {
+            // Cek jika 0, tampilkan 0, jika tidak, format
+            if (nilai === 0) {
+              nilaiTampil = 0;
+            } else {
+              // Cek jika angka bulat (misal 80.0)
+              if (nilai % 1 === 0) {
+                nilaiTampil = nilai.toFixed(0); // 80
+              } else {
+                // Tampilkan 2 desimal jika ada koma (misal 44.50)
+                nilaiTampil = nilai.toFixed(2); 
+              }
+            }
+            sum += nilai;
+        }
+        
+        // Tampilkan sebagai teks, bukan input
+        html += `<td class="col-mapel" style="text-align: center; font-weight: 500;">
+            ${nilaiTampil}
+          </td>`;
+      });
+      
+      // Hitung rata-rata
+      // Dibagi jumlah mapel total (sesuai header)
+      const mapelCount = mapelList.length;
+      const average = (mapelCount > 0) ? (sum / mapelCount) : 0;
+      
+      // Tampilkan 2 desimal untuk jumlah dan rata-rata
+      html += `<td class="col-total col-total-jumlah">${sum.toFixed(2)}</td>`;
+      html += `<td class="col-total col-total-rata">${average.toFixed(2)}</td>`;
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+
+    container.innerHTML = html;
   }
 
 </script>
