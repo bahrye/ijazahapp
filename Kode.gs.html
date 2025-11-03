@@ -1672,7 +1672,7 @@ function saveNilaiUjianBatch(dataToSave) {
       const key = `${item.siswaId}_${item.mapelId}`;
       
       // ==========================================================
-      // [PERBAIKAN DIMULAI] - Menerapkan 'Force Text' (Sesuai Ide Anda)
+      // [PERUBAHAN VALIDASI SESUAI PERMINTAAN]
       // ==========================================================
       let nilaiClient = item.nilai;
       let nilaiBaru;
@@ -1681,22 +1681,23 @@ function saveNilaiUjianBatch(dataToSave) {
           // 1. Jika nilai benar-benar kosong, simpan null (untuk menghapus sel)
           nilaiBaru = null;
       } else {
-          // 2. Jika nilai TIDAK kosong (termasuk 0, "0", 80, "80")
-          //    Coba ubah jadi angka
-          let num = parseFloat(nilaiClient);
+          // 2. Coba ubah jadi ANGKA BULAT (Integer)
+          let num = parseInt(nilaiClient, 10); 
+          let numFloat = parseFloat(nilaiClient); // Untuk cek desimal
           
-          if (!isNaN(num)) {
-              // 3. Jika berhasil (valid, misal 0 atau 80.5)
-              //    TAMBAHKAN TANDA PETIK SATU DI DEPANNYA
-              nilaiBaru = "'" + num; // Contoh: '0 atau '80.5
-          } else {
-              // 4. Jika gagal (invalid, misal "abc")
-              //    Simpan null (kosongkan sel)
+          // 3. Cek apakah valid DAN dalam rentang 0-100
+          // Cek jika invalid (negatif, >100, teks, atau desimal)
+          if (isNaN(num) || num < 0 || num > 100 || num !== numFloat) {
+              // 4. Jika invalid (misal -10, 101, "abc", atau "80.5"), simpan null
               nilaiBaru = null;
+          } else {
+              // 5. Jika valid (angka bulat 0-100)
+              //    Simpan sebagai Teks (diawali ')
+              nilaiBaru = "'" + num; // Contoh: '0 atau '80
           }
       }
       // ==========================================================
-      // [PERBAIKAN SELESAI]
+      // [AKHIR PERUBAHAN VALIDASI]
       // ==========================================================
 
       const existingEntry = dataMap.get(key);
@@ -1929,7 +1930,7 @@ function prosesUploadExcelNilai(fileData) {
     tempConvertedSheetId = convertedFile.id;
     
     const tempSheet = SpreadsheetApp.openById(tempConvertedSheetId);
-    
+
     // 3. Siapkan Variabel Laporan
     const gagalList = [];
     const dataToSave = []; // Ini akan diisi untuk dikirim ke saveNilaiUjianBatch()
@@ -1989,20 +1990,42 @@ function prosesUploadExcelNilai(fileData) {
             return; // Lanjut ke mapel berikutnya
           }
           
-          // Validasi Nilai (0-100 atau angka)
-          const numNilai = parseFloat(nilai);
-          if (isNaN(numNilai) || numNilai < 0 || numNilai > 100) {
-            gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: info, alasan: `Nilai '${nilai}' tidak valid (harus 0-100).` });
+          // ==========================================================
+          // [PERUBAHAN VALIDASI SESUAI PERMINTAAN]
+          // ==========================================================
+          
+          // Validasi Nilai (HARUS angka bulat 0-100)
+          const numNilaiFloat = parseFloat(nilai);
+          const numNilaiInt = parseInt(nilai, 10);
+
+          // Cek 1: Bukan angka
+          if (isNaN(numNilaiFloat)) {
+            gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: info, alasan: `Nilai '${nilai}' bukan angka.` });
             return; // Lanjut ke mapel berikutnya
           }
           
+          // Cek 2: Bukan angka bulat (desimal)
+          if (numNilaiFloat !== numNilaiInt) { // Contoh: 80.5 !== 80
+            gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: info, alasan: `Nilai '${nilai}' tidak boleh desimal (berkoma).` });
+            return; // Lanjut ke mapel berikutnya
+          }
+          
+          // Cek 3: Diluar rentang 0-100
+          if (numNilaiInt < 0 || numNilaiInt > 100) {
+            gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: info, alasan: `Nilai '${numNilaiInt}' diluar rentang (0-100).` });
+            return; // Lanjut ke mapel berikutnya
+          }
+
           // LOLOS SEMUA VALIDASI
           dataToSave.push({
             siswaId: siswaId,
             mapelId: mapelId,
-            tipeUjian: sheetInfo.type, // 'UM' atau 'Praktek'
-            nilai: numNilai
+            tipeUjian: sheetInfo.type,
+            nilai: numNilaiInt // Kirim sebagai angka bulat (integer)
           });
+          // ==========================================================
+          // [AKHIR PERUBAHAN VALIDASI]
+          // ==========================================================
         });
       });
     });
