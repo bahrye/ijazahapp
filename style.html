@@ -225,6 +225,31 @@
     margin-bottom: 10px;
   }
 
+  /* [MODIFIKASI BARU] Style untuk tombol upload nilai di halaman input */
+  .page-sub-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .page-sub-header p {
+    margin: 0;
+    color: var(--text-dark);
+  }
+  .page-sub-header button#btn-buka-upload-nilai {
+    width: auto;
+    margin: 0;
+    flex-shrink: 0;
+    background-color: var(--primary-color); /* Biru seperti import siswa */
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+  .page-sub-header button#btn-buka-upload-nilai:hover {
+    background-color: var(--primary-dark);
+  }
+  /* [MODIFIKASI BARU SELESAI] */
+
+
   #btn-tambah-mapel-baru,
   #btn-tambah-siswa-baru {
     width: auto;
@@ -405,7 +430,8 @@
     margin: 0; 
   }
   #btn-batal-modal,
-  #btn-batal-modal-siswa {
+  #btn-batal-modal-siswa,
+  #btn-batal-modal-import-siswa { /* [DIUBAH] Tambahkan tombol batal import */
     background-color: var(--secondary-color);
   }
 
@@ -812,7 +838,9 @@
   #btn-simpan-kelas:disabled,
   #btn-simpan-siswa:disabled,
   #btn-simpan-mapel:disabled,
-  #btn-simpan-tipe-ujian:disabled {
+  #btn-simpan-tipe-ujian:disabled,
+  #btn-proses-import-siswa:disabled,
+  #btn-proses-upload-nilai:disabled { /* [DIUBAH] Tambahkan tombol upload nilai */
     background-color: var(--secondary-color) !important;
     opacity: 0.65;
     cursor: not-allowed;
@@ -863,15 +891,10 @@
   #btn-proses-import-siswa:hover {
     background-color: #157347; /* [DIUBAH] Ganti jadi hijau tua */
   }
-  #btn-proses-import-siswa:disabled {
-     background-color: var(--secondary-color) !important;
-  }
-  #btn-batal-modal-import-siswa {
-    background-color: var(--secondary-color);
-  }
-
+  
   /* Area Hasil Import */
-  #import-siswa-results {
+  #import-siswa-results,
+  #import-nilai-results { /* [DIUBAH] Terapkan juga ke modal nilai */
     margin-top: 20px;
     padding: 15px;
     border: 1px solid var(--border-color);
@@ -880,7 +903,8 @@
     max-height: 300px;
     overflow-y: auto;
   }
-  #import-siswa-results h4 {
+  #import-siswa-results h4,
+  #import-nilai-results h4 { /* [DIUBAH] Terapkan juga ke modal nilai */
     margin-top: 0;
     color: var(--text-dark);
   }
@@ -901,11 +925,13 @@
   }
 
   /* 26. Perbaikan Modal Import Profesional */
-  #import-siswa-modal .modal-content {
+  #import-siswa-modal .modal-content,
+  #upload-nilai-modal .modal-content { /* [DIUBAH] Terapkan juga ke modal nilai */
     max-width: 480px; /* [DIUBAH] Dibuat lebih ramping */
   }
 
-  #import-siswa-modal .modal-body {
+  #import-siswa-modal .modal-body,
+  #upload-nilai-modal .modal-body { /* [DIUBAH] Terapkan juga ke modal nilai */
     background-color: var(--bg-light); /* Latar belakang body modal sedikit abu-abu */
     padding: 20px 25px;
   }
@@ -1002,7 +1028,8 @@
   }
 
   /* Sembunyikan input file asli */
-  #file-upload-siswa {
+  #file-upload-siswa,
+  #file-upload-nilai { /* [DIUBAH] Terapkan juga ke input nilai */
     display: none;
   }
 
@@ -1059,9 +1086,6 @@
   /* =======================================================
     [PERBAIKAN] BAGIAN INPUT NILAI (SECTION 29, 35, 36, 37)
     =======================================================
-    Logika sticky z-index di file asli salah (misal: td:first-child z-index: 2, 
-    sedangkan th z-index: 10, sehingga header menutupi kolom nama).
-    Ini disusun ulang agar logis.
   */
 
   /* 29. [DIUBAH] Style Halaman Input Nilai Detail (Styling Dasar) */
@@ -1092,7 +1116,6 @@
   .input-nilai-table th {
     font-weight: 700;
     white-space: nowrap; /* Mencegah header mapel terpotong */
-    /* [DIHAPUS] Properti sticky dipindah ke section 35 */
   }
 
   .input-nilai-table tr:last-child td {
@@ -1101,7 +1124,6 @@
 
   .input-nilai-table td:first-child { 
     font-weight: 500; 
-    /* [DIHAPUS] Properti sticky dipindah ke section 35 */
   }
 
   /* Kolom input nilai */
@@ -1167,7 +1189,7 @@
       color: white;
   }
 
-  /* 30. [BARU] Style Filter Bar (Halaman Siswa) */
+  /* 30. [BARU] Style Filter Bar (Halaman Siswa & Input Nilai) */
   .filter-bar {
     display: flex;
     flex-wrap: wrap;
@@ -1176,7 +1198,7 @@
     padding: 15px;
     border-radius: 8px;
     margin-top: 10px; /* Jarak dari paragraf di atas */
-    margin-bottom: 20px; /* Jarak ke tabel di bawah */
+    margin-bottom: 0px; /* [DIUBAH] Hapus margin bawah agar nempel ke tabel */
   }
   .filter-bar .form-group {
     margin-bottom: 0;
@@ -1425,5 +1447,48 @@
     text-decoration: underline;
     color: var(--primary-dark);
   }
+
+  /* [MODIFIKASI BARU] Style untuk modal upload nilai */
+  
+  /* Style untuk tombol download template nilai */
+  #btn-download-template-nilai {
+    width: auto;
+    background-color: var(--success-color);
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 10px; /* Beri jarak dari dropdown */
+  }
+  #btn-download-template-nilai:hover {
+    background-color: #157347;
+  }
+
+  /* Style untuk dropdown di dalam modal upload nilai */
+  #upload-nilai-modal .form-group {
+    margin-bottom: 15px;
+  }
+  #upload-nilai-modal .form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  #upload-nilai-modal .form-group select {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  /* Tombol proses & batal di modal upload nilai */
+  #btn-proses-upload-nilai {
+    background-color: var(--success-color);
+  }
+  #btn-proses-upload-nilai:hover {
+    background-color: #157347;
+  }
+  #btn-batal-modal-upload-nilai {
+    background-color: var(--secondary-color);
+  }
+  /* [MODIFIKASI BARU SELESAI] */
 
 </style>
