@@ -465,55 +465,98 @@ function clearMapelCache() {
 
 function prosesLogin(email, password) {
   try {
-    const dataSekolah = getCachedMasterSheetData();
+    const dataSekolahFromCache = getCachedMasterSheetData();
+    let cachedRow = null;
+    let passwordIsValid = false;
 
-    for (let i = 1; i < dataSekolah.length; i++) {
-      const row = dataSekolah[i];
-      const dbEmail = row[3];
+    for (let i = 1; i < dataSekolahFromCache.length; i++) {
+      const row = dataSekolahFromCache[i];
+      const dbEmail = row[3]; 
       
-      const dbHashOrPassword = row[4];
-      const dbSalt = row[6];
-
-      let passwordIsValid = false;
-
       if (dbEmail === email) {
+        const dbHashOrPassword = row[4]; 
+        const dbSalt = row[6]; 
+        
         if (dbSalt) {
           passwordIsValid = verifyPassword(password, dbHashOrPassword, dbSalt);
         } else {
           passwordIsValid = (dbHashOrPassword === password);
         }
-      }
-      
-      if (passwordIsValid) {
-        
-        const token = Utilities.getUuid();
-        const now = new Date().getTime(); 
-        const namaSekolahUpper = row[1].toUpperCase();
-        const userSpreadsheetID = row[5]; 
-        
-        const userProperties = PropertiesService.getUserProperties();
-        userProperties.setProperty('sessionToken', token);
-        userProperties.setProperty('lastActivity', now.toString());
-        
-        const jenjangPilihan = getJenjangPilihanFromSheet(userSpreadsheetID);
 
-        userProperties.setProperty('sekolahID', row[0]);
-        userProperties.setProperty('namaSekolah', namaSekolahUpper); 
-        userProperties.setProperty('jenjang', row[2]); 
-        userProperties.setProperty('spreadsheetID', userSpreadsheetID); 
-        userProperties.setProperty('jenjangPilihan', jenjangPilihan); 
-        
-        return { 
-          status: "sukses", 
-          namaSekolah: namaSekolahUpper,
-          jenjang: row[2], 
-          jenjangPilihan: jenjangPilihan, 
-          token: token
-        };
+        if (passwordIsValid) {
+          cachedRow = row; 
+        }
+        break; 
       }
     }
+
+    if (!passwordIsValid || !cachedRow) {
+      return { status: "gagal", message: "Email atau password salah." };
+    }
+
+    Logger.log(`Verifikasi live data untuk: ${email}`);
     
-    return { status: "gagal", message: "Email atau password salah." };
+    let masterSS;
+    let sheetSekolah;
+    try {
+      masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
+      sheetSekolah = masterSS.getSheetByName('Sheet_Sekolah');
+      if (!sheetSekolah) {
+        throw new Error("Sheet_Sekolah tidak ditemukan.");
+      }
+    } catch (e) {
+      Logger.log("Gagal membuka Master Sheet saat verifikasi login: " + e.message);
+      return { status: "gagal", message: "Gagal memverifikasi akun. Hubungi Admin." };
+    }
+
+    const emailColumnRange = sheetSekolah.getRange('D:D');
+    const textFinder = emailColumnRange.createTextFinder(email).matchEntireCell(true);
+    const foundCell = textFinder.findNext();
+
+    let liveRowFound = false;
+
+    if (foundCell) {
+      const rowIndex = foundCell.getRow();
+      const livePassDataRange = sheetSekolah.getRange(rowIndex, 5, 1, 3); 
+      const livePassDataValues = livePassDataRange.getValues()[0];
+      const liveHash = livePassDataValues[0]; 
+      const liveSalt = livePassDataValues[2]; 
+      
+      if (verifyPassword(password, liveHash, liveSalt)) {
+          liveRowFound = true;
+      }
+    }
+
+    if (!liveRowFound) {
+        Logger.log(`Login GAGAL untuk ${email}: Ditemukan di cache, TAPI tidak ada di live data (mungkin dihapus atau password diubah).`);
+        clearMasterSheetCache(); 
+        return { status: "gagal", message: "Email atau password salah." };
+    }
+
+    const token = Utilities.getUuid();
+    const now = new Date().getTime(); 
+    const namaSekolahUpper = cachedRow[1].toUpperCase();
+    const userSpreadsheetID = cachedRow[5]; 
+    
+    const userProperties = PropertiesService.getUserProperties();
+    userProperties.setProperty('sessionToken', token);
+    userProperties.setProperty('lastActivity', now.toString());
+    
+    const jenjangPilihan = getJenjangPilihanFromSheet(userSpreadsheetID);
+
+    userProperties.setProperty('sekolahID', cachedRow[0]);
+    userProperties.setProperty('namaSekolah', namaSekolahUpper); 
+    userProperties.setProperty('jenjang', cachedRow[2]); 
+    userProperties.setProperty('spreadsheetID', userSpreadsheetID); 
+    userProperties.setProperty('jenjangPilihan', jenjangPilihan); 
+    
+    return { 
+      status: "sukses", 
+      namaSekolah: namaSekolahUpper,
+      jenjang: cachedRow[2], 
+      jenjangPilihan: jenjangPilihan, 
+      token: token
+    };
     
   } catch (e) {
     Logger.log(e);
