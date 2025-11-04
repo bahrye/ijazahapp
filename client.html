@@ -1119,6 +1119,25 @@
     localStorage.removeItem(LAST_PAGE_KEY);
 
     if (response.status === "sukses") {
+      
+      // --- PERBAIKAN DI SINI ---
+      // Reset state global di sisi klien ke kondisi awal
+      globalSiswaList = [];
+      globalGridData = {
+        siswaList: [],
+        mapelList: [],
+        nilaiData: {}
+      };
+      globalRaporData = {
+        P: { siswaList: [], mapelList: [], nilaiData: {} },
+        K: { siswaList: [], mapelList: [], nilaiData: {} },
+        Rekap: { siswaList: [], mapelList: [], nilaiRekapData: {} }
+      };
+      // Reset juga cache jenjang
+      jenjangBaseCache = '';
+      jenjangPilihanCache = '';
+      // --- AKHIR PERBAIKAN ---
+
       tampilHalaman('halaman-login');
     } else {
       showInfoModal("Gagal Logout", response.message, true);
@@ -2884,10 +2903,12 @@
     document.getElementById('input-rapor-keterampilan-table-container').innerHTML = '<p>Memuat data...</p>';
     document.getElementById('rekap-rapor-semester-table-container').innerHTML = '<p>Memuat data...</p>';
 
+    // --- PERBAIKAN DI SINI: Nonaktifkan tombol saat memuat ---
     btnSimpanP.disabled = true;
     btnBersihkanP.disabled = true;
     btnSimpanK.disabled = true;
     btnBersihkanK.disabled = true;
+    // --- AKHIR PERBAIKAN ---
 
     document.getElementById('input-rapor-filter-kelas').innerHTML = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
     
@@ -2911,16 +2932,18 @@
   function onNilaiRaporGridLoaded(response) {
     setLoading(false);
     
+    // --- PERBAIKAN DI SINI: Ambil referensi tombol lagi ---
     const btnSimpanP = document.getElementById('btn-simpan-input-rapor-p');
     const btnBersihkanP = document.getElementById('btn-bersihkan-input-rapor-p');
     const btnSimpanK = document.getElementById('btn-simpan-input-rapor-k');
     const btnBersihkanK = document.getElementById('btn-bersihkan-input-rapor-k');
+    // --- AKHIR PERBAIKAN ---
 
     if (response.status !== 'sukses') {
       document.getElementById('input-rapor-table-container').innerHTML = `<p class="message error" style="display:block;">Gagal memuat data: ${response.message}</p>`;
       document.getElementById('input-rapor-keterampilan-table-container').innerHTML = "";
       document.getElementById('rekap-rapor-semester-table-container').innerHTML = "";
-      // (Tombol-tombol sudah disabled)
+      // (Tombol-tombol tetap nonaktif jika gagal)
       return;
     }
 
@@ -2944,6 +2967,7 @@
     // Aktifkan tab pertama
     activateRaporTab('pengetahuan');
     
+    // --- PERBAIKAN DI SINI: Aktifkan tombol jika data ada ---
     // Cek apakah tombol P perlu diaktifkan
     const { siswaList: siswaListP, mapelList: mapelListP } = globalRaporData.P;
     if (siswaListP && siswaListP.length > 0 && mapelListP && mapelListP.length > 0) {
@@ -2957,6 +2981,7 @@
       btnSimpanK.disabled = false;
       btnBersihkanK.disabled = false;
     }
+    // --- AKHIR PERBAIKAN ---
   }
   
   function populateNilaiRaporFilter(siswaList) {
