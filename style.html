@@ -1094,6 +1094,7 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-top: 20px;
+    position: relative; /* <-- TAMBAHAN: Diperlukan untuk overlay */
   }
 
   .input-nilai-table {
@@ -1674,14 +1675,24 @@
   #global-toast-container {
     position: fixed;
     top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    
+    /* --- PERUBAHAN DI SINI --- */
+    right: 20px; /* <-- UBAH: Tentukan posisi di kanan */
+    left: auto; /* <-- UBAH: Hapus posisi kiri */
+    transform: none; /* <-- UBAH: Hapus transform */
+    /* --- AKHIR PERUBAHAN --- */
+
     z-index: 10001;
     width: 90%;
     max-width: 450px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+
+    /* --- PERUBAHAN DI SINI (Opsional tapi disarankan) --- */
+    /* Ubah dari 'center' menjadi 'flex-end' agar toast rata ke kanan */
+    align-items: flex-end; 
+    /* --- AKHIR PERUBAHAN --- */
+    
     gap: 10px;
     pointer-events: none;
   }
@@ -1695,7 +1706,7 @@
     padding: 14px 20px; /* Lebih compact */
     border-radius: 12px; /* Sesuai gambar */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    animation: toast-slide-in 0.3s cubic-bezier(0.21, 1.02, 0.73, 1);
+    animation: toast-slide-in 0.3s ease-out;
     pointer-events: auto;
     opacity: 0;
     transform: translateY(-20px);
@@ -1852,4 +1863,34 @@
   #tab-rekap-rapor-semester-content .form-actions {
     display: none;
   }
+
+  /* === TAMBAHAN BARU: Overlay untuk Tabel Input Nilai === */
+  /* Overlay ini akan menutupi input tapi membiarkan container di-scroll */
+  .table-blocker-overlay {
+    display: none; /* Sembunyi by default */
+    position: absolute;
+    top: 0;
+    left: 0;
+    /* Kita buat 100% width/height. Karena parent-nya (table-container)
+      punya position:relative, overlay ini akan di-scroll bersama
+      konten tabel.
+    */
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.6);
+    /* z-index ini harus lebih tinggi dari konten tabel (termasuk sticky)
+      tapi lebih rendah dari toast. Sticky kolom/header punya z-index 5-12.
+      Jadi kita gunakan 99.
+    */
+    z-index: 99; 
+    cursor: wait;
+  }
+
+  /* Class .loading-in-progress akan kita tambahkan via JS ke .page
+    untuk menampilkan overlay di semua tabel di dalamnya.
+  */
+  .page.loading-in-progress .table-blocker-overlay {
+    display: block;
+  }
+  /* === AKHIR TAMBAHAN BARU === */
 </style>
