@@ -134,7 +134,7 @@
     border-radius: 8px;
     margin-top: 15px;
     text-align: center;
-    display: none !important; /* <-- TAMBAHKAN !important DI SINI */
+    display: none !important; 
   }
   .error {
     color: var(--danger-color);
@@ -212,22 +212,21 @@
   }
 
   .page-sub-header {
-    /* Mobile-first: Tombol di atas, teks di bawah */
     display: flex;
-    flex-direction: column-reverse; /* Ini kuncinya: menukar urutan visual */
-    align-items: stretch; /* Membuat tombol jadi full-width */
+    flex-direction: column-reverse; 
+    align-items: stretch; 
     margin-bottom: 20px;
   }
 
   .page-sub-header p {
     margin: 0;
     color: var(--text-dark);
-    text-align: center; /* DIUBAH: Dibuat rata tengah di mobile */
+    text-align: center; 
   }
 
   .page-sub-header button.btn-aksi {
-    width: 100%; /* Tombol full-width di mobile */
-    margin: 0 0 15px 0; /* Beri jarak 15px di bawah tombol (di atas teks) */
+    width: 100%; 
+    margin: 0 0 15px 0; 
     flex-shrink: 0;
     background-color: var(--primary-color);
     padding: 10px 15px;
@@ -237,21 +236,20 @@
     background-color: var(--primary-dark);
   }
 
-  /* Desktop: Kembalikan ke layout lama (side-by-side) */
   @media (min-width: 576px) {
     .page-sub-header {
-      flex-direction: row; /* Kembali ke baris */
-      justify-content: space-between; /* Saling menjauh */
-      align-items: center; /* Tengah secara vertikal */
+      flex-direction: row; 
+      justify-content: space-between; 
+      align-items: center; 
     }
 
     .page-sub-header p {
-      text-align: left; /* DIUBAH: Kembalikan ke rata kiri di desktop */
+      text-align: left; 
     }
     
     .page-sub-header button.btn-aksi {
-      width: auto; /* Lebar tombol kembali auto */
-      margin: 0; /* Hapus margin mobile */
+      width: auto; 
+      margin: 0; 
     }
   }
 
@@ -340,17 +338,18 @@
   #btn-kembali-ke-dashboard-6,
   #btn-kembali-ke-dashboard-7,
   #btn-kembali-ke-dashboard-8,
+  #btn-kembali-ke-dashboard-9,
   #btn-kembali-ke-input-rapor,
   #btn-kembali-ke-input-rapor-2 {
     width: auto;
-    padding: 12px 16px; /* DIUBAH: Dari 8px 12px */
-    font-size: 15px;     /* DIUBAH: Dari 14px */
+    padding: 12px 16px; 
+    font-size: 15px;     
     font-weight: 700;
     margin: 0;
     background-color: var(--secondary-color);
     color: white;
     border: none;
-    border-radius: 8px; /* DIUBAH: Dari 6px (agar lebih besar) */
+    border-radius: 8px; 
     gap: 8px;
   }
 
@@ -362,6 +361,7 @@
   #btn-kembali-ke-dashboard-6:hover,
   #btn-kembali-ke-dashboard-7:hover,
   #btn-kembali-ke-dashboard-8:hover,
+  #btn-kembali-ke-dashboard-9:hover,
   #btn-kembali-ke-input-rapor:hover,
   #btn-kembali-ke-input-rapor-2:hover {
      background-color: #5a6268;
@@ -474,7 +474,8 @@
     #halaman-semester,
     #halaman-input-rapor,
     #halaman-input-rapor-detail,
-    #halaman-rekap-rapor {
+    #halaman-rekap-rapor,
+    #halaman-nilai-ijazah {
       max-width: 960px;
     }
 
@@ -821,6 +822,7 @@
   #btn-buka-bobot { color: #fd7e14; }
   #btn-buka-kelas { color: #0dcaf0; }
   #btn-buka-semester { color: #dc3545; }
+  #btn-buka-nilai-ijazah { color: #6f42c1; } 
 
   .dashboard-card:hover {
     transform: translateY(-5px);
@@ -849,6 +851,10 @@
   }
   #btn-buka-semester:hover {
     background-color: #dc3545 !important;
+    color: white !important;
+  }
+  #btn-buka-nilai-ijazah:hover {
+    background-color: #6f42c1 !important;
     color: white !important;
   }
 
@@ -1115,7 +1121,7 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-top: 20px;
-    position: relative; /* <-- TAMBAHAN: Diperlukan untuk overlay */
+    position: relative; 
   }
 
   .input-nilai-table {
@@ -1198,14 +1204,14 @@
   #btn-kembali-ke-input-ujian,
   #btn-kembali-ke-input-ujian-2 {
     width: auto;
-    padding: 12px 16px; /* DIUBAH: Dari 8px 12px */
-    font-size: 15px;     /* DIUBAH: Dari 14px */
+    padding: 12px 16px; 
+    font-size: 15px;     
     font-weight: 700;
     margin: 0;
     background-color: var(--secondary-color);
     color: white;
     border: none;
-    border-radius: 8px; /* DIUBAH: Dari 6px (agar lebih besar) */
+    border-radius: 8px; 
     gap: 8px;
   }
   #btn-kembali-ke-input-ujian:hover,
@@ -1444,13 +1450,19 @@
     #halaman-rekap-nilai .input-nilai-table .th-total,
     #halaman-rekap-nilai .input-nilai-table .col-total,
     #halaman-rekap-nilai .input-nilai-table .th-total-bulat,
-    #halaman-rekap-nilai .input-nilai-table .col-total-bulat { 
+    #halaman-rekap-nilai .input-nilai-table .col-total-bulat,
+    #halaman-nilai-ijazah .input-nilai-table .th-total,
+    #halaman-nilai-ijazah .input-nilai-table .col-total,
+    #halaman-nilai-ijazah .input-nilai-table .th-total-bulat,
+    #halaman-nilai-ijazah .input-nilai-table .col-total-bulat { 
       position: sticky;
       z-index: 6; 
     }
   
     #halaman-rekap-nilai .input-nilai-table th.th-total,
-    #halaman-rekap-nilai .input-nilai-table th.th-total-bulat {
+    #halaman-rekap-nilai .input-nilai-table th.th-total-bulat,
+    #halaman-nilai-ijazah .input-nilai-table th.th-total,
+    #halaman-nilai-ijazah .input-nilai-table th.th-total-bulat {
       z-index: 11;
     }
 
@@ -1468,6 +1480,40 @@
     #halaman-rekap-nilai .input-nilai-table .col-total-jumlah {
       right: 140px;
     }
+
+    /* --- PERBAIKAN STICKY KOLOM NILAI IJAZAH --- */
+
+    /* Aturan untuk tabel 3-kolom (Final) */
+    #ijazah-final-table-container .input-nilai-table .th-total-bulat,
+    #ijazah-final-table-container .input-nilai-table .col-total-bulat {
+      right: 0; 
+    }
+  
+    #ijazah-final-table-container .input-nilai-table .th-total-rata,
+    #ijazah-final-table-container .input-nilai-table .col-total-rata {
+      right: 70px;
+    }
+  
+    #ijazah-final-table-container .input-nilai-table .th-total-jumlah,
+    #ijazah-final-table-container .input-nilai-table .col-total-jumlah {
+      right: 140px;
+    }
+
+    /* Aturan untuk tabel 2-kolom (Ujian & Rapor Berbobot) */
+    #ijazah-ujian-table-container .input-nilai-table .th-total-rata,
+    #ijazah-ujian-table-container .input-nilai-table .col-total-rata,
+    #ijazah-rapor-table-container .input-nilai-table .th-total-rata,
+    #ijazah-rapor-table-container .input-nilai-table .col-total-rata {
+      right: 0;
+    }
+
+    #ijazah-ujian-table-container .input-nilai-table .th-total-jumlah,
+    #ijazah-ujian-table-container .input-nilai-table .col-total-jumlah,
+    #ijazah-rapor-table-container .input-nilai-table .th-total-jumlah,
+    #ijazah-rapor-table-container .input-nilai-table .col-total-jumlah {
+      right: 70px;
+    }
+    /* --- AKHIR PERBAIKAN --- */
     
     #halaman-input-nilai-detail .input-nilai-table .th-total,
     #halaman-input-nilai-detail .input-nilai-table .col-total {
@@ -1582,16 +1628,16 @@
   }
 
   #btn-proses-upload-nilai,
-  #btn-proses-upload-nilai-rapor { /* <-- TAMBAHKAN INI */
+  #btn-proses-upload-nilai-rapor { 
     background-color: var(--success-color);
   }
   #btn-proses-upload-nilai:hover,
-  #btn-proses-upload-nilai-rapor:hover { /* <-- TAMBAHKAN INI */
+  #btn-proses-upload-nilai-rapor:hover { 
     background-color: #157347;
   }
   #btn-batal-modal-upload-nilai,
-  #btn-batal-modal-upload-nilai-rapor { /* <-- TAMBAHKAN INI */
-    background-color: var(--danger-color); /* <-- UBAH KE WARNA INI */
+  #btn-batal-modal-upload-nilai-rapor { 
+    background-color: var(--danger-color); 
   }
 
   .dynamic-tooltip {
@@ -1660,8 +1706,6 @@
     color: white !important;
   }
   
-  /* --- PERUBAHAN DI SINI --- */
-  /* Membuat tombol Bersihkan (P & K) menjadi merah */
   #btn-bersihkan-input-rapor,
   #btn-bersihkan-input-rapor-p,
   #btn-bersihkan-input-rapor-k {
@@ -1673,7 +1717,6 @@
     background-color: #b02a37;
   }
   
-  /* (Opsional) Membuat tombol Simpan (P & K) menjadi hijau agar konsisten */
   #btn-simpan-input-rapor,
   #btn-simpan-input-rapor-p,
   #btn-simpan-input-rapor-k {
@@ -1698,16 +1741,13 @@
     pointer-events: none;
   }
     
-  /* === Gaya Notifikasi Toast Global (Versi Sederhana & Profesional) === */
   #global-toast-container {
     position: fixed;
     top: 20px;
     
-    /* --- PERBAIKAN: Peletakan di tengah --- */
-    left: 50%; /* <-- DIUBAH: Tentukan posisi di tengah */
-    transform: translateX(-50%); /* <-- DIUBAH: Geser 50% dari lebarnya sendiri */
-    right: auto; /* <-- DIUBAH: Hapus posisi kanan */
-    /* --- AKHIR PERBAIKAN --- */
+    left: 50%; 
+    transform: translateX(-50%); 
+    right: auto; 
 
     z-index: 10001;
     width: 90%;
@@ -1715,9 +1755,7 @@
     display: flex;
     flex-direction: column;
 
-    /* --- PERBAIKAN: Buat toast rata tengah --- */
     align-items: center; 
-    /* --- AKHIR PERBAIKAN --- */
     
     gap: 10px;
     pointer-events: none;
@@ -1725,23 +1763,21 @@
 
   .global-toast {
     display: flex;
-    align-items: center; /* Vertikal center */
-    width: auto; /* Otomatis sesuai konten */
-    min-width: 250px; /* Lebar minimal */
+    align-items: center; 
+    width: auto; 
+    min-width: 250px; 
     max-width: 100%;
-    padding: 14px 20px; /* Lebih compact */
-    border-radius: 12px; /* Sesuai gambar */
+    padding: 14px 20px; 
+    border-radius: 12px; 
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     animation: toast-slide-in 0.3s ease-out;
     pointer-events: auto;
     opacity: 0;
-    /* transform: translateY(-20px); */ /* <-- DIHAPUS: Ini menyebabkan slide dari atas */
     border: 1px solid rgba(0,0,0,0.05);
   }
 
   .global-toast.show {
     opacity: 1;
-    /* transform: translateY(0); */ /* <-- DIHAPUS: Ini menyebabkan slide dari atas */
   }
 
   .global-toast.hide {
@@ -1766,79 +1802,66 @@
     line-height: 1.4;
   }
 
-  /* --- Status Toast (Sesuai Desain Baru) --- */
-
-  /* 1. Proses (Biru) */
   .global-toast.toast-proses {
-    background-color: #e7f1ff; /* Latar belakang biru muda */
-    color: #0b5ed7; /* Teks & ikon biru tua */
+    background-color: #e7f1ff; 
+    color: #0b5ed7; 
     border-color: #b6d4fe;
   }
   .toast-proses .toast-icon .spinner-toast {
     width: 18px;
     height: 18px;
-    border: 3px solid rgba(13, 110, 253, 0.2); /* Border spinner biru muda */
-    border-top-color: #0b5ed7; /* Top spinner biru tua */
+    border: 3px solid rgba(13, 110, 253, 0.2); 
+    border-top-color: #0b5ed7; 
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    box-sizing: border-box; /* <-- TAMBAHKAN BARIS INI */
+    box-sizing: border-box; 
   }
 
-  /* 2. Sukses (Hijau) */
   .global-toast.toast-sukses {
-    background-color: #e8f8f0; /* Latar belakang hijau muda */
-    color: #198754; /* Teks & ikon hijau tua */
+    background-color: #e8f8f0; 
+    color: #198754; 
     border-color: #bce3cd;
   }
 
-  /* 3. Gagal (Merah) */
   .global-toast.toast-gagal {
-    background-color: #fdeeee; /* Latar belakang merah muda */
-    color: #dc3545; /* Teks & ikon merah tua */
+    background-color: #fdeeee; 
+    color: #dc3545; 
     border-color: #f7d0d4;
   }
 
-  /* --- Animasi --- */
   @keyframes toast-slide-in {
     from {
       opacity: 0;
-      /* transform: translateY(-20px); */ /* <-- DIHAPUS: Animasi hanya fade-in */
     }
     to {
       opacity: 1;
-      /* transform: translateY(0); */ /* <-- DIHAPUS: Animasi hanya fade-in */
     }
   }
 
   @keyframes toast-fade-out {
     from {
       opacity: 1;
-      /* transform: translateY(0); */ /* <-- DIHAPUS: Animasi hanya fade-out */
     }
     to {
       opacity: 0;
-      /* transform: translateY(-20px); */ /* <-- DIHAPUS: Animasi hanya fade-out */
     }
   }
-  /* Referensi animasi spin (jika belum ada) */
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
 
-  /* === UI Blocker Overlay === */
   #global-ui-blocker {
-    display: none; /* Sembunyi secara default */
+    display: none; 
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: transparent; /* Tidak terlihat, hanya memblokir klik */
-    z-index: 10000; /* Di bawah toast (10001), di atas segalanya */
-    cursor: wait; /* Tampilkan kursor "tunggu" */
+    background: transparent; 
+    z-index: 10000; 
+    cursor: wait; 
   }
 
-  /* === Gaya Tab === */
   .tab-bar {
     display: flex;
     border-bottom: 2px solid var(--border-color);
@@ -1855,7 +1878,7 @@
     background-color: transparent;
     color: var(--text-light);
     border-bottom: 3px solid transparent;
-    margin-bottom: -2px; /* Agar border bawah menimpa border container */
+    margin-bottom: -2px; 
     transition: all 0.2s;
   }
 
@@ -1871,7 +1894,7 @@
 
   .tab-content {
     display: none;
-    padding-top: 25px; /* Jarak dari tab bar */
+    padding-top: 25px; 
     animation: fadeIn 0.3s;
   }
   
@@ -1879,46 +1902,30 @@
     display: block;
   }
   
-  /* Animasi fade-in sederhana */
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Sembunyikan tombol form-actions di dalam tab rekapitulasi */
   #tab-rekap-rapor-semester-content .form-actions {
     display: none;
   }
 
-  /* === TAMBAHAN BARU: Overlay untuk Tabel Input Nilai === */
-  /* Overlay ini akan menutupi input tapi membiarkan container di-scroll */
   .table-blocker-overlay {
-    display: none; /* Sembunyi by default */
+    display: none; 
     position: absolute;
     top: 0;
     left: 0;
-    /* Kita buat 100% width/height. Karena parent-nya (table-container)
-      punya position:relative, overlay ini akan di-scroll bersama
-      konten tabel.
-    */
     width: 100%;
     height: 100%;
     background: rgba(255, 255, 255, 0.6);
-    /* z-index ini harus lebih tinggi dari konten tabel (termasuk sticky)
-      tapi lebih rendah dari toast. Sticky kolom/header punya z-index 5-12.
-      Jadi kita gunakan 99.
-    */
     z-index: 99; 
     cursor: wait;
   }
 
-  /* Class .loading-in-progress akan kita tambahkan via JS ke .page
-    untuk menampilkan overlay di semua tabel di dalamnya.
-  */
   .page.loading-in-progress .table-blocker-overlay {
     display: block;
   }
-  /* === AKHIR TAMBAHAN BARU === */
 
   .table-content-header {
     font-size: 16px;
@@ -1928,7 +1935,6 @@
     margin-bottom: 15px;
   }
 
-  /* Spinner kecil di dalam tombol */
   .spinner-inline {
     width: 20px;
     height: 20px;
@@ -1938,17 +1944,14 @@
     animation: spin 0.8s linear infinite;
   }
   
-  /* Sembunyikan ikon dan teks asli saat loading */
   button.loading > *:not(.spinner-inline) {
     display: none;
   }
 
-  /* Tampilkan spinner saat loading */
   button.loading .spinner-inline {
     display: inline-block;
   }
 
-  /* Keyframe untuk getar dan flash merah */
   @keyframes shake-and-flash {
     0%, 100% {
       transform: translateX(0);
@@ -1961,29 +1964,23 @@
       transform: translateX(6px);
     }
     30%, 60% {
-      /* Ini adalah flash merah di tengah getaran */
       background-color: rgba(220, 53, 69, 0.1); 
     }
   }
 
-  /* Kelas yang akan kita tambahkan via JavaScript */
   .login-fail-shake {
     animation: shake-and-flash 0.6s ease-in-out;
   }
 
-  /* --- TAMBAHAN BARU: Style untuk Input Error --- */
   .input-error {
     border-color: var(--danger-color);
   }
   
   .input-error:focus {
-    /* Pastikan glow-nya juga merah saat error dan difokuskan */
     border-color: var(--danger-color);
     box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25);
   }
-  /* --- AKHIR TAMBAHAN BARU --- */
 
-  /* Aturan untuk semua pesan loading di kontainer NON-GRID */
   #mapel-table-container p,
   #kelas-list-container p,
   #siswa-table-container p,
@@ -1992,17 +1989,28 @@
   #input-rapor-table-container p,
   #input-rapor-keterampilan-table-container p,
   #rekap-rapor-semester-table-container p,
-  #rekap-rapor-table-container p {
+  #rekap-rapor-table-container p,
+  #ijazah-ujian-table-container p,
+  #ijazah-rapor-table-container p,
+  #ijazah-final-table-container p {
     text-align: center;
     padding: 20px 0;
     color: var(--text-light);
   }
 
-  /* Aturan KHUSUS untuk pesan loading di kontainer GRID */
   #rapor-semester-card-container p {
-    grid-column: 1 / -1; /* <-- INI BARIS PERBAIKANNYA */
+    grid-column: 1 / -1; 
     text-align: center;
     padding: 20px 0;
     color: var(--text-light);
+  }
+
+  .input-nilai-table .col-total.status-lulus {
+    color: var(--success-color);
+    font-weight: 700;
+  }
+  .input-nilai-table .col-total.status-tidak-lulus {
+    color: var(--danger-color);
+    font-weight: 700;
   }
 </style>
