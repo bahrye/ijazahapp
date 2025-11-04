@@ -787,6 +787,45 @@
     });
     document.getElementById('data-jenjang-pilihan').addEventListener('change', updateTampilanNSM);
 
+    // --- TAMBAHKAN BLOK BARU INI ---
+    // Hapus status error pada input data sekolah saat pengguna mengetik
+    const dataSekolahFieldsToWatch = [
+      'data-jenjang-pilihan', 'data-npsn', 'data-alamat', 'data-kepsek', 'data-nsm'
+    ];
+    
+    dataSekolahFieldsToWatch.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        // Gunakan 'change' untuk <select> dan 'input' untuk lainnya
+        const eventType = (el.tagName.toLowerCase() === 'select') ? 'change' : 'input';
+        el.addEventListener(eventType, () => {
+          el.classList.remove('input-error');
+        });
+      }
+    });
+    // --- AKHIR BLOK BARU ---
+
+    // --- TAMBAHKAN BLOK BARU INI ---
+    // Hapus status error pada input modal siswa saat pengguna mengetik/mengubah
+    const modalSiswaFieldsToWatch = [
+      'modal-siswa-nama', 
+      'modal-siswa-nisn', 
+      'modal-siswa-jk', 
+      'modal-siswa-kelas'
+    ];
+    
+    modalSiswaFieldsToWatch.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        // Gunakan 'change' untuk <select> dan 'input' untuk lainnya
+        const eventType = (el.tagName.toLowerCase() === 'select') ? 'change' : 'input';
+        el.addEventListener(eventType, () => {
+          el.classList.remove('input-error');
+        });
+      }
+    });
+    // --- AKHIR BLOK BARU ---
+
     document.getElementById('form-bobot').addEventListener('submit', (e) => {
       e.preventDefault();
       simpanBobot();
@@ -1284,13 +1323,29 @@
       document.getElementById('salam-sekolah').innerText = `Selamat Datang, Admin ${response.namaSekolah}`;
       tampilHalaman('halaman-utama');
 
-      // --- BARU ---
-      // Mulai timer setelah login berhasil
       resetInactivityTimer();
-      // --- AKHIR BARU ---
 
     } else {
+      // Tampilkan toast error seperti biasa
       showMessage('login-error', response.message, true);
+      
+      // --- TAMBAHKAN BLOK INI ---
+      const loginPage = document.getElementById('halaman-login');
+      
+      // Hapus dulu jika masih ada (untuk jaga-jaga)
+      loginPage.classList.remove('login-fail-shake');
+      
+      // Paksa browser menghitung ulang style sebelum menambah kelas lagi
+      void loginPage.offsetWidth; 
+
+      // Tambahkan kelas untuk memicu animasi
+      loginPage.classList.add('login-fail-shake');
+      
+      // Hapus kelas setelah animasi selesai (600ms)
+      setTimeout(() => {
+        loginPage.classList.remove('login-fail-shake');
+      }, 600);
+      // --- AKHIR BLOK ---
     }
   }
 
@@ -1751,6 +1806,23 @@
       setLoading(true, 'Menyimpan data sekolah...');
       hideMessage('data-sekolah-message');
 
+      // --- PERUBAHAN: Daftar ID field yang wajib ---
+      const requiredFieldIds = [
+        'data-jenjang-pilihan', 
+        'data-npsn', 
+        'data-alamat', 
+        'data-kepsek'
+      ];
+      const nsmFieldId = 'data-nsm';
+
+      // --- PERUBAHAN: Bersihkan semua error class sebelumnya ---
+      requiredFieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('input-error');
+      });
+      document.getElementById(nsmFieldId).classList.remove('input-error');
+      // --- AKHIR PERUBAHAN ---
+
       const dataToSave = {
         jenjangPilihan: document.getElementById('data-jenjang-pilihan').value,
         npsn: document.getElementById('data-npsn').value.trim(),
@@ -1770,18 +1842,34 @@
         nipKepsek: document.getElementById('data-nip-kepsek').value.trim()
       };
 
-      const errors = [];
-      if (!dataToSave.jenjangPilihan) { errors.push("Jenjang"); }
-      if (!dataToSave.npsn) { errors.push("NPSN"); }
-      if (!dataToSave.alamat) { errors.push("Alamat Sekolah"); }
-      if (!dataToSave.namaKepsek) { errors.push("Nama Kepala Sekolah"); }
+      // --- PERUBAHAN: Kumpulkan ID field yang error ---
+      const errorFieldIds = [];
+      if (!dataToSave.jenjangPilihan) { errorFieldIds.push('data-jenjang-pilihan'); }
+      if (!dataToSave.npsn) { errorFieldIds.push('data-npsn'); }
+      if (!dataToSave.alamat) { errorFieldIds.push('data-alamat'); }
+      if (!dataToSave.namaKepsek) { errorFieldIds.push('data-kepsek'); }
 
       const isMadrasah = (dataToSave.jenjangPilihan === 'MI' || dataToSave.jenjangPilihan === 'MTS' || dataToSave.jenjangPilihan === 'MA');
-      if (isMadrasah && !dataToSave.nsm) { errors.push("NSM (wajib untuk Madrasah)"); }
+      if (isMadrasah && !dataToSave.nsm) { 
+        errorFieldIds.push('data-nsm'); 
+      }
+      // --- AKHIR PERUBAHAN ---
 
-      if (errors.length > 0) {
+      if (errorFieldIds.length > 0) {
         setLoading(false);
-        const errorMessage = "Field (Wajib) tidak boleh kosong: " + errors.join(', ') + ".";
+        
+        // --- PERUBAHAN: Terapkan error class ke field yang gagal ---
+        errorFieldIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add('input-error');
+        });
+        
+        // Fokus ke field error pertama
+        document.getElementById(errorFieldIds[0]).focus();
+        
+        const errorMessage = "Harap lengkapi semua field (Wajib) yang ditandai merah.";
+        // --- AKHIR PERUBAHAN ---
+        
         showMessage('data-sekolah-message', errorMessage, true);
         return;
       }
@@ -2227,6 +2315,21 @@
       setLoading(true, 'Menyimpan data siswa...');
       hideMessage('modal-siswa-error');
 
+      // --- TAMBAHAN BARU: Daftar ID Wajib ---
+      const requiredFieldIds = [
+        'modal-siswa-nama', 
+        'modal-siswa-nisn', 
+        'modal-siswa-jk', 
+        'modal-siswa-kelas'
+      ];
+
+      // --- TAMBAHAN BARU: Bersihkan error sebelumnya ---
+      requiredFieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('input-error');
+      });
+      // --- AKHIR TAMBAHAN ---
+
       const dataSiswa = {
         id: document.getElementById('modal-siswa-id').value,
         nama: document.getElementById('modal-siswa-nama').value.trim(),
@@ -2238,17 +2341,30 @@
         kelas: document.getElementById('modal-siswa-kelas').value
       };
 
-      const errors = [];
-      if (!dataSiswa.nama) errors.push("Nama Lengkap");
-      if (!dataSiswa.nisn) errors.push("NISN");
-      if (!dataSiswa.jk) errors.push("Jenis Kelamin");
-      if (!dataSiswa.kelas) errors.push("Kelas");
+      // --- PERUBAHAN: Validasi berdasarkan ID ---
+      const errorFieldIds = [];
+      if (!dataSiswa.nama) errorFieldIds.push("modal-siswa-nama");
+      if (!dataSiswa.nisn) errorFieldIds.push("modal-siswa-nisn");
+      if (!dataSiswa.jk) errorFieldIds.push("modal-siswa-jk");
+      if (!dataSiswa.kelas) errorFieldIds.push("modal-siswa-kelas");
 
-      if (errors.length > 0) {
+      if (errorFieldIds.length > 0) {
         setLoading(false);
-        showMessage('modal-siswa-error', "Field (Wajib) tidak boleh kosong: " + errors.join(', ') + ".", true);
+        
+        // --- TAMBAHAN BARU: Terapkan class error ---
+        errorFieldIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add('input-error');
+        });
+        
+        document.getElementById(errorFieldIds[0]).focus();
+        const errorMessage = "Harap lengkapi semua field (Wajib) yang ditandai merah.";
+        // --- AKHIR TAMBAHAN ---
+
+        showMessage('modal-siswa-error', errorMessage, true);
         return;
       }
+      // --- AKHIR PERUBAHAN ---
 
       const mode = document.getElementById('modal-siswa-mode').value;
       if (mode === 'add') {
