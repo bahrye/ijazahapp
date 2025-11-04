@@ -1633,19 +1633,31 @@
     color: white !important;
   }
   
-  #btn-bersihkan-input-rapor {
+  /* --- PERUBAHAN DI SINI --- */
+  /* Membuat tombol Bersihkan (P & K) menjadi merah */
+  #btn-bersihkan-input-rapor,
+  #btn-bersihkan-input-rapor-p,
+  #btn-bersihkan-input-rapor-k {
     background-color: var(--danger-color);
   }
-  #btn-bersihkan-input-rapor:hover {
+  #btn-bersihkan-input-rapor:hover,
+  #btn-bersihkan-input-rapor-p:hover,
+  #btn-bersihkan-input-rapor-k:hover {
     background-color: #b02a37;
   }
   
-  #btn-simpan-input-rapor {
+  /* (Opsional) Membuat tombol Simpan (P & K) menjadi hijau agar konsisten */
+  #btn-simpan-input-rapor,
+  #btn-simpan-input-rapor-p,
+  #btn-simpan-input-rapor-k {
     background-color: var(--success-color);
   }
-  #btn-simpan-input-rapor:hover {
+  #btn-simpan-input-rapor:hover,
+  #btn-simpan-input-rapor-p:hover,
+  #btn-simpan-input-rapor-k:hover {
     background-color: #157347;
   }
+  /* --- AKHIR PERUBAHAN --- */
   
   #btn-bersihkan-input-rapor:disabled,
   #btn-simpan-input-rapor:disabled {
@@ -1784,5 +1796,57 @@
     background: transparent; /* Tidak terlihat, hanya memblokir klik */
     z-index: 10000; /* Di bawah toast (10001), di atas segalanya */
     cursor: wait; /* Tampilkan kursor "tunggu" */
+  }
+
+  /* === Gaya Tab === */
+  .tab-bar {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin-top: 20px;
+    margin-bottom: 0;
+  }
+
+  .tab-link {
+    padding: 12px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    color: var(--text-light);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px; /* Agar border bawah menimpa border container */
+    transition: all 0.2s;
+  }
+
+  .tab-link:hover {
+    color: var(--text-dark);
+    background-color: var(--bg-light);
+  }
+
+  .tab-link.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+  }
+
+  .tab-content {
+    display: none;
+    padding-top: 25px; /* Jarak dari tab bar */
+    animation: fadeIn 0.3s;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  /* Animasi fade-in sederhana */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Sembunyikan tombol form-actions di dalam tab rekapitulasi */
+  #tab-rekap-rapor-semester-content .form-actions {
+    display: none;
   }
 </style>
