@@ -4,6 +4,7 @@
   const LAST_PAGE_KEY = 'lastVisitedPageId';
   let siswaTelahDiImport = false;
   let nilaiTelahDiUpload = false;
+  let nilaiRaporTelahDiUpload = false; 
   let globalSiswaList = [];
   let isSiswaOrderDirty = false;
   let isMapelTipeDirty = false;
@@ -937,6 +938,59 @@
       }
     });
     // --- AKHIR PENAMBAHAN ---
+
+    document.getElementById('btn-buka-upload-rapor').addEventListener('click', bukaModalUploadNilaiRapor);
+    document.getElementById('btn-tutup-modal-upload-nilai-rapor').addEventListener('click', tutupModalUploadNilaiRapor);
+    document.getElementById('btn-batal-modal-upload-nilai-rapor').addEventListener('click', tutupModalUploadNilaiRapor);
+    document.getElementById('btn-download-template-rapor').addEventListener('click', downloadTemplateNilaiRapor);
+    document.getElementById('btn-proses-upload-nilai-rapor').addEventListener('click', prosesUploadFileNilaiRapor);
+
+    const fileUploadZoneRapor = document.getElementById('file-upload-zone-rapor');
+    const fileUploadInputRapor = document.getElementById('file-upload-rapor');
+    const fileUploadTextRapor = document.getElementById('file-upload-text-rapor');
+    const btnProsesUploadRapor = document.getElementById('btn-proses-upload-nilai-rapor');
+
+    fileUploadInputRapor.addEventListener('change', (e) => {
+        const fileInput = e.target;
+        if (fileInput.files.length > 0) {
+            const fileName = fileInput.files[0].name;
+            if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                fileUploadTextRapor.innerText = `File dipilih: ${fileName}`;
+                fileUploadTextRapor.classList.add('file-chosen');
+                btnProsesUploadRapor.disabled = false;
+                hideMessage('template-rapor-message');
+            } else {
+                fileUploadTextRapor.innerText = 'File harus berekstensi .xlsx atau .xls';
+                fileUploadTextRapor.classList.remove('file-chosen');
+                btnProsesUploadRapor.disabled = true;
+            }
+        } else {
+            fileUploadTextRapor.innerText = 'Klik untuk memilih file atau seret & letakkan di sini.';
+            fileUploadTextRapor.classList.remove('file-chosen');
+            btnProsesUploadRapor.disabled = true;
+        }
+    });
+
+    fileUploadZoneRapor.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileUploadZoneRapor.classList.add('drag-over');
+    });
+
+    fileUploadZoneRapor.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        fileUploadZoneRapor.classList.remove('drag-over');
+    });
+
+    fileUploadZoneRapor.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileUploadZoneRapor.classList.remove('drag-over');
+        
+        if (e.dataTransfer.files.length > 0) {
+          fileUploadInputRapor.files = e.dataTransfer.files;
+          const changeEvent = new Event('change');
+          fileUploadInputRapor.dispatchEvent(changeEvent);
+        }
+    });
 
     document.getElementById('btn-buka-input-rapor').addEventListener('click', () => {
       bukaHalamanInputRapor();
@@ -2439,6 +2493,216 @@
     fileUploadText.classList.remove('file-chosen');
   }
 
+  function bukaModalUploadNilaiRapor() {
+    document.getElementById('file-upload-rapor').value = null;
+    document.getElementById('btn-proses-upload-nilai-rapor').disabled = true;
+    document.getElementById('import-rapor-results').style.display = 'none';
+    document.getElementById('import-rapor-results').innerHTML = '';
+    hideMessage('template-rapor-message');
+    
+    const fileUploadText = document.getElementById('file-upload-text-rapor');
+    fileUploadText.innerText = 'Klik untuk memilih file atau seret & letakkan di sini.';
+    fileUploadText.classList.remove('file-chosen');
+    document.getElementById('file-upload-zone-rapor').classList.remove('drag-over');
+
+    nilaiRaporTelahDiUpload = false;
+    
+    document.getElementById('upload-nilai-rapor-modal').classList.add('show');
+
+    const selectSemester = document.getElementById('upload-rapor-filter-semester');
+    selectSemester.innerHTML = '<option value="">-- Memuat semester... --</option>';
+    const selectKelas = document.getElementById('upload-rapor-filter-kelas');
+    selectKelas.innerHTML = '<option value="">-- Pilih Semester Dulu --</option>';
+    
+    google.script.run
+      .withSuccessHandler(onSemesterListLoadedForUploadModal)
+      .withFailureHandler(onGagal)
+      .getSemesterList();
+  }
+
+  function onSemesterListLoadedForUploadModal(response) {
+    const selectSemester = document.getElementById('upload-rapor-filter-semester');
+    hideMessage('template-rapor-message');
+
+    if (response.status !== 'sukses' || !response.semesterList || response.semesterList.length === 0) {
+      selectSemester.innerHTML = '<option value="">-- Gagal memuat semester --</option>';
+      showMessage('template-rapor-message', "Gagal memuat daftar semester.", true);
+    } else {
+      selectSemester.innerHTML = '<option value="">-- Pilih Semester --</option>';
+      response.semesterList.forEach(semester => {
+        selectSemester.innerHTML += `<option value="${semester.id}">${semester.nama}</option>`;
+      });
+      
+      google.script.run
+        .withSuccessHandler(onKelasListLoadedForUploadRaporModal)
+        .withFailureHandler(onGagal)
+        .getKelas();
+    }
+  }
+
+  function onKelasListLoadedForUploadRaporModal(response) {
+    const selectKelas = document.getElementById('upload-rapor-filter-kelas');
+    hideMessage('template-rapor-message');
+
+    if (response.status !== 'sukses' || !response.kelas || response.kelas.length === 0) {
+      selectKelas.innerHTML = '<option value="">-- Tidak ada data kelas --</option>';
+      showMessage('template-rapor-message', "Tidak dapat membuat template. Harap isi data kelas terlebih dahulu.", true);
+    } else {
+      selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+      response.kelas.forEach(namaKelas => {
+        selectKelas.innerHTML += `<option value="${namaKelas}">${namaKelas}</option>`;
+      });
+    }
+  }
+
+  function tutupModalUploadNilaiRapor() {
+    document.getElementById('upload-nilai-rapor-modal').classList.remove('show');
+    if (nilaiRaporTelahDiUpload) {
+      nilaiRaporTelahDiUpload = false;
+    }
+  }
+
+  function downloadTemplateNilaiRapor() {
+    setLoading(true, 'Membuat template nilai rapor...');
+    hideMessage('template-rapor-message');
+    
+    const semesterDipilih = document.getElementById('upload-rapor-filter-semester').value;
+    const kelasDipilih = document.getElementById('upload-rapor-filter-kelas').value;
+    
+    if (!semesterDipilih) {
+        setLoading(false);
+        showMessage('template-rapor-message', 'Anda harus memilih semester terlebih dahulu.', true);
+        return;
+    }
+    if (!kelasDipilih) {
+        setLoading(false);
+        showMessage('template-rapor-message', 'Anda harus memilih kelas terlebih dahulu.', true);
+        return;
+    }
+
+    google.script.run
+      .withSuccessHandler(onTemplateNilaiRaporUrlReceived)
+      .withFailureHandler(onGagal)
+      .getNilaiRaporTemplateData(semesterDipilih, kelasDipilih);
+  }
+
+  function onTemplateNilaiRaporUrlReceived(response) {
+    setLoading(false);
+    
+    if (response.status === 'sukses') {
+      showMessage('template-rapor-message', 'Template berhasil dibuat. Mengunduh...', false);
+
+      try {
+        const dataUrl = `data:${response.mimeType};base64,${response.base64}`;
+        const link = document.createElement('a');
+        link.setAttribute('href', dataUrl);
+        link.setAttribute('download', response.fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {
+        showMessage('template-rapor-message', 'Gagal memproses unduhan: ' + e.message, true);
+      }
+
+    } else {
+      showMessage('template-rapor-message', response.message, true);
+    }
+  }
+
+  function prosesUploadFileNilaiRapor() {
+    setLoading(true, 'Mengupload nilai rapor...');
+    document.getElementById('import-rapor-results').style.display = 'none';
+    hideMessage('template-rapor-message');
+
+    const fileInput = document.getElementById('file-upload-rapor');
+    const file = fileInput.files[0];
+    
+    const semesterId = document.getElementById('upload-rapor-filter-semester').value;
+
+    if (!file) {
+      setLoading(false);
+      showMessage('template-rapor-message', 'Pilih file Excel terlebih dahulu.', true);
+      return;
+    }
+    
+    if (!semesterId) {
+      setLoading(false);
+      showMessage('template-rapor-message', 'Pilih semester tujuan untuk validasi.', true);
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const fileData = {
+        base64: e.target.result,
+        mimeType: file.type,
+        fileName: file.name
+      };
+      
+      google.script.run
+        .withSuccessHandler(onUploadNilaiRaporFinished)
+        .withFailureHandler(onGagal)
+        .prosesUploadExcelNilaiRapor(fileData, semesterId);
+    };
+
+    reader.onerror = (e) => {
+      setLoading(false);
+      showMessage('template-rapor-message', 'Gagal membaca file: ' + e.target.error.name, true);
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function onUploadNilaiRaporFinished(response) {
+    setLoading(false);
+    const resultsContainer = document.getElementById('import-rapor-results');
+
+    if (response.status !== 'sukses') {
+      showMessage('template-rapor-message', response.message, true);
+      resultsContainer.style.display = 'none';
+      return;
+    }
+
+    if (response.berhasilDiUpload > 0) {
+      nilaiRaporTelahDiUpload = true;
+    }
+
+    let html = '<h4><i class="fas fa-check-circle"></i>Proses Upload Selesai</h4>';
+    html += `<p>Total nilai terdeteksi: <strong>${response.totalDitemukan}</strong></p>`;
+    html += `<p style="color: var(--success-color);">Berhasil disimpan/diperbarui: <strong>${response.berhasilDiUpload}</strong></p>`;
+    html += `<p style="color: var(--danger-color);">Gagal/Dilewati: <strong>${response.gagalDiUpload}</strong></p>`;
+
+    if (response.dataGagal && response.dataGagal.length > 0) {
+      html += `<hr><p><strong>Detail Data yang Gagal:</strong></p>`;
+      html += '<table class="import-gagal-table">';
+      html += '<tr><th>Sheet</th><th>Baris</th><th>Info</th><th>Alasan Gagal</th></tr>';
+      
+      response.dataGagal.forEach(item => {
+        html += `
+          <tr>
+            <td>${item.sheet || 'N/A'}</td>
+            <td>${item.baris || 'N/A'}</td>
+            <td>${item.info || 'N/A'}</td>
+            <td>${item.alasan}</td>
+          </tr>
+        `;
+      });
+      html += '</table>';
+    }
+
+    resultsContainer.innerHTML = html;
+    resultsContainer.style.display = 'block';
+
+    document.getElementById('file-upload-rapor').value = null;
+    document.getElementById('btn-proses-upload-nilai-rapor').disabled = true;
+    
+    const fileUploadText = document.getElementById('file-upload-text-rapor');
+    fileUploadText.innerText = 'Klik untuk memilih file atau seret & letakkan di sini.';
+    fileUploadText.classList.remove('file-chosen');
+  }
+
   function bukaHalamanInputUjian() {
     tampilHalaman('halaman-input-ujian');
     
@@ -3286,9 +3550,6 @@
     showMessage('input-rapor-message', `Formulir ${tipeText} telah dibersihkan.`, false);
   }
 
-  // --- FUNGSI BARU: renderRekapRaporSemesterTable ---
-  // (Ini adalah salinan dari renderRekapRaporTable, tetapi disesuaikan
-  //  untuk tab baru dan data rekap semesteran)
   function renderRekapRaporSemesterTable() {
     const container = document.getElementById('rekap-rapor-semester-table-container');
     const { siswaList, mapelList, nilaiRekapData } = globalRaporData.Rekap; 
@@ -3313,15 +3574,16 @@
     }
 
     let html = '<table class="input-nilai-table">';
-    // Rekap ini hanya (P+K)/2, tidak ada total/rata-rata lagi
+    
     html += '<thead><tr><th>Nama Siswa</th>';
     mapelList.forEach(mapel => {
       html += `<th class="col-mapel clickable-mapel-header" data-mapel-nama="${mapel.nama}" title="Klik untuk lihat nama mapel">${mapel.id}</th>`;
     });
-    // --- Hapus kolom total dari rekap tab ---
-    // html += '<th class="th-total th-total-jumlah">Jumlah</th>';
-    // html += '<th class="th-total th-total-rata">Rata-Rata</th>';
-    // html += '<th class="th-total th-total-bulat">Pembulatan</th>';
+    
+    html += '<th class="th-total th-total-jumlah">Jumlah</th>';
+    html += '<th class="th-total th-total-rata">Rata-Rata</th>';
+    html += '<th class="th-total th-total-bulat">Pembulatan</th>';
+    
     html += '</tr></thead>';
     
     html += '<tbody>';
@@ -3331,19 +3593,32 @@
       const namaFormatted = formatNamaSiswa(namaProper);
       html += `<td><span class="clickable-nama-siswa" data-nisn="${siswa.nisn}" data-nama-lengkap="${siswa.nama}" title="Klik untuk lihat NISN">${namaFormatted}</span></td>`; 
       
+      let sum = 0;
+      let count = 0;
+      
       mapelList.forEach(mapel => {
         const key = `${siswa.id}_${mapel.id}`;
-        const nilai = nilaiRekapData[key]; // Ini sudah nilai rekap (bulat)
+        const nilai = nilaiRekapData[key];
         
         let nilaiTampil = '-';
         if (nilai !== null && nilai !== undefined) {
            nilaiTampil = nilai;
+           
+           sum += parseFloat(nilai);
+           count++;
         }
         
         html += `<td class="col-mapel" style="text-align: center; font-weight: 500;">${nilaiTampil}</td>`;
       });
       
-      // --- Hapus kolom total dari rekap tab ---
+      const average = (count > 0) ? (sum / count) : 0;
+      const pembulatan = Math.round(average);
+      const sumTampil = parseFloat(sum.toFixed(2));
+      
+      html += `<td class="col-total col-total-jumlah">${sumTampil}</td>`;
+      html += `<td class="col-total col-total-rata">${average.toFixed(2)}</td>`;
+      html += `<td class="col-total col-total-bulat">${pembulatan}</td>`;
+      
       html += '</tr>';
     });
     html += '</tbody></table>';
