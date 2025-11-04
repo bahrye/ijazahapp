@@ -327,6 +327,16 @@ function prosesRegistrasi(namaSekolah, jenjang, email, password) {
 function prosesLogout() {
   try {
     PropertiesService.getUserProperties().deleteAllProperties();
+    
+    // --- PERBAIKAN DI SINI ---
+    // Panggil fungsi pembersih cache yang sudah ada.
+    // Fungsi-fungsi ini sudah otomatis membersihkan cache nilai dan rekap juga.
+    clearSiswaCache();
+    clearMapelCache(); 
+    
+    Logger.log("User cache dan properti dibersihkan saat logout.");
+    // --- AKHIR PERBAIKAN ---
+
     return { status: "sukses" };
   } catch (e) {
     return { status: "gagal", message: e.message };
