@@ -153,6 +153,9 @@
         </div>
         <div class="page-header">
           <h2>Input Nilai Rapor</h2>
+           <div class="header-buttons">
+            <button id="btn-buka-upload-rapor" class="btn-aksi"><i class="fas fa-upload"></i>Upload Nilai Rapor</button>
+          </div>
         </div>
         <p>Pilih semester yang akan diinput nilainya.</p>
         
@@ -772,6 +775,66 @@
         <div class="modal-footer">
           <button id="btn-batal-modal-upload-nilai"><i class="fas fa-times"></i>Tutup</button>
           <button id="btn-proses-upload-nilai" disabled><i class="fas fa-cogs"></i>Proses Upload Nilai</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="upload-nilai-rapor-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-upload-nilai-rapor-title">Upload Nilai Rapor</h2>
+          <span class="close-button" id="btn-tutup-modal-upload-nilai-rapor">&times;</span>
+        </div>
+        <div class="modal-body">
+          <p>Upload nilai rapor (Pengetahuan & Keterampilan) menggunakan file Excel.</p>
+          
+          <div class="import-step-box">
+            <div class="import-step-number">1</div>
+            <div class="import-step-content">
+              <h4 class="import-step-header">Unduh Template Nilai</h4>
+              <p>Pilih semester dan kelas untuk mengisi template, unduh, lalu isi nilai.</p>
+              
+              <div class="form-group">
+                <label for="upload-rapor-filter-semester">Pilih Semester (Wajib)</label>
+                <select id="upload-rapor-filter-semester">
+                  <option value="">-- Pilih Semester --</option>
+                  </select>
+              </div>
+
+              <div class="form-group">
+                <label for="upload-rapor-filter-kelas">Pilih Kelas untuk Template (Wajib)</label>
+                <select id="upload-rapor-filter-kelas">
+                  <option value="">-- Pilih Kelas --</option>
+                  </select>
+              </div>
+              
+              <button id="btn-download-template-rapor" class="btn-aksi"><i class="fas fa-file-excel"></i>Unduh Template (.xlsx)</button>
+              <p id="template-rapor-message" class="message" style="display: none;"></p>
+            </div>
+          </div>
+
+          <div class="import-step-box">
+            <div class="import-step-number">2</div>
+            <div class="import-step-content">
+              <h4 class="import-step-header">Unggah File Nilai</h4>
+              <p>Pilih file Excel (`.xlsx` atau `.xls`) yang sudah Anda isi.</p>
+              
+              <label for="file-upload-rapor" class="file-upload-zone" id="file-upload-zone-rapor">
+                <input type="file" id="file-upload-rapor" accept=".xlsx, .xls, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span id="file-upload-text-rapor">Klik untuk memilih file atau seret & letakkan di sini.</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="import-rapor-results" style="display: none;">
+            </div>
+          
+        </div>
+        <div class="modal-footer">
+          <button id="btn-batal-modal-upload-nilai-rapor"><i class="fas fa-times"></i>Tutup</button>
+          <button id="btn-proses-upload-nilai-rapor" disabled><i class="fas fa-cogs"></i>Proses Upload Nilai</button>
         </div>
       </div>
     </div>
