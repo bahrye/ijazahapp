@@ -2184,14 +2184,31 @@ function getRekapitulasiNilaiRaporData() {
       const siswaId = row[0];
       const mapelId = row[1];
       const semId = row[2];
-      const nilai = parseFloat(row[3]);
+      const nilaiP = parseFloat(row[3]); // Ambil Nilai_P
+      const nilaiK = parseFloat(row[4]); // Ambil Nilai_K
       
-      if (semesterIdSet.has(semId) && !isNaN(nilai)) {
-        const key = `${siswaId}_${mapelId}`;
-        if (!nilaiMap.has(key)) {
-          nilaiMap.set(key, []);
+      if (semesterIdSet.has(semId)) {
+        
+        // Hitung nilai akhir semester (rata-rata P dan K)
+        let nilaiAkhirSem = null;
+        const pIsValid = !isNaN(nilaiP);
+        const kIsValid = !isNaN(nilaiK);
+        
+        if (pIsValid && kIsValid) {
+          nilaiAkhirSem = (nilaiP + nilaiK) / 2;
+        } else if (pIsValid) {
+          nilaiAkhirSem = nilaiP;
+        } else if (kIsValid) {
+          nilaiAkhirSem = nilaiK;
         }
-        nilaiMap.get(key).push(nilai);
+
+        if (nilaiAkhirSem !== null) {
+          const key = `${siswaId}_${mapelId}`;
+          if (!nilaiMap.has(key)) {
+            nilaiMap.set(key, []);
+          }
+          nilaiMap.get(key).push(nilaiAkhirSem);
+        }
       }
     });
     
@@ -2203,7 +2220,7 @@ function getRekapitulasiNilaiRaporData() {
         
         if (nilaiArray && nilaiArray.length > 0) {
           const sum = nilaiArray.reduce((acc, val) => acc + val, 0);
-          const average = sum / semesterCount; 
+          const average = sum / semesterCount; // Rata-rata dari (P+K)/2
           
           // --- PERUBAHAN DI SINI ---
           // Nilai rata-rata rapor per mapel dibulatkan
@@ -2310,8 +2327,26 @@ function getNilaiRaporSheet(ss) {
   let sheet = ss.getSheetByName('Nilai_Rapor_Akhir');
   if (!sheet) {
     sheet = ss.insertSheet('Nilai_Rapor_Akhir');
-    sheet.appendRow(['SiswaID', 'MapelID', 'SemesterID', 'Nilai']);
+    // --- PERUBAHAN SKEMA ---
+    sheet.appendRow(['SiswaID', 'MapelID', 'SemesterID', 'Nilai_P', 'Nilai_K']);
     SpreadsheetApp.flush();
+  } else {
+    // --- Logika Migrasi (jika header lama ditemukan) ---
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const nilaiIndex = headers.indexOf('Nilai');
+    const nilaiPIndex = headers.indexOf('Nilai_P');
+    
+    if (nilaiIndex !== -1 && nilaiPIndex === -1) {
+      // Jika kolom 'Nilai' ada, dan 'Nilai_P' tidak ada
+      // Asumsikan 'Nilai' adalah 'Nilai_P' dan tambahkan 'Nilai_K'
+      sheet.getRange(1, nilaiIndex + 1).setValue('Nilai_P');
+      sheet.getRange(1, headers.length + 1).setValue('Nilai_K');
+      Logger.log("Migrasi skema Nilai_Rapor_Akhir: Menambahkan Nilai_P dan Nilai_K.");
+    } else if (nilaiPIndex === -1) {
+      // Fallback jika sheet kosong tapi header salah
+       sheet.clear();
+       sheet.appendRow(['SiswaID', 'MapelID', 'SemesterID', 'Nilai_P', 'Nilai_K']);
+    }
   }
   return sheet;
 }
@@ -2379,20 +2414,15 @@ function getSemesterList() {
 
 function getNilaiRaporGridData(semesterId) {
   try {
-    const userCache = CacheService.getUserCache();
-    const cacheKey = NILAI_RAPOR_GRID_CACHE_KEY_PREFIX + semesterId;
-    const cachedData = userCache.get(cacheKey);
-
-    if (cachedData != null) {
-      Logger.log("Mengambil Nilai Rapor Grid dari USER CACHE untuk: " + semesterId);
-      return JSON.parse(cachedData);
-    }
+    // Caching dinonaktifkan untuk fungsi ini karena kompleksitas data
+    // (Bisa ditambahkan kembali nanti jika diperlukan)
     Logger.log("Mengambil Nilai Rapor Grid dari SPREADSHEET untuk: " + semesterId);
 
     const userProperties = validateAndRefreshSession();
     const spreadsheetID = userProperties.getProperty('spreadsheetID');
     const ss = SpreadsheetApp.openById(spreadsheetID);
     
+    // 1. Ambil Siswa dan Mapel
     const siswaData = getSiswa(); 
     if (siswaData.status !== 'sukses') {
       throw new Error("Gagal mengambil data siswa: " + siswaData.message);
@@ -2407,54 +2437,101 @@ function getNilaiRaporGridData(semesterId) {
     }
     const mapelList = mapelData.mapel.map(m => ({ id: m.id, nama: m.nama }));
     
+    // 2. Ambil Nilai
     const sheetNilai = getNilaiRaporSheet(ss);
     const dataNilai = sheetNilai.getDataRange().getValues();
     dataNilai.shift(); 
     
-    const nilaiMap = new Map();
+    const nilaiMapP = new Map();
+    const nilaiMapK = new Map();
+    const nilaiMapRekap = new Map();
+
     dataNilai.forEach(row => {
       const siswaId = row[0];
       const mapelId = row[1];
       const semId = row[2];
-      const nilai = row[3];
+      const nilaiP = row[3]; // Kolom Nilai_P
+      const nilaiK = row[4]; // Kolom Nilai_K
       
       if (semId === semesterId) {
         const key = `${siswaId}_${mapelId}`;
-        nilaiMap.set(key, nilai);
+        
+        // Simpan Nilai P
+        if (nilaiP !== undefined && nilaiP !== null && nilaiP !== "") {
+          nilaiMapP.set(key, nilaiP);
+        }
+        
+        // Simpan Nilai K
+        if (nilaiK !== undefined && nilaiK !== null && nilaiK !== "") {
+          nilaiMapK.set(key, nilaiK);
+        }
+
+        // Hitung Nilai Rekap (Rata-rata P dan K untuk semester ini)
+        const p = (nilaiP === null || nilaiP === "") ? null : parseFloat(nilaiP);
+        const k = (nilaiK === null || nilaiK === "") ? null : parseFloat(nilaiK);
+        const pIsValid = (p !== null && !isNaN(p));
+        const kIsValid = (k !== null && !isNaN(k));
+        let rekapVal = null;
+
+        if (pIsValid && kIsValid) {
+          rekapVal = (p + k) / 2;
+        } else if (pIsValid) {
+          rekapVal = p;
+        } else if (kIsValid) {
+          rekapVal = k;
+        }
+        
+        if (rekapVal !== null) {
+          // Bulatkan nilai rekap per mapel
+          nilaiMapRekap.set(key, Math.round(rekapVal));
+        }
       }
     });
     
-    const nilaiData = {};
+    // 3. Siapkan 3 set data
+    const nilaiDataP = {};
+    const nilaiDataK = {};
+    const nilaiDataRekap = {};
+
     siswaList.forEach(siswa => {
       mapelList.forEach(mapel => {
         const key = `${siswa.id}_${mapel.id}`;
-        const storedNilai = nilaiMap.get(key);
-        if (storedNilai !== undefined && storedNilai !== null && storedNilai !== "") {
-          nilaiData[key] = storedNilai;
-        }
+        
+        const pVal = nilaiMapP.get(key);
+        if (pVal !== undefined) nilaiDataP[key] = pVal;
+
+        const kVal = nilaiMapK.get(key);
+        if (kVal !== undefined) nilaiDataK[key] = kVal;
+
+        const rVal = nilaiMapRekap.get(key);
+        if (rVal !== undefined) nilaiDataRekap[key] = rVal;
       });
     });
 
+    // 4. Dapatkan Nama Semester
     const semesterListData = getSemesterList();
     let namaSemester = semesterId;
     if (semesterListData.status === 'sukses') {
       const sem = semesterListData.semesterList.find(s => s.id === semesterId);
-      if (sem) {
-        namaSemester = sem.nama;
-      }
+      if (sem) namaSemester = sem.nama;
     }
 
+    // 5. Kirim response
     const response = { 
       status: "sukses", 
       namaSemester: namaSemester,
-      data: {
-        siswaList: siswaList,
-        mapelList: mapelList,
-        nilaiData: nilaiData 
+      dataP: {
+        siswaList: siswaList, mapelList: mapelList, nilaiData: nilaiDataP 
+      },
+      dataK: {
+        siswaList: siswaList, mapelList: mapelList, nilaiData: nilaiDataK
+      },
+      dataRekap: {
+        siswaList: siswaList, mapelList: mapelList, nilaiRekapData: nilaiDataRekap
       }
     };
     
-    userCache.put(cacheKey, JSON.stringify(response), 600);
+    // Cache dapat ditambahkan di sini jika diinginkan
     
     return response;
     
@@ -2464,8 +2541,12 @@ function getNilaiRaporGridData(semesterId) {
   }
 }
 
-function saveNilaiRaporBatch(dataToSave) {
+function saveNilaiRaporBatch(dataToSave, tipeNilai) {
   try {
+    if (!tipeNilai || (tipeNilai !== 'P' && tipeNilai !== 'K')) {
+      return { status: "gagal", message: "Tipe nilai (P/K) tidak valid." };
+    }
+
     const userProperties = validateAndRefreshSession();
     const spreadsheetID = userProperties.getProperty('spreadsheetID');
     const ss = SpreadsheetApp.openById(spreadsheetID);
@@ -2474,13 +2555,13 @@ function saveNilaiRaporBatch(dataToSave) {
     const dataRange = sheet.getDataRange();
     const data = dataRange.getValues(); 
     
+    // Kolom 3 = Nilai_P, Kolom 4 = Nilai_K (index 3 dan 4)
+    const kolomIndex = (tipeNilai === 'P') ? 3 : 4; 
+    
     const dataMap = new Map();
     for (let i = 1; i < data.length; i++) { 
       const key = `${data[i][0]}_${data[i][1]}_${data[i][2]}`; 
-      dataMap.set(key, { 
-        rowIndex: i, 
-        dataRow: data[i] 
-      });
+      dataMap.set(key, { rowIndex: i });
     }
     
     let changesMade = false;
@@ -2490,35 +2571,30 @@ function saveNilaiRaporBatch(dataToSave) {
       if (!item.semesterId) return; 
 
       const key = `${item.siswaId}_${item.mapelId}_${item.semesterId}`;
+      let nilaiBaru = (item.nilai === "" || item.nilai === null || item.nilai === undefined) ? null : "'" + item.nilai;
       
-      let nilaiClient = item.nilai;
-      let nilaiBaru;
-
-      if (nilaiClient === "" || nilaiClient === null || nilaiClient === undefined) {
-          nilaiBaru = null;
-      } else {
-          let num = parseInt(nilaiClient, 10); 
-          let numFloat = parseFloat(nilaiClient); 
-          
-          if (isNaN(num) || num < 0 || num > 100 || num !== numFloat) {
-              nilaiBaru = null;
-          } else {
-              nilaiBaru = "'" + num;
-          }
+      // Validasi tambahan
+      if (nilaiBaru !== null) {
+        let num = parseInt(item.nilai, 10);
+        if (isNaN(num) || num < 0 || num > 100) {
+          nilaiBaru = null; // Abaikan nilai tidak valid
+        }
       }
 
       const existingEntry = dataMap.get(key);
       
       if (existingEntry) {
         const rowIndex = existingEntry.rowIndex;
-        if (data[rowIndex][3] !== nilaiBaru) {
-          data[rowIndex][3] = nilaiBaru;
+        // Cek data[rowIndex][kolomIndex]
+        if (data[rowIndex][kolomIndex] != nilaiBaru) { // Perbandingan nilai
+          data[rowIndex][kolomIndex] = nilaiBaru;
           changesMade = true;
         }
       } else {
-        let newRow = [item.siswaId, item.mapelId, item.semesterId, nilaiBaru];
+        let newRow = [item.siswaId, item.mapelId, item.semesterId, null, null];
+        newRow[kolomIndex] = nilaiBaru;
         rowsToAppend.push(newRow);
-        dataMap.set(key, {});
+        dataMap.set(key, {}); // Tandai sudah ada untuk batch ini
       }
     });
     
@@ -2527,10 +2603,11 @@ function saveNilaiRaporBatch(dataToSave) {
     }
     
     if (rowsToAppend.length > 0) {
-      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 4)
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 5) // 5 kolom
            .setValues(rowsToAppend);
     }
     
+    // Hapus cache
     const userCache = CacheService.getUserCache();
     const semesterIdsToClear = new Set(dataToSave.map(item => item.semesterId));
     semesterIdsToClear.forEach(semId => {
