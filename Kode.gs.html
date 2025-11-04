@@ -16,6 +16,8 @@ const TEMPLATE_SISWA_MIMETYPE = MimeType.MICROSOFT_EXCEL;
 const SHEET_REGISTRASI_PENDING = "Registrasi_Pending";
 const TOKEN_EXPIRY_HOURS = 24; // Token berlaku 24 jam
 
+const NILAI_IJAZAH_CACHE_KEY = 'nilai_ijazah_v1';
+
 /**
  * Mengubah array byte (dari computeDigest) menjadi string heksadesimal.
  */
@@ -382,8 +384,10 @@ function clearMasterSheetCache() {
 
 function clearRekapNilaiCache() {
   try {
-    CacheService.getUserCache().remove(REKAP_NILAI_CACHE_KEY);
-    Logger.log("Cache Rekap Nilai dibersihkan.");
+    const userCache = CacheService.getUserCache();
+    userCache.remove(REKAP_NILAI_CACHE_KEY);
+    userCache.remove(NILAI_IJAZAH_CACHE_KEY);
+    Logger.log("Cache Rekap Nilai dan Ijazah dibersihkan.");
   } catch (e) {
     Logger.log("Gagal membersihkan cache rekap nilai: " + e.message);
   }
@@ -404,8 +408,10 @@ function clearNilaiUjianCache() {
 
 function clearRekapNilaiRaporCache() {
   try {
-    CacheService.getUserCache().remove(REKAP_NILAI_RAPOR_CACHE_KEY);
-    Logger.log("Cache Rekap Nilai Rapor dibersihkan.");
+    const userCache = CacheService.getUserCache();
+    userCache.remove(REKAP_NILAI_RAPOR_CACHE_KEY);
+    userCache.remove(NILAI_IJAZAH_CACHE_KEY);
+    Logger.log("Cache Rekap Nilai Rapor dan Ijazah dibersihkan.");
   } catch (e) {
     Logger.log("Gagal membersihkan cache rekap nilai rapor: " + e.message);
   }
@@ -445,6 +451,7 @@ function clearSiswaCache() {
     
     clearNilaiUjianCache(); 
     clearNilaiRaporCache();
+    CacheService.getUserCache().remove(NILAI_IJAZAH_CACHE_KEY);
     
   } catch (e) {
     Logger.log("Gagal membersihkan cache siswa: " + e.message);
@@ -458,6 +465,7 @@ function clearMapelCache() {
     
     clearNilaiUjianCache();
     clearNilaiRaporCache();
+    CacheService.getUserCache().remove(NILAI_IJAZAH_CACHE_KEY);
   } catch (e) {
     Logger.log("Gagal membersihkan cache mapel: " + e.message);
   }
@@ -2381,52 +2389,11 @@ function getRekapitulasiNilaiData() {
     
     const mapelListFull = getMapelDataInternal(ss); 
     
-    const filteredMapelList = mapelListFull.filter(m => m.isUS === true || m.isUP === true);
+    const { mapelList, nilaiRekapMap } = getRekapUjianInternal(ss, siswaList, mapelListFull);
     
-    const mapelList = filteredMapelList.map(m => ({ id: m.id, nama: m.nama }));
-    
-    const mapelFlags = new Map(filteredMapelList.map(m => [m.id, { isUS: m.isUS, isUP: m.isUP }]));
-    
-    const sheetNilai = getNilaiUjianSheet(ss);
-    const dataNilai = sheetNilai.getDataRange().getValues();
-    dataNilai.shift(); 
-    
-    const nilaiMap = new Map();
-    dataNilai.forEach(row => {
-      const siswaId = row[0];
-      const mapelId = row[1];
-      const nilaiUM = row[2];
-      const nilaiUP = row[3];
-      const key = `${siswaId}_${mapelId}`;
-      nilaiMap.set(key, { um: nilaiUM, up: nilaiUP });
-    });
-    
-    const nilaiRekapData = {};
-    siswaList.forEach(siswa => {
-      
-      filteredMapelList.forEach(mapel => {
-        const key = `${siswa.id}_${mapel.id}`;
-        const storedNilai = nilaiMap.get(key);
-        const flags = mapelFlags.get(mapel.id);
-        
-        let nilaiRekap = null;
-        
-        if (flags && (flags.isUS || flags.isUP)) {
-          let nilaiUM_to_use = null;
-          let nilaiUP_to_use = null;
-
-          if (storedNilai) {
-            nilaiUM_to_use = (flags.isUS) ? storedNilai.um : null;
-            nilaiUP_to_use = (flags.isUP) ? storedNilai.up : null;
-          }
-          
-          nilaiRekap = hitungNilaiRekap(nilaiUM_to_use, nilaiUP_to_use);
-        }
-        
-        if (nilaiRekap !== null) {
-            nilaiRekapData[key] = Math.round(nilaiRekap);
-        }
-      });
+    const nilaiRekapDataObj = {};
+    nilaiRekapMap.forEach((value, key) => {
+      nilaiRekapDataObj[key] = value;
     });
 
     const response = { 
@@ -2434,7 +2401,7 @@ function getRekapitulasiNilaiData() {
       data: {
         siswaList: siswaList,
         mapelList: mapelList, 
-        nilaiRekapData: nilaiRekapData 
+        nilaiRekapData: nilaiRekapDataObj 
       }
     };
     
@@ -2469,7 +2436,6 @@ function getRekapitulasiNilaiRaporData() {
     }
     const semesterIds = semesterListData.semesterList.map(s => s.id);
     const semesterCount = semesterIds.length;
-    const semesterIdSet = new Set(semesterIds);
 
     const siswaData = getSiswa(); 
     if (siswaData.status !== 'sukses') {
@@ -2481,61 +2447,11 @@ function getRekapitulasiNilaiRaporData() {
     
     const mapelListFull = getMapelDataInternal(ss); 
     
-    const filteredMapelList = mapelListFull.filter(m => m.isUS === true || m.isUP === true);
+    const { mapelList, nilaiRekapMap } = getRekapRaporInternal(ss, siswaList, mapelListFull, semesterIds);
     
-    const mapelList = filteredMapelList.map(m => ({ id: m.id, nama: m.nama })); 
-    
-    const sheetNilai = getNilaiRaporSheet(ss);
-    const dataNilai = sheetNilai.getDataRange().getValues();
-    dataNilai.shift(); 
-    
-    const nilaiMap = new Map();
-    dataNilai.forEach(row => {
-      const siswaId = row[0];
-      const mapelId = row[1];
-      const semId = row[2];
-      const nilaiP = parseFloat(row[3]); 
-      const nilaiK = parseFloat(row[4]); 
-      
-      if (semesterIdSet.has(semId)) {
-        
-        let nilaiAkhirSem = null;
-        const pIsValid = !isNaN(nilaiP);
-        const kIsValid = !isNaN(nilaiK);
-        
-        if (pIsValid && kIsValid) {
-          nilaiAkhirSem = (nilaiP + nilaiK) / 2;
-        } else if (pIsValid) {
-          nilaiAkhirSem = nilaiP;
-        } else if (kIsValid) {
-          nilaiAkhirSem = nilaiK;
-        }
-
-        if (nilaiAkhirSem !== null) {
-          const key = `${siswaId}_${mapelId}`;
-          if (!nilaiMap.has(key)) {
-            nilaiMap.set(key, []);
-          }
-          nilaiMap.get(key).push(nilaiAkhirSem);
-        }
-      }
-    });
-    
-    const nilaiRekapData = {};
-    siswaList.forEach(siswa => {
-      filteredMapelList.forEach(mapel => { 
-        const key = `${siswa.id}_${mapel.id}`;
-        const nilaiArray = nilaiMap.get(key);
-        
-        if (nilaiArray && nilaiArray.length > 0) {
-          const sum = nilaiArray.reduce((acc, val) => acc + val, 0);
-          const average = sum / semesterCount; 
-          
-          nilaiRekapData[key] = Math.round(average);
-        } else {
-          nilaiRekapData[key] = null;
-        }
-      });
+    const nilaiRekapDataObj = {};
+    nilaiRekapMap.forEach((value, key) => {
+      nilaiRekapDataObj[key] = value;
     });
 
     const response = { 
@@ -2543,7 +2459,7 @@ function getRekapitulasiNilaiRaporData() {
       data: {
         siswaList: siswaList,
         mapelList: mapelList,
-        nilaiRekapData: nilaiRekapData,
+        nilaiRekapData: nilaiRekapDataObj,
         jumlahSemester: semesterCount
       }
     };
@@ -3272,4 +3188,208 @@ function getMapelDataInternal(ss) {
                         }))
                         .filter(row => row.id); 
   return mapel;
+}
+
+function getRekapUjianInternal(ss, siswaList, mapelListFull) {
+  
+    const filteredMapelList = mapelListFull.filter(m => m.isUS === true || m.isUP === true);
+    const mapelFlags = new Map(filteredMapelList.map(m => [m.id, { isUS: m.isUS, isUP: m.isUP }]));
+    
+    const sheetNilai = getNilaiUjianSheet(ss);
+    const dataNilai = sheetNilai.getDataRange().getValues();
+    dataNilai.shift(); 
+    
+    const nilaiMap = new Map();
+    dataNilai.forEach(row => {
+      const siswaId = row[0];
+      const mapelId = row[1];
+      const nilaiUM = row[2];
+      const nilaiUP = row[3];
+      const key = `${siswaId}_${mapelId}`;
+      nilaiMap.set(key, { um: nilaiUM, up: nilaiUP });
+    });
+    
+    const nilaiRekapData = new Map();
+    siswaList.forEach(siswa => {
+      filteredMapelList.forEach(mapel => {
+        const key = `${siswa.id}_${mapel.id}`;
+        const storedNilai = nilaiMap.get(key);
+        const flags = mapelFlags.get(mapel.id);
+        
+        let nilaiRekap = null;
+        
+        if (flags && (flags.isUS || flags.isUP)) {
+          let nilaiUM_to_use = null;
+          let nilaiUP_to_use = null;
+
+          if (storedNilai) {
+            nilaiUM_to_use = (flags.isUS) ? storedNilai.um : null;
+            nilaiUP_to_use = (flags.isUP) ? storedNilai.up : null;
+          }
+          
+          nilaiRekap = hitungNilaiRekap(nilaiUM_to_use, nilaiUP_to_use);
+        }
+        
+        if (nilaiRekap !== null) {
+            nilaiRekapData.set(key, Math.round(nilaiRekap));
+        }
+      });
+    });
+
+    return { 
+      mapelList: filteredMapelList.map(m => ({ id: m.id, nama: m.nama })),
+      nilaiRekapMap: nilaiRekapData
+    };
+}
+
+function getRekapRaporInternal(ss, siswaList, mapelListFull, semesterIds) {
+
+  const semesterIdSet = new Set(semesterIds);
+  const semesterCount = semesterIds.length;
+  
+  const filteredMapelList = mapelListFull.filter(m => m.isUS === true || m.isUP === true);
+  
+  const sheetNilai = getNilaiRaporSheet(ss);
+  const dataNilai = sheetNilai.getDataRange().getValues();
+  dataNilai.shift(); 
+  
+  const nilaiMap = new Map();
+  dataNilai.forEach(row => {
+    const siswaId = row[0];
+    const mapelId = row[1];
+    const semId = row[2];
+    const nilaiP = parseFloat(row[3]); 
+    const nilaiK = parseFloat(row[4]); 
+    
+    if (semesterIdSet.has(semId)) {
+      
+      let nilaiAkhirSem = null;
+      const pIsValid = !isNaN(nilaiP);
+      const kIsValid = !isNaN(nilaiK);
+      
+      if (pIsValid && kIsValid) {
+        nilaiAkhirSem = (nilaiP + nilaiK) / 2;
+      } else if (pIsValid) {
+        nilaiAkhirSem = nilaiP;
+      } else if (kIsValid) {
+        nilaiAkhirSem = nilaiK;
+      }
+
+      if (nilaiAkhirSem !== null) {
+        const key = `${siswaId}_${mapelId}`;
+        if (!nilaiMap.has(key)) {
+          nilaiMap.set(key, []);
+        }
+        nilaiMap.get(key).push(nilaiAkhirSem);
+      }
+    }
+  });
+  
+  const nilaiRekapData = new Map();
+  siswaList.forEach(siswa => {
+    filteredMapelList.forEach(mapel => { 
+      const key = `${siswa.id}_${mapel.id}`;
+      const nilaiArray = nilaiMap.get(key);
+      
+      if (nilaiArray && nilaiArray.length > 0) {
+        const sum = nilaiArray.reduce((acc, val) => acc + val, 0);
+        const average = sum / semesterCount; 
+        
+        nilaiRekapData.set(key, Math.round(average));
+      } else {
+        nilaiRekapData.set(key, null);
+      }
+    });
+  });
+
+  return {
+    mapelList: filteredMapelList.map(m => ({ id: m.id, nama: m.nama })),
+    nilaiRekapMap: nilaiRekapData
+  };
+}
+
+function getNilaiIjazahData() {
+  try {
+    const userCache = CacheService.getUserCache();
+    const cachedData = userCache.get(NILAI_IJAZAH_CACHE_KEY);
+
+    if (cachedData != null) {
+      Logger.log("Mengambil Nilai Ijazah dari USER CACHE");
+      return JSON.parse(cachedData);
+    }
+    Logger.log("Mengambil Nilai Ijazah dari SPREADSHEET (Perhitungan)");
+
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+
+    const bobotResponse = getBobotData();
+    if (bobotResponse.status !== 'sukses') {
+      throw new Error("Gagal mengambil data bobot: " + bobotResponse.message);
+    }
+    const bobotRapor = (parseFloat(bobotResponse.bobotRapor) || 0) / 100;
+    const bobotUjian = (parseFloat(bobotResponse.bobotUjian) || 0) / 100;
+    const kkmValue = parseFloat(bobotResponse.kkm) || 76; 
+
+    const siswaData = getSiswa();
+    if (siswaData.status !== 'sukses') {
+      throw new Error("Gagal mengambil data siswa: " + siswaData.message);
+    }
+    const siswaList = siswaData.siswa.map(s => ({
+      id: s.id, nama: s.nama, nisn: s.nisn, kelas: s.kelas
+    }));
+
+    const mapelListFull = getMapelDataInternal(ss);
+
+    const semesterListData = getSemesterList();
+    if (semesterListData.status !== 'sukses') {
+      throw new Error("Gagal mengambil daftar semester: " + semesterListData.message);
+    }
+    const semesterIds = semesterListData.semesterList.map(s => s.id);
+
+    const { nilaiRekapMap: nilaiUjianMap } = getRekapUjianInternal(ss, siswaList, mapelListFull);
+    const { nilaiRekapMap: nilaiRaporMap } = getRekapRaporInternal(ss, siswaList, mapelListFull, semesterIds);
+
+    const mapelListIjazah = mapelListFull.filter(m => m.isUS === true || m.isUP === true);
+
+    const dataUjianWeighted = {};
+    const dataRaporWeighted = {};
+    const dataIjazahFinal = {};
+
+    siswaList.forEach(siswa => {
+      mapelListIjazah.forEach(mapel => {
+        const key = `${siswa.id}_${mapel.id}`;
+        
+        const nilaiUjianRaw = nilaiUjianMap.get(key) || 0;
+        const nilaiRaporRaw = nilaiRaporMap.get(key) || 0;
+        
+        const weightedUjian = nilaiUjianRaw * bobotUjian;
+        const weightedRapor = nilaiRaporRaw * bobotRapor;
+        const finalIjazah = weightedUjian + weightedRapor;
+        
+        dataUjianWeighted[key] = weightedUjian;
+        dataRaporWeighted[key] = weightedRapor;
+        dataIjazahFinal[key] = finalIjazah;
+      });
+    });
+    
+    const response = {
+      status: "sukses",
+      data: {
+        siswaList: siswaList,
+        mapelList: mapelListIjazah,
+        dataUjian: dataUjianWeighted,
+        dataRapor: dataRaporWeighted,
+        dataIjazah: dataIjazahFinal,
+        kkm: kkmValue 
+      }
+    };
+
+    userCache.put(NILAI_IJAZAH_CACHE_KEY, JSON.stringify(response), 600);
+    return response;
+
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
 }
