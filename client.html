@@ -1192,7 +1192,22 @@
   }
 
   function onGagal(error) {
-    setLoading(false);
+    // --- PERUBAHAN DI SINI ---
+    // Cek apakah kita sedang dalam proses loading di halaman input nilai
+    // Jika ya, panggil setTableInputLock(false) untuk membuka kuncinya.
+    
+    const pageNilaiUjian = document.getElementById('halaman-input-nilai-detail');
+    const pageNilaiRapor = document.getElementById('halaman-input-rapor-detail');
+
+    if (pageNilaiUjian && pageNilaiUjian.classList.contains('loading-in-progress')) {
+      setTableInputLock('halaman-input-nilai-detail', false);
+    }
+    if (pageNilaiRapor && pageNilaiRapor.classList.contains('loading-in-progress')) {
+      setTableInputLock('halaman-input-rapor-detail', false);
+    }
+    // `setLoading(false)` sudah dipanggil di dalam `setTableInputLock`
+    // --- AKHIR PERUBAHAN ---
+    
     const errorMsg = error.message;
 
     if (errorMsg.includes("Sesi") || errorMsg.includes("Token")) {
@@ -2653,7 +2668,11 @@
   }
 
   function simpanInputNilai() {
-    setLoading(true, 'Menyimpan nilai...');
+    // --- PERUBAHAN DI SINI ---
+    // Mengganti setLoading(true, 'Menyimpan nilai...');
+    setTableInputLock('halaman-input-nilai-detail', true, 'Menyimpan nilai ujian...');
+    // --- AKHIR PERUBAHAN ---
+
     hideMessage('input-nilai-message');
     
     const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
@@ -2677,8 +2696,13 @@
   }
 
   function onNilaiUjianSaved(response, savedData) { 
+    // --- PERUBAHAN DI SINI ---
+    // Panggil setTableInputLock(false) di kedua cabang (sukses/gagal)
+    
     if (response.status === 'sukses') {
-      setLoading(false);
+      // Hentikan loading, BUKA KUNCI
+      setTableInputLock('halaman-input-nilai-detail', false); 
+      
       showMessage('input-nilai-message', response.message, false);
       
       if (globalGridData && globalGridData.nilaiData) {
@@ -2701,7 +2725,7 @@
       }
 
     } else {
-      setLoading(false);
+      setTableInputLock('halaman-input-nilai-detail', false);
       showMessage('input-nilai-message', response.message, true);
     }
   }
@@ -3147,8 +3171,11 @@
     const tipeText = (tipeNilai === 'P') ? 'Pengetahuan' : 'Keterampilan';
     
     // --- PERUBAHAN DI SINI ---
-    // Blokir UI selama proses simpan DAN refresh rekap
-    setLoading(true, `Menyimpan nilai & memperbarui rekap...`, true); 
+    // Mengganti setLoading(true, ...)
+    // Pesan akan diperbarui nanti di onNilaiRaporSaved
+    setTableInputLock('halaman-input-rapor-detail', true, `Menyimpan nilai ${tipeText}...`); 
+    // --- AKHIR PERUBAHAN ---
+
     hideMessage('input-rapor-message');
     
     const containerSelector = (tipeNilai === 'P') ? '#input-rapor-table-container' : '#input-rapor-keterampilan-table-container';
@@ -3166,8 +3193,8 @@
     });
 
     google.script.run
-      .withSuccessHandler((response) => onNilaiRaporSaved(response, tipeNilai, semesterId)) // Hapus 'savedData' dari argumen
-      .withFailureHandler(onGagal)
+      .withSuccessHandler((response) => onNilaiRaporSaved(response, tipeNilai, semesterId))
+      .withFailureHandler(onGagal) // onGagal sudah dimodifikasi
       .saveNilaiRaporBatch(dataToSave, tipeNilai); 
   }
 
@@ -3175,27 +3202,30 @@
     if (response.status === 'sukses') {
       
       // --- PERUBAHAN DI SINI ---
-      // JANGAN hentikan loading. Biarkan berlanjut.
-      // JANGAN update cache lokal di sini. Kita tunggu data baru dari server.
+      // JANGAN buka kunci. Biarkan loading berlanjut untuk refresh rekap.
+      // Cukup update pesan toast-nya menggunakan setLoading (tanpa global block).
+      setLoading(true, 'Memperbarui rekap semester...', false); 
+      // --- AKHIR PERUBAHAN ---
       
-      // Langsung panggil refresh data rekap
       google.script.run
         .withSuccessHandler(onRekapSemesterUpdated)
-        .withFailureHandler(onGagal)
+        .withFailureHandler(onGagal) // onGagal akan membuka kunci
         .getNilaiRaporGridData(semesterId);
         
     } else {
       // --- PERUBAHAN DI SINI ---
-      // Jika GAGAL, baru hentikan loading dan tampilkan error
-      setLoading(false);
+      // Jika GAGAL, baru hentikan loading dan BUKA KUNCI
+      setTableInputLock('halaman-input-rapor-detail', false);
+      // --- AKHIR PERUBAHAN ---
       showMessage('input-rapor-message', response.message, true);
     }
   }
 
   function onRekapSemesterUpdated(response) {
     // --- PERUBAHAN DI SINI ---
-    // Ini adalah akhir dari keseluruhan proses, jadi hentikan loading SEKARANG.
-    setLoading(false);
+    // Ini adalah akhir dari keseluruhan proses save rapor, BUKA KUNCI.
+    setTableInputLock('halaman-input-rapor-detail', false);
+    // --- AKHIR PERUBAHAN ---
 
     if (response.status === 'sukses') {
       // Perbarui SEMUA data lokal (P, K, dan Rekap) dengan data baru
@@ -3214,7 +3244,7 @@
       showMessage('input-rapor-message', 'Nilai berhasil disimpan dan rekapitulasi telah diperbarui.', false);
       
     } else {
-      // Jika GAGAL mengambil rekap, tampilkan error
+      // (setTableInputLock(false) sudah dipanggil di atas)
       showMessage('input-rapor-message', 'Gagal memperbarui rekap: ' + response.message, true);
     }
   }
@@ -3574,6 +3604,84 @@
       forceLogout('Anda telah otomatis logout setelah 3 jam tidak aktif.');
       // --- AKHIR PERUBAHAN ---
     }, INACTIVITY_TIMEOUT_MS);
+  }
+
+  /**
+   * FUNGSI BARU
+   * Mengunci atau membuka form input nilai di halaman detail.
+   * Ini akan menonaktifkan input & tombol, lalu menampilkan overlay,
+   * tapi membiarkan tabel tetap bisa di-scroll.
+   * @param {string} pageId - ID halaman ('halaman-input-nilai-detail' or 'halaman-input-rapor-detail')
+   * @param {boolean} isLocked - True untuk mengunci, false untuk membuka.
+   * @param {string} [message] - Pesan loading (opsional).
+   */
+  function setTableInputLock(pageId, isLocked, message = 'Menyimpan...') {
+    const pageElement = document.getElementById(pageId);
+    if (!pageElement) return;
+
+    let inputs;
+    let buttons;
+
+    if (pageId === 'halaman-input-nilai-detail') {
+      inputs = pageElement.querySelectorAll('.input-nilai');
+      buttons = [
+        document.getElementById('btn-simpan-input-nilai'),
+        document.getElementById('btn-bersihkan-input-nilai')
+      ];
+    } else if (pageId === 'halaman-input-rapor-detail') {
+      inputs = pageElement.querySelectorAll('.input-nilai');
+      buttons = [
+        document.getElementById('btn-simpan-input-rapor-p'),
+        document.getElementById('btn-bersihkan-input-rapor-p'),
+        document.getElementById('btn-simpan-input-rapor-k'),
+        document.getElementById('btn-bersihkan-input-rapor-k')
+      ];
+    } else {
+      return; // Halaman tidak didukung
+    }
+
+    if (isLocked) {
+      // Tampilkan toast loading, TAPI JANGAN BLOKIR UI GLOBAL
+      // (parameter ketiga `false` berarti jangan pakai global blocker)
+      setLoading(true, message, false); 
+      
+      // Tambah class ke halaman untuk memicu overlay CSS
+      pageElement.classList.add('loading-in-progress');
+
+      // Nonaktifkan semua input dan tombol
+      inputs.forEach(input => input.disabled = true);
+      buttons.forEach(btn => btn.disabled = true);
+
+    } else {
+      // Sembunyikan toast
+      setLoading(false); 
+      
+      // Hapus class loading
+      pageElement.classList.remove('loading-in-progress');
+      
+      // Aktifkan kembali input dan tombol
+      inputs.forEach(input => input.disabled = false);
+      
+      // Hanya enable tombol yang relevan (misal, jika ada data)
+      if (pageId === 'halaman-input-nilai-detail') {
+        const { siswaList, mapelList } = globalGridData;
+        if (siswaList && siswaList.length > 0 && mapelList && mapelList.length > 0) {
+          document.getElementById('btn-simpan-input-nilai').disabled = false;
+          document.getElementById('btn-bersihkan-input-nilai').disabled = false;
+        }
+      } else if (pageId === 'halaman-input-rapor-detail') {
+        const { siswaList: siswaP, mapelList: mapelP } = globalRaporData.P;
+        if (siswaP && siswaP.length > 0 && mapelP && mapelP.length > 0) {
+          document.getElementById('btn-simpan-input-rapor-p').disabled = false;
+          document.getElementById('btn-bersihkan-input-rapor-p').disabled = false;
+        }
+        const { siswaList: siswaK, mapelList: mapelK } = globalRaporData.K;
+        if (siswaK && siswaK.length > 0 && mapelK && mapelK.length > 0) {
+          document.getElementById('btn-simpan-input-rapor-k').disabled = false;
+          document.getElementById('btn-bersihkan-input-rapor-k').disabled = false;
+        }
+      }
+    }
   }
 
 </script>
