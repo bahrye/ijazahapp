@@ -274,11 +274,11 @@
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    border: 1px solid var(--border-color);
   }
   .mapel-table th, .mapel-table td,
   .siswa-table th, .siswa-table td {
-    border: none;
-    border-bottom: 1px solid var(--border-color);
+    border: 1px solid var(--border-color);
     padding: 12px 15px;
     text-align: left;
     font-size: 14px;
@@ -1126,7 +1126,8 @@
 
   .input-nilai-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
   }
 
   .input-nilai-table th, 
@@ -1139,13 +1140,18 @@
     vertical-align: middle;
   }
 
+  .input-nilai-table .col-mapel,
+  .input-nilai-table .col-total {
+    border-left: 1px solid var(--border-color);
+  }
+
   .input-nilai-table th {
     font-weight: 700;
     white-space: nowrap;
   }
 
   .input-nilai-table tr:last-child td {
-    border-bottom: none;
+    border-bottom: 1px solid var(--border-color);
   }
 
   .input-nilai-table td:first-child { 
@@ -1183,7 +1189,7 @@
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
   }
-
+  
   #btn-simpan-input-nilai {
     background-color: var(--success-color);
   }
@@ -1406,8 +1412,12 @@
     white-space: normal; 
   }
   
+  .input-nilai-table tbody tr:nth-child(even) {
+    background-color: var(--bg-light);
+  }
+
   .input-nilai-table tr:nth-child(even) td:first-child {
-     background-color: var(--bg-light); 
+    background-color: var(--bg-light); 
   }
   
   .input-nilai-table .col-mapel {
@@ -1864,32 +1874,140 @@
 
   .tab-bar {
     display: flex;
-    border-bottom: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     margin-top: 20px;
     margin-bottom: 0;
+    background-color: var(--bg-light);
+    padding: 5px;
+    border-radius: 12px;
+    gap: 5px;
   }
 
   .tab-link {
-    padding: 12px 18px;
+    flex: 1;
+    padding: 10px 15px;
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
     border: none;
     background-color: transparent;
     color: var(--text-light);
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px; 
+    border-bottom: none;
+    margin-bottom: 0; 
     transition: all 0.2s;
+    border-radius: 8px;
+    text-align: center;
   }
 
   .tab-link:hover {
     color: var(--text-dark);
-    background-color: var(--bg-light);
+    background-color: #e9ecef;
   }
 
-  .tab-link.active {
-    color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
+  /* HAPUS/GANTI ATURAN .tab-link.active LAMA ANDA DENGAN SEMUA ATURAN DI BAWAH INI */
+
+  /* -- Halaman Input Rapor -- */
+
+  /* Tab Pengetahuan (Biru) */
+  #halaman-input-rapor-detail .tab-link[data-tab="pengetahuan"].active {
+    background-color: var(--primary-color);
+    color: white;
+  }
+  #halaman-input-rapor-detail.tab-pengetahuan-active #tab-pengetahuan-content .input-nilai-table thead th {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-dark);
+  }
+  #halaman-input-rapor-detail.tab-pengetahuan-active #tab-pengetahuan-content .input-nilai-table th.th-total {
+    background-color: var(--primary-color); /* Memastikan kolom sticky juga terwarnai */
+  }
+  #halaman-input-rapor-detail.tab-pengetahuan-active #tab-pengetahuan-content .input-nilai-table th:first-child {
+    background-color: var(--primary-color); /* Memastikan kolom sticky juga terwarnai */
+  }
+
+  /* Tab Keterampilan (Hijau) */
+  #halaman-input-rapor-detail .tab-link[data-tab="keterampilan"].active {
+    background-color: var(--success-color);
+    color: white;
+  }
+  #halaman-input-rapor-detail.tab-keterampilan-active #tab-keterampilan-content .input-nilai-table thead th {
+    background-color: var(--success-color);
+    color: white;
+    border-color: #157347;
+  }
+  #halaman-input-rapor-detail.tab-keterampilan-active #tab-keterampilan-content .input-nilai-table th.th-total {
+    background-color: var(--success-color);
+  }
+  #halaman-input-rapor-detail.tab-keterampilan-active #tab-keterampilan-content .input-nilai-table th:first-child {
+    background-color: var(--success-color);
+  }
+
+  /* Tab Rekap (Abu-abu) */
+  #halaman-input-rapor-detail .tab-link[data-tab="rekap"].active {
+    background-color: var(--secondary-color);
+    color: white;
+  }
+  #halaman-input-rapor-detail.tab-rekap-active #tab-rekap-content .input-nilai-table thead th {
+    background-color: var(--secondary-color);
+    color: white;
+    border-color: #5a6268;
+  }
+  #halaman-input-rapor-detail.tab-rekap-active #tab-rekap-content .input-nilai-table th.th-total {
+    background-color: var(--secondary-color);
+  }
+  #halaman-input-rapor-detail.tab-rekap-active #tab-rekap-content .input-nilai-table th:first-child {
+    background-color: var(--secondary-color);
+  }
+
+
+  /* -- Halaman Nilai Ijazah -- */
+  /* (Menggunakan warna dari tombol dashboard) */
+
+  /* Tab Nilai Ujian (Ungu) */
+  #halaman-nilai-ijazah .tab-link[data-tab="ujian"].active {
+    background-color: #6f42c1;
+    color: white;
+  }
+  #halaman-nilai-ijazah.tab-ujian-active #tab-ujian-content .input-nilai-table thead th {
+    background-color: #6f42c1;
+    color: white;
+    border-color: #5a359c;
+  }
+
+  /* Tab Nilai Rapor (Oranye) */
+  #halaman-nilai-ijazah .tab-link[data-tab="rapor"].active {
+    background-color: #fd7e14;
+    color: white;
+  }
+  #halaman-nilai-ijazah.tab-rapor-active #tab-rapor-content .input-nilai-table thead th {
+    background-color: #fd7e14;
+    color: white;
+    border-color: #e66a00;
+  }
+
+  /* Tab Ijazah Final (Merah) */
+  #halaman-nilai-ijazah .tab-link[data-tab="ijazah"].active {
+    background-color: var(--danger-color);
+    color: white;
+  }
+  #halaman-nilai-ijazah.tab-ijazah-active #tab-ijazah-content .input-nilai-table thead th {
+    background-color: var(--danger-color);
+    color: white;
+    border-color: #b02a37;
+  }
+
+  /* Aturan Umum untuk Memastikan Kolom Sticky Terwarnai di Halaman Ijazah */
+  #halaman-nilai-ijazah.tab-ujian-active #tab-ujian-content .input-nilai-table th.th-total,
+  #halaman-nilai-ijazah.tab-ujian-active #tab-ujian-content .input-nilai-table th:first-child {
+    background-color: #6f42c1;
+  }
+  #halaman-nilai-ijazah.tab-rapor-active #tab-rapor-content .input-nilai-table th.th-total,
+  #halaman-nilai-ijazah.tab-rapor-active #tab-rapor-content .input-nilai-table th:first-child {
+    background-color: #fd7e14;
+  }
+  #halaman-nilai-ijazah.tab-ijazah-active #tab-ijazah-content .input-nilai-table th.th-total,
+  #halaman-nilai-ijazah.tab-ijazah-active #tab-ijazah-content .input-nilai-table th:first-child {
+    background-color: var(--danger-color);
   }
 
   .tab-content {
@@ -2012,5 +2130,12 @@
   .input-nilai-table .col-total.status-tidak-lulus {
     color: var(--danger-color);
     font-weight: 700;
+  }
+
+  #halaman-rekap-nilai .input-nilai-table td,
+  #halaman-rekap-rapor .input-nilai-table td,
+  #halaman-nilai-ijazah .input-nilai-table td,
+  #rekap-rapor-semester-table-container .input-nilai-table td {
+    font-size: 16px;
   }
 </style>
