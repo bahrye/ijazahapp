@@ -189,16 +189,45 @@
             </select>
           </div>
         </div>
-        <div class="input-nilai-table-container" id="input-rapor-table-container">
-          <p>Memuat data...</p>
+
+        <div class="tab-bar">
+          <button class="tab-link active" data-tab="pengetahuan">Nilai Peng.</button>
+          <button class="tab-link" data-tab="keterampilan">Nilai Ket.</button>
+          <button class="tab-link" data-tab="rekap">Rekap</button>
         </div>
-        
-        <hr>
-        <div class="form-actions">
-            <button type="button" id="btn-bersihkan-input-rapor" disabled><i class="fas fa-eraser"></i>Bersihkan Formulir</button>
-            <button type="button" id="btn-simpan-input-rapor" disabled><i class="fas fa-save"></i>Simpan Perubahan Nilai</button>
+
+        <div class="tab-content-wrapper">
+          
+          <div id="tab-pengetahuan-content" class="tab-content active">
+            <div class="input-nilai-table-container" id="input-rapor-table-container">
+              <p>Memuat data...</p>
+            </div>
+            <hr>
+            <div class="form-actions" id="form-actions-pengetahuan">
+                <button type="button" id="btn-bersihkan-input-rapor-p" disabled><i class="fas fa-eraser"></i>Bersihkan Pengetahuan</button>
+                <button type="button" id="btn-simpan-input-rapor-p" disabled><i class="fas fa-save"></i>Simpan Pengetahuan</button>
+            </div>
+          </div>
+
+          <div id="tab-keterampilan-content" class="tab-content">
+            <div class="input-nilai-table-container" id="input-rapor-keterampilan-table-container">
+              <p>Memuat data...</p>
+            </div>
+            <hr>
+            <div class="form-actions" id="form-actions-keterampilan">
+                <button type="button" id="btn-bersihkan-input-rapor-k" disabled><i class="fas fa-eraser"></i>Bersihkan Keterampilan</button>
+                <button type="button" id="btn-simpan-input-rapor-k" disabled><i class="fas fa-save"></i>Simpan Keterampilan</button>
+            </div>
+          </div>
+
+          <div id="tab-rekap-content" class="tab-content">
+          <div class="input-nilai-table-container" id="rekap-rapor-semester-table-container">
+              <p>Memuat data...</p>
+            </div>
+          </div>
+
         </div>
-      </div>
+        </div>
     </div>
 
     <div class="container" id="halaman-rekap-rapor" style="display: none;">
