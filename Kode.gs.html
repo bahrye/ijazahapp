@@ -413,8 +413,26 @@ function clearRekapNilaiRaporCache() {
 
 function clearNilaiRaporCache() {
   try {
-    clearRekapNilaiRaporCache();
-    Logger.log("Cache Rekap Nilai Rapor dibersihkan (memicu clear grid rapor).");
+    const userCache = CacheService.getUserCache();
+    
+    // 1. Hapus cache rekap rapor utama
+    userCache.remove(REKAP_NILAI_RAPOR_CACHE_KEY);
+    Logger.log("Cache Rekap Nilai Rapor (Utama) dibersihkan.");
+
+    // 2. Dapatkan daftar semester untuk menghapus cache grid-nya
+    //    Kita bisa memanggil getSemesterList() karena properti pengguna 
+    //    sudah di-set oleh fungsi pemanggil (misal: saveMapelTipeUjianBatch).
+    const semesterListData = getSemesterList(); 
+    if (semesterListData.status === 'sukses') {
+      semesterListData.semesterList.forEach(semester => {
+        const cacheKey = NILAI_RAPOR_GRID_CACHE_KEY_PREFIX + semester.id;
+        userCache.remove(cacheKey);
+        Logger.log("Cache Grid Nilai Rapor dibersihkan untuk: " + semester.id);
+      });
+    } else {
+        Logger.log("Peringatan: Gagal mendapatkan daftar semester saat membersihkan cache grid rapor.");
+    }
+    
   } catch (e) {
     Logger.log("Gagal membersihkan cache nilai rapor: " + e.message);
   }
@@ -722,18 +740,13 @@ function getMapel() {
       return { status: "sukses", mapel: JSON.parse(cachedMapel) };
     }
     
-    Logger.log("Mengambil mapel dari SPREADSHEET");
-    const sheetMapel = getMapelSheet();
-    const data = sheetMapel.getDataRange().getValues();
-    const headers = data.shift(); 
+    Logger.log("Mengambil mapel dari SPREADSHEET (via getMapel)");
     
-    const mapel = data.map(row => ({ 
-                        id: row[0], 
-                        nama: row[1],
-                        isUS: row[2] || false, 
-                        isUP: row[3] || false  
-                      }))
-                      .filter(row => row.id); 
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    
+    const mapel = getMapelDataInternal(ss); 
     
     userCache.put(MAPEL_CACHE_KEY, JSON.stringify(mapel), 600); 
     
@@ -1855,16 +1868,13 @@ function getNilaiUjianGridData(tipeUjian) {
       kelas: s.kelas
     }));
     
-    const mapelData = getMapel(); 
-    if (mapelData.status !== 'sukses') {
-      throw new Error("Gagal mengambil data mapel: " + mapelData.message);
-    }
+    const mapelListFull = getMapelDataInternal(ss); 
     
     let filteredMapel = [];
     if (tipeUjian === 'UM') {
-      filteredMapel = mapelData.mapel.filter(m => m.isUS === true);
+      filteredMapel = mapelListFull.filter(m => m.isUS === true);
     } else { 
-      filteredMapel = mapelData.mapel.filter(m => m.isUP === true);
+      filteredMapel = mapelListFull.filter(m => m.isUP === true);
     }
     const mapelList = filteredMapel.map(m => ({ id: m.id, nama: m.nama }));
     
@@ -2300,7 +2310,6 @@ function hitungNilaiRekap(nilaiUM, nilaiUP) {
   }
 }
 
-// GANTI FUNGSI INI (REKAP UJIAN)
 function getRekapitulasiNilaiData() {
   try {
     const userCache = CacheService.getUserCache();
@@ -2327,12 +2336,7 @@ function getRekapitulasiNilaiData() {
       kelas: s.kelas
     }));
     
-    const mapelData = getMapel(); 
-    if (mapelData.status !== 'sukses') {
-      throw new Error("Gagal mengambil data mapel: " + mapelData.message);
-    }
-    
-    const mapelListFull = mapelData.mapel;
+    const mapelListFull = getMapelDataInternal(ss); 
     
     const filteredMapelList = mapelListFull.filter(m => m.isUS === true || m.isUP === true);
     
@@ -2377,10 +2381,7 @@ function getRekapitulasiNilaiData() {
         }
         
         if (nilaiRekap !== null) {
-            // --- PERUBAHAN DI SINI ---
-            // Nilai rekap per mapel dibulatkan
             nilaiRekapData[key] = Math.round(nilaiRekap);
-            // --- AKHIR PERUBAHAN ---
         }
       });
     });
@@ -2404,7 +2405,6 @@ function getRekapitulasiNilaiData() {
   }
 }
 
-// GANTI FUNGSI INI JUGA (REKAP RAPOR)
 function getRekapitulasiNilaiRaporData() {
   try {
     const userCache = CacheService.getUserCache();
@@ -2436,16 +2436,9 @@ function getRekapitulasiNilaiRaporData() {
       id: s.id, nama: s.nama, nisn: s.nisn, kelas: s.kelas
     }));
     
-    const mapelData = getMapel(); 
-    if (mapelData.status !== 'sukses') {
-      throw new Error("Gagal mengambil data mapel: " + mapelData.message);
-    }
-
-    const mapelListFull = mapelData.mapel;
+    const mapelListFull = getMapelDataInternal(ss); 
     
-    const filteredMapelList = mapelListFull.filter(m => m.isUS === true || m.isUP === true);
-    
-    const mapelList = filteredMapelList.map(m => ({ id: m.id, nama: m.nama }));
+    const mapelList = mapelListFull.map(m => ({ id: m.id, nama: m.nama })); 
     
     const sheetNilai = getNilaiRaporSheet(ss);
     const dataNilai = sheetNilai.getDataRange().getValues();
@@ -2456,12 +2449,11 @@ function getRekapitulasiNilaiRaporData() {
       const siswaId = row[0];
       const mapelId = row[1];
       const semId = row[2];
-      const nilaiP = parseFloat(row[3]); // Ambil Nilai_P
-      const nilaiK = parseFloat(row[4]); // Ambil Nilai_K
+      const nilaiP = parseFloat(row[3]); 
+      const nilaiK = parseFloat(row[4]); 
       
       if (semesterIdSet.has(semId)) {
         
-        // Hitung nilai akhir semester (rata-rata P dan K)
         let nilaiAkhirSem = null;
         const pIsValid = !isNaN(nilaiP);
         const kIsValid = !isNaN(nilaiK);
@@ -2486,18 +2478,15 @@ function getRekapitulasiNilaiRaporData() {
     
     const nilaiRekapData = {};
     siswaList.forEach(siswa => {
-      filteredMapelList.forEach(mapel => {
+      mapelListFull.forEach(mapel => { 
         const key = `${siswa.id}_${mapel.id}`;
         const nilaiArray = nilaiMap.get(key);
         
         if (nilaiArray && nilaiArray.length > 0) {
           const sum = nilaiArray.reduce((acc, val) => acc + val, 0);
-          const average = sum / semesterCount; // Rata-rata dari (P+K)/2
+          const average = sum / semesterCount; 
           
-          // --- PERUBAHAN DI SINI ---
-          // Nilai rata-rata rapor per mapel dibulatkan
           nilaiRekapData[key] = Math.round(average);
-          // --- AKHIR PERUBAHAN ---
         } else {
           nilaiRekapData[key] = null;
         }
@@ -2686,15 +2675,12 @@ function getSemesterList() {
 
 function getNilaiRaporGridData(semesterId) {
   try {
-    // Caching dinonaktifkan untuk fungsi ini karena kompleksitas data
-    // (Bisa ditambahkan kembali nanti jika diperlukan)
     Logger.log("Mengambil Nilai Rapor Grid dari SPREADSHEET untuk: " + semesterId);
 
     const userProperties = validateAndRefreshSession();
     const spreadsheetID = userProperties.getProperty('spreadsheetID');
     const ss = SpreadsheetApp.openById(spreadsheetID);
     
-    // 1. Ambil Siswa dan Mapel
     const siswaData = getSiswa(); 
     if (siswaData.status !== 'sukses') {
       throw new Error("Gagal mengambil data siswa: " + siswaData.message);
@@ -2703,13 +2689,9 @@ function getNilaiRaporGridData(semesterId) {
       id: s.id, nama: s.nama, nisn: s.nisn, kelas: s.kelas
     }));
     
-    const mapelData = getMapel(); 
-    if (mapelData.status !== 'sukses') {
-      throw new Error("Gagal mengambil data mapel: " + mapelData.message);
-    }
-    const mapelList = mapelData.mapel.map(m => ({ id: m.id, nama: m.nama }));
+    const mapelListFull = getMapelDataInternal(ss); 
+    const mapelList = mapelListFull.map(m => ({ id: m.id, nama: m.nama })); 
     
-    // 2. Ambil Nilai
     const sheetNilai = getNilaiRaporSheet(ss);
     const dataNilai = sheetNilai.getDataRange().getValues();
     dataNilai.shift(); 
@@ -2722,23 +2704,20 @@ function getNilaiRaporGridData(semesterId) {
       const siswaId = row[0];
       const mapelId = row[1];
       const semId = row[2];
-      const nilaiP = row[3]; // Kolom Nilai_P
-      const nilaiK = row[4]; // Kolom Nilai_K
+      const nilaiP = row[3]; 
+      const nilaiK = row[4]; 
       
       if (semId === semesterId) {
         const key = `${siswaId}_${mapelId}`;
         
-        // Simpan Nilai P
         if (nilaiP !== undefined && nilaiP !== null && nilaiP !== "") {
           nilaiMapP.set(key, nilaiP);
         }
         
-        // Simpan Nilai K
         if (nilaiK !== undefined && nilaiK !== null && nilaiK !== "") {
           nilaiMapK.set(key, nilaiK);
         }
 
-        // Hitung Nilai Rekap (Rata-rata P dan K untuk semester ini)
         const p = (nilaiP === null || nilaiP === "") ? null : parseFloat(nilaiP);
         const k = (nilaiK === null || nilaiK === "") ? null : parseFloat(nilaiK);
         const pIsValid = (p !== null && !isNaN(p));
@@ -2754,19 +2733,17 @@ function getNilaiRaporGridData(semesterId) {
         }
         
         if (rekapVal !== null) {
-          // Bulatkan nilai rekap per mapel
           nilaiMapRekap.set(key, Math.round(rekapVal));
         }
       }
     });
     
-    // 3. Siapkan 3 set data
     const nilaiDataP = {};
     const nilaiDataK = {};
     const nilaiDataRekap = {};
 
     siswaList.forEach(siswa => {
-      mapelList.forEach(mapel => {
+      mapelList.forEach(mapel => { 
         const key = `${siswa.id}_${mapel.id}`;
         
         const pVal = nilaiMapP.get(key);
@@ -2780,7 +2757,6 @@ function getNilaiRaporGridData(semesterId) {
       });
     });
 
-    // 4. Dapatkan Nama Semester
     const semesterListData = getSemesterList();
     let namaSemester = semesterId;
     if (semesterListData.status === 'sukses') {
@@ -2788,7 +2764,6 @@ function getNilaiRaporGridData(semesterId) {
       if (sem) namaSemester = sem.nama;
     }
 
-    // 5. Kirim response
     const response = { 
       status: "sukses", 
       namaSemester: namaSemester,
@@ -2802,8 +2777,6 @@ function getNilaiRaporGridData(semesterId) {
         siswaList: siswaList, mapelList: mapelList, nilaiRekapData: nilaiDataRekap
       }
     };
-    
-    // Cache dapat ditambahkan di sini jika diinginkan
     
     return response;
     
@@ -2957,4 +2930,298 @@ function MIGRASI_PasswordLama() {
     Logger.log("Gagal total saat migrasi: " + e.message);
     Browser.msgBox("Migrasi Gagal: " + e.message);
   }
+}
+
+function getNilaiRaporTemplateData(semesterId, kelasDipilih) {
+  let tempSpreadsheetId = null; 
+
+  try {
+    const userProperties = validateAndRefreshSession();
+    const namaSekolah = userProperties.getProperty('namaSekolah');
+
+    const siswaResponse = getSiswa();
+    if (siswaResponse.status !== 'sukses') {
+      throw new Error(siswaResponse.message);
+    }
+    
+    const siswaList = siswaResponse.siswa;
+    const filteredSiswa = (kelasDipilih === 'semua')
+      ? siswaList
+      : siswaList.filter(s => s.kelas === kelasDipilih);
+
+    if (filteredSiswa.length === 0) {
+      return { status: "gagal", message: `Tidak ada siswa yang ditemukan untuk kelas '${kelasDipilih}'.` };
+    }
+    
+    const mapelResponse = getMapel();
+    if (mapelResponse.status !== 'sukses') {
+      throw new Error(mapelResponse.message);
+    }
+    
+    const mapelList = mapelResponse.mapel;
+    if (mapelList.length === 0) {
+      return { status: "gagal", message: "Tidak ada mata pelajaran di database." };
+    }
+
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd_HHmmss");
+    const tempFileName = `[TEMP] Template Rapor - ${namaSekolah} - ${timestamp}`;
+    const ss = SpreadsheetApp.create(tempFileName);
+    tempSpreadsheetId = ss.getId();
+
+    const rule = SpreadsheetApp.newDataValidation()
+      .requireNumberBetween(0, 100)
+      .setAllowInvalid(true) 
+      .setHelpText("Nilai harus angka antara 0 dan 100.")
+      .build();
+    
+    const mapelHeaders = mapelList.map(m => m.id);
+    const headers = ["Nama Siswa", "NISN", "Kelas", ...mapelHeaders];
+    const dataSiswaRows = filteredSiswa.map(s => [s.nama, String(s.nisn), s.kelas]);
+
+    const sheetP = ss.getSheetByName('Sheet1'); 
+    sheetP.setName("Pengetahuan");
+    sheetP.getRange("B:B").setNumberFormat("@");
+    sheetP.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheetP.getRange(2, 1, dataSiswaRows.length, 3).setValues(dataSiswaRows);
+    if (mapelHeaders.length > 0) {
+      const nilaiRangeP = sheetP.getRange(2, 4, dataSiswaRows.length, mapelHeaders.length);
+      nilaiRangeP.setDataValidation(rule);
+    }
+    sheetP.autoResizeColumns(1, 3);
+
+    const sheetK = ss.insertSheet('Keterampilan');
+    sheetK.getRange("B:B").setNumberFormat("@");
+    sheetK.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheetK.getRange(2, 1, dataSiswaRows.length, 3).setValues(dataSiswaRows);
+    if (mapelHeaders.length > 0) {
+      const nilaiRangeK = sheetK.getRange(2, 4, dataSiswaRows.length, mapelHeaders.length);
+      nilaiRangeK.setDataValidation(rule);
+    }
+    sheetK.autoResizeColumns(1, 3);
+    
+    const metadataSheet = ss.insertSheet('Metadata');
+    metadataSheet.appendRow(['SemesterID', semesterId]);
+    metadataSheet.appendRow(['Kelas', kelasDipilih]);
+    metadataSheet.hideSheet();
+
+    SpreadsheetApp.flush(); 
+    const url = "https://docs.google.com/spreadsheets/d/" + tempSpreadsheetId + "/export?format=xlsx";
+    const token = ScriptApp.getOAuthToken();
+    const response = UrlFetchApp.fetch(url, {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    });
+
+    const fileNameOutput = `template_rapor_${semesterId}_${kelasDipilih}.xlsx`;
+    const blob = response.getBlob().setName(fileNameOutput);
+    const base64Data = Utilities.base64Encode(blob.getBytes());
+
+    return {
+      status: "sukses",
+      base64: base64Data,
+      mimeType: MimeType.MICROSOFT_EXCEL,
+      fileName: fileNameOutput
+    };
+
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: "Gagal membuat template: " + e.message };
+  } finally {
+    if (tempSpreadsheetId) {
+      DriveApp.getFileById(tempSpreadsheetId).setTrashed(true);
+    }
+  }
+}
+
+function prosesUploadExcelNilaiRapor(fileData, semesterIdFromModal) {
+  let tempExcelFileId = null;
+  let tempConvertedSheetId = null;
+
+  try {
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+
+    const { base64, mimeType, fileName } = fileData;
+    const decodedData = Utilities.base64Decode(base64.split(',')[1]);
+    const blob = Utilities.newBlob(decodedData, mimeType, fileName);
+    
+    const tempExcelFile = DriveApp.createFile(blob);
+    tempExcelFileId = tempExcelFile.getId();
+
+    const conversionResource = { title: `[TEMP] Upload Rapor - ${fileName}`, mimeType: MimeType.GOOGLE_SHEETS };
+    const convertedFile = Drive.Files.copy(conversionResource, tempExcelFileId, { convert: true });
+    tempConvertedSheetId = convertedFile.id;
+    
+    const tempSheet = SpreadsheetApp.openById(tempConvertedSheetId);
+    
+    const metadataSheet = tempSheet.getSheetByName('Metadata');
+    if (!metadataSheet) {
+      throw new Error("File template tidak valid. Sheet 'Metadata' tidak ditemukan.");
+    }
+    
+    const templateSemesterId = metadataSheet.getRange('B1').getValue();
+    const templateKelas = metadataSheet.getRange('B2').getValue();
+    
+    if (templateSemesterId !== semesterIdFromModal) {
+      throw new Error(`File ini adalah untuk semester ${templateSemesterId}, tetapi Anda mencoba mengupload ke ${semesterIdFromModal}. Upload dibatalkan.`);
+    }
+
+    const sheetSiswa = getSiswaSheet(ss);
+    const dataSiswa = sheetSiswa.getDataRange().getValues();
+    dataSiswa.shift(); 
+    
+    const nisnToSiswaIdMap = new Map();
+    dataSiswa.forEach(row => {
+      const siswaKelas = row[7];
+      if (templateKelas === 'semua' || siswaKelas === templateKelas) {
+         nisnToSiswaIdMap.set(String(row[2]), row[0]);
+      }
+    });
+    
+    const sheetMapel = getMapelSheet(ss);
+    const dataMapel = sheetMapel.getDataRange().getValues();
+    dataMapel.shift();
+    const mapelIdSet = new Set(dataMapel.map(row => row[0])); 
+
+    const gagalList = [];
+    const dataToSaveP = []; 
+    const dataToSaveK = [];
+    let totalDitemukan = 0;
+    
+    const sheetsToProcess = [
+      { name: "Pengetahuan", type: 'P', dataArray: dataToSaveP },
+      { name: 'Keterampilan', type: 'K', dataArray: dataToSaveK }
+    ];
+
+    sheetsToProcess.forEach(sheetInfo => {
+      const sheet = tempSheet.getSheetByName(sheetInfo.name);
+      if (!sheet) {
+        gagalList.push({ sheet: sheetInfo.name, baris: 'N/A', info: 'Sheet Tidak Ditemukan', alasan: 'Sheet dengan nama ini tidak ada di file.' });
+        return; 
+      }
+      
+      const data = sheet.getDataRange().getValues();
+      if (data.length <= 1) return; 
+      
+      const header = data.shift(); 
+      const mapelHeaders = header.slice(3); 
+
+      data.forEach((row, rowIndex) => {
+        const barisKe = rowIndex + 2; 
+        const namaSiswa = row[0];
+        const nisn = String(row[1]).trim(); 
+        const kelasSiswa = String(row[2]).trim();
+        
+        const siswaId = nisnToSiswaIdMap.get(nisn);
+        
+        if (templateKelas !== 'semua' && kelasSiswa !== templateKelas) {
+           gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: `Siswa: ${namaSiswa}`, alasan: `Siswa tidak ada di kelas ${templateKelas}.` });
+           return;
+        }
+        
+        if (!siswaId) {
+          gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: `Siswa: ${namaSiswa || nisn}`, alasan: `NISN '${nisn}' tidak terdaftar di database (atau tidak ada di kelas ${templateKelas}).` });
+          return; 
+        }
+        
+        mapelHeaders.forEach((mapelId, mapelIndex) => {
+          mapelId = String(mapelId).trim(); 
+          const nilai = row[mapelIndex + 3]; 
+          
+          if (nilai === null || nilai === "") {
+            return; 
+          }
+          
+          totalDitemukan++; 
+          const info = `Siswa: ${namaSiswa} (Mapel: ${mapelId})`;
+          
+          if (!mapelIdSet.has(mapelId)) {
+            gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: info, alasan: `Kode Mapel '${mapelId}' di header tidak dikenal.` });
+            return; 
+          }
+          
+          const numNilaiFloat = parseFloat(nilai);
+          const numNilaiInt = parseInt(nilai, 10);
+
+          if (isNaN(numNilaiFloat)) {
+            gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: info, alasan: `Nilai '${nilai}' bukan angka.` });
+            return; 
+          }
+          
+          if (numNilaiFloat !== numNilaiInt) { 
+            gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: info, alasan: `Nilai '${nilai}' tidak boleh desimal (berkoma).` });
+            return; 
+          }
+          
+          if (numNilaiInt < 0 || numNilaiInt > 100) {
+            gagalList.push({ sheet: sheetInfo.name, baris: barisKe, info: info, alasan: `Nilai '${numNilaiInt}' diluar rentang (0-100).` });
+            return; 
+          }
+
+          sheetInfo.dataArray.push({
+            siswaId: siswaId,
+            mapelId: mapelId,
+            semesterId: templateSemesterId,
+            nilai: numNilaiInt 
+          });
+        });
+      });
+    });
+    
+    let totalBerhasil = 0;
+    
+    if (dataToSaveP.length > 0) {
+      const saveResultP = saveNilaiRaporBatch(dataToSaveP, 'P'); 
+      if (saveResultP.status !== 'sukses') {
+        throw new Error("Gagal menyimpan data Pengetahuan: " + saveResultP.message);
+      }
+      totalBerhasil += dataToSaveP.length;
+    }
+    
+    if (dataToSaveK.length > 0) {
+      const saveResultK = saveNilaiRaporBatch(dataToSaveK, 'K');
+      if (saveResultK.status !== 'sukses') {
+        throw new Error("Gagal menyimpan data Keterampilan: " + saveResultK.message);
+      }
+      totalBerhasil += dataToSaveK.length;
+    }
+    
+    DriveApp.getFileById(tempExcelFileId).setTrashed(true);
+    DriveApp.getFileById(tempConvertedSheetId).setTrashed(true);
+
+    clearNilaiRaporCache();
+
+    return { 
+      status: "sukses", 
+      totalDitemukan: totalDitemukan, 
+      berhasilDiUpload: totalBerhasil, 
+      gagalDiUpload: gagalList.length, 
+      dataGagal: gagalList 
+    };
+
+  } catch (e) {
+    Logger.log(e);
+    if (tempExcelFileId) { DriveApp.getFileById(tempExcelFileId).setTrashed(true); }
+    if (tempConvertedSheetId) { DriveApp.getFileById(tempConvertedSheetId).setTrashed(true); }
+    return { status: "gagal", message: "Terjadi error di server: " + e.message };
+  }
+}
+
+function getMapelDataInternal(ss) {
+  const sheetMapel = ss.getSheetByName('Mapel');
+  if (!sheetMapel) throw new Error("Sheet 'Mapel' tidak ditemukan.");
+  
+  const data = sheetMapel.getDataRange().getValues();
+  const headers = data.shift(); 
+  
+  const mapel = data.map(row => ({ 
+                          id: row[0], 
+                          nama: row[1],
+                          isUS: row[2] || false, 
+                          isUP: row[3] || false  
+                        }))
+                        .filter(row => row.id); 
+  return mapel;
 }
