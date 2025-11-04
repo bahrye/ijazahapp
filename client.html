@@ -20,6 +20,11 @@
 
   let currentProsesToast = null;
 
+  // --- TAMBAHAN BARU ---
+  let inactivityTimer = null;
+  const INACTIVITY_TIMEOUT_MS = 3 * 60 * 60 * 1000; // 3 Jam
+  // --- AKHIR TAMBAHAN BARU ---
+
   function showToast(message, type = 'proses', duration = 4000) {
     const container = document.getElementById('global-toast-container');
     if (!container) return;
@@ -1025,6 +1030,14 @@
     });
     document.getElementById('rekap-rapor-filter-kelas').addEventListener('change', renderRekapRaporTable);
 
+    // --- TAMBAHAN BARU: Event Listener untuk Inactivity ---
+    window.addEventListener('mousemove', resetInactivityTimer);
+    window.addEventListener('mousedown', resetInactivityTimer);
+    window.addEventListener('keypress', resetInactivityTimer);
+    window.addEventListener('touchstart', resetInactivityTimer);
+    window.addEventListener('scroll', resetInactivityTimer);
+    // --- AKHIR TAMBAHAN BARU ---
+
     const token = localStorage.getItem('sessionToken');
     const lastPageId = localStorage.getItem(LAST_PAGE_KEY);
 
@@ -1070,6 +1083,11 @@
       jenjangBaseCache = response.jenjang;
       jenjangPilihanCache = response.jenjangPilihan;
       
+      // --- BARU ---
+      // Mulai timer setelah token divalidasi
+      resetInactivityTimer();
+      // --- AKHIR BARU ---
+
     } else {
       localStorage.removeItem('sessionToken');
       localStorage.removeItem(LAST_PAGE_KEY);
@@ -1090,6 +1108,12 @@
 
       document.getElementById('salam-sekolah').innerText = `Selamat Datang, Admin ${response.namaSekolah}`;
       tampilHalaman('halaman-utama');
+
+      // --- BARU ---
+      // Mulai timer setelah login berhasil
+      resetInactivityTimer();
+      // --- AKHIR BARU ---
+
     } else {
       showMessage('login-error', response.message, true);
     }
@@ -1117,6 +1141,14 @@
     setLoading(false);
     localStorage.removeItem('sessionToken');
     localStorage.removeItem(LAST_PAGE_KEY);
+
+    // --- BARU ---
+    // Hentikan timer saat logout manual
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = null;
+    }
+    // --- AKHIR BARU ---
 
     if (response.status === "sukses") {
       
@@ -3460,6 +3492,73 @@
     } else {
       showMessage('semester-message', response.message, true);
     }
+  }
+
+  // --- FUNGSI BARU UNTUK LOGOUT OTOMATIS ---
+  function forceLogout(message) {
+    // Cek jika sudah di halaman login, jangan lakukan apa-apa
+    const authContainer = document.getElementById('auth-container');
+    if (authContainer && authContainer.style.display !== 'none') {
+      return;
+    }
+
+    // Hentikan timer jika ada
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = null;
+    }
+
+    // Tampilkan pesan logout
+    showToast(message || 'Sesi Anda telah berakhir karena tidak aktif.', 'gagal', 6000);
+
+    // 1. Panggil server untuk membersihkan sesi (tanpa success handler, "fire and forget")
+    google.script.run.prosesLogout();
+
+    // 2. Langsung bersihkan di sisi klien (logic dari onLogout)
+    localStorage.removeItem('sessionToken');
+    localStorage.removeItem(LAST_PAGE_KEY);
+
+    // Reset state global
+    globalSiswaList = [];
+    globalGridData = {
+      siswaList: [],
+      mapelList: [],
+      nilaiData: {}
+    };
+    globalRaporData = {
+      P: { siswaList: [], mapelList: [], nilaiData: {} },
+      K: { siswaList: [], mapelList: [], nilaiData: {} },
+      Rekap: { siswaList: [], mapelList: [], nilaiRekapData: {} }
+    };
+    jenjangBaseCache = '';
+    jenjangPilihanCache = '';
+
+    // 3. Tampilkan halaman login
+    tampilHalaman('halaman-login');
+    
+    // 4. Sembunyikan semua loading/toast
+    setLoading(false); 
+    hideToast();
+  }
+
+  // --- FUNGSI BARU UNTUK RESET TIMER ---
+  function resetInactivityTimer() {
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+    }
+    
+    // Cek jika kita di halaman login, jangan mulai timer
+    const authContainer = document.getElementById('auth-container');
+    if (authContainer && authContainer.style.display !== 'none') {
+        inactivityTimer = null;
+        return;
+    }
+    
+    inactivityTimer = setTimeout(() => {
+      // --- PERUBAHAN DI SINI ---
+      forceLogout('Anda telah otomatis logout setelah 3 jam tidak aktif.');
+      // --- AKHIR PERUBAHAN ---
+    }, INACTIVITY_TIMEOUT_MS);
   }
 
 </script>
