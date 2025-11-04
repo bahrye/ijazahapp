@@ -2590,27 +2590,42 @@
       });
     });
 
+    // --- PERUBAHAN DI SINI ---
     google.script.run
-      .withSuccessHandler(onNilaiUjianSaved)
+      .withSuccessHandler((response) => onNilaiUjianSaved(response, dataToSave)) // Kirim dataToSave ke callback
       .withFailureHandler(onGagal)
       .saveNilaiUjianBatch(dataToSave);
+    // --- AKHIR PERUBAHAN ---
   }
 
-  function onNilaiUjianSaved(response) {
+  function onNilaiUjianSaved(response, savedData) { // Terima 'savedData'
     if (response.status === 'sukses') {
-      setLoading(false); // PERUBAHAN: Matikan loading di sini
+      setLoading(false);
       showMessage('input-nilai-message', response.message, false);
       
-      // PERUBAHAN: Blok di bawah ini dinonaktifkan untuk
-      // menghentikan pemuatan ulang data yang tidak perlu.
-      /*
-      const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
-      
-      google.script.run
-        .withSuccessHandler(onNilaiGridLoaded)
-        .withFailureHandler(onGagal) 
-        .getNilaiUjianGridData(tipeUjian);
-      */
+      // --- PERUBAHAN HEMAT KUOTA ---
+      // Alih-alih memuat ulang, perbarui data lokal
+      if (globalGridData && globalGridData.nilaiData) {
+        savedData.forEach(item => {
+          const key = `${item.siswaId}_${item.mapelId}`;
+          const nilai = item.nilai;
+          
+          if (nilai === "" || nilai === null || nilai === undefined) {
+            // Jika nilai dihapus, hapus dari data lokal
+            delete globalGridData.nilaiData[key];
+          } else {
+            // Jika ada nilai, ubah jadi angka dan simpan
+            const numValue = parseInt(nilai, 10);
+            if (!isNaN(numValue)) {
+              globalGridData.nilaiData[key] = numValue;
+            } else {
+              delete globalGridData.nilaiData[key];
+            }
+          }
+        });
+        console.log("Cache nilai ujian lokal berhasil diperbarui.");
+      }
+      // --- AKHIR PERUBAHAN ---
 
     } else {
       setLoading(false);
@@ -3036,27 +3051,43 @@
       });
     });
 
+    // --- PERUBAHAN DI SINI ---
     google.script.run
-      .withSuccessHandler(onNilaiRaporSaved)
+      .withSuccessHandler((response) => onNilaiRaporSaved(response, dataToSave)) // Kirim dataToSave ke callback
       .withFailureHandler(onGagal)
       .saveNilaiRaporBatch(dataToSave);
+    // --- AKHIR PERUBAHAN ---
   }
 
-  function onNilaiRaporSaved(response) {
+  function onNilaiRaporSaved(response, savedData) { // Terima 'savedData'
     if (response.status === 'sukses') {
-      setLoading(false); // PERUBAHAN: Matikan loading di sini
+      setLoading(false);
       showMessage('input-rapor-message', response.message, false);
       
-      // PERUBAHAN: Blok di bawah ini dinonaktifkan untuk
-      // menghentikan pemuatan ulang data yang tidak perlu.
-      /*
-      const semesterId = document.getElementById('judul-halaman-input-rapor').dataset.semesterId;
-      
-      google.script.run
-        .withSuccessHandler(onNilaiRaporGridLoaded)
-        .withFailureHandler(onGagal) 
-        .getNilaiRaporGridData(semesterId);
-      */
+      // --- PERUBAHAN HEMAT KUOTA ---
+      // Alih-alih memuat ulang, perbarui data lokal
+      if (globalRaporGridData && globalRaporGridData.nilaiData) {
+         savedData.forEach(item => {
+          const key = `${item.siswaId}_${item.mapelId}`;
+          const nilai = item.nilai;
+          
+          if (nilai === "" || nilai === null || nilai === undefined) {
+            // Jika nilai dihapus, hapus dari data lokal
+            delete globalRaporGridData.nilaiData[key];
+          } else {
+            // Jika ada nilai, ubah jadi angka dan simpan
+            const numValue = parseInt(nilai, 10);
+            if (!isNaN(numValue)) {
+              globalRaporGridData.nilaiData[key] = numValue;
+            } else {
+              delete globalRaporGridData.nilaiData[key];
+            }
+          }
+        });
+        console.log("Cache nilai rapor lokal berhasil diperbarui.");
+      }
+      // --- AKHIR PERUBAHAN ---
+
     } else {
       setLoading(false);
       showMessage('input-rapor-message', response.message, true);
