@@ -26,6 +26,50 @@
   const INACTIVITY_TIMEOUT_MS = 3 * 60 * 60 * 1000; // 3 Jam
   // --- AKHIR TAMBAHAN BARU ---
 
+  let originalButtonContent = new Map();
+
+  /**
+   * Menampilkan status loading di dalam tombol.
+   * @param {HTMLElement} button Tombol yang akan diubah.
+   * @param {string} loadingText Teks yang ditampilkan saat loading.
+   */
+  function setButtonLoading(button, loadingText = "Memproses...") {
+    if (!button) return;
+    
+    // Simpan konten asli jika belum disimpan
+    if (!originalButtonContent.has(button.id)) {
+      originalButtonContent.set(button.id, button.innerHTML);
+    }
+    
+    // Nonaktifkan tombol dan tambahkan class
+    button.disabled = true;
+    button.classList.add('loading');
+    
+    // Set konten loading baru
+    button.innerHTML = `
+      <span class="spinner-inline"></span>
+      <span>${loadingText}</span>
+    `;
+  }
+
+  /**
+   * Mengembalikan tombol ke status semula.
+   * @param {HTMLElement} button Tombol yang akan dikembalikan.
+   */
+  function resetButtonLoading(button) {
+    if (!button) return;
+    
+    // Kembalikan konten asli
+    if (originalButtonContent.has(button.id)) {
+      button.innerHTML = originalButtonContent.get(button.id);
+      originalButtonContent.delete(button.id);
+    }
+    
+    // Aktifkan kembali
+    button.disabled = false;
+    button.classList.remove('loading');
+  }
+
   function showToast(message, type = 'proses', duration = 4000) {
     const container = document.getElementById('global-toast-container');
     if (!container) return;
@@ -148,6 +192,45 @@
         }
       }
     });
+  }
+
+  function autoScrollToBottom() {
+    // Gunakan timeout kecil untuk memberi waktu DOM render/paint
+    // sebelum kita menghitung tinggi halaman.
+    setTimeout(() => {
+      window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'auto' // 'auto' untuk instan
+      });
+    }, 100); 
+  }
+
+  function jalankanLogin() {
+    hideMessage('login-error'); 
+    
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-password').value;
+    
+    if (!email || !pass) {
+      showToast("Email dan Password harus dilengkapi.", 'gagal');
+      return; 
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showToast("Format email yang dimasukkan tidak valid.", 'gagal');
+      return; 
+    }
+    
+    // --- GANTI BARIS INI ---
+    // setLoading(true, 'Login...', false);
+    // --- MENJADI INI ---
+    setButtonLoading(document.getElementById('btn-login'), 'Login...');
+    
+    google.script.run
+      .withSuccessHandler(hasilLogin)
+      .withFailureHandler(onGagal)
+      .prosesLogin(email, pass);
   }
 
   function hideToast() {
@@ -450,19 +533,17 @@
 
   document.addEventListener('DOMContentLoaded', (event) => {
 
-    document.getElementById('btn-login').addEventListener('click', () => {
-      setLoading(true, 'Login...', false);
-      hideMessage('login-error');
-      const email = document.getElementById('login-email').value;
-      const pass = document.getElementById('login-password').value;
-      google.script.run
-        .withSuccessHandler(hasilLogin)
-        .withFailureHandler(onGagal)
-        .prosesLogin(email, pass);
-    });
+    document.getElementById('btn-login').addEventListener('click', jalankanLogin);
 
     document.getElementById('btn-registrasi').addEventListener('click', () => {
-      setLoading(true, 'Mendaftar...');
+      // --- TAMBAHKAN INI ---
+      const btnReg = document.getElementById('btn-registrasi');
+      
+      // --- GANTI BARIS INI ---
+      // setLoading(true, 'Mendaftar...');
+      // --- MENJADI INI ---
+      setButtonLoading(btnReg, 'Mendaftar...');
+
       hideMessage('reg-message');
 
       const namaSekolah = document.getElementById('reg-nama-sekolah').value.toUpperCase();
@@ -471,7 +552,11 @@
       const password = document.getElementById('reg-password').value;
 
       if (!namaSekolah || !jenjang || !email || !password) {
-        setLoading(false);
+        // --- GANTI BARIS INI ---
+        // setLoading(false);
+        // --- MENJADI INI ---
+        resetButtonLoading(btnReg);
+        
         showMessage('reg-message', "Semua field wajib diisi.", true);
         return;
       }
@@ -499,10 +584,42 @@
       e.preventDefault();
       tampilHalaman('halaman-login');
     });
+    
+    // (Ini listener submit form, BIARKAN SEPERTI INI)
     document.getElementById('login-form').addEventListener('submit', (e) => {
       e.preventDefault();
-      document.getElementById('btn-login').click();
+      jalankanLogin(); 
     });
+
+    // (Ini listener untuk 'Enter' di kotak password, BIARKAN SEPERTI INI)
+    document.getElementById('login-password').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault(); 
+        jalankanLogin();    
+      }
+    });
+
+    // --- TAMBAHKAN BLOK BARU DI BAWAH INI ---
+    // Pemicu 'Enter' cerdas dari kotak email
+    document.getElementById('login-email').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        
+        const passInput = document.getElementById('login-password');
+        
+        // Periksa apakah kotak password kosong
+        if (passInput.value === "") {
+          // Jika password kosong, hentikan 'Enter' agar tidak submit
+          e.preventDefault();
+          // Pindahkan fokus ke kotak password
+          passInput.focus();
+        } else {
+          // Jika password sudah terisi, jalankan login
+          e.preventDefault();
+          jalankanLogin();
+        }
+      }
+    });
+    // --- AKHIR BLOK BARU ---
 
     document.getElementById('reg-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1112,23 +1229,26 @@
     }
   });
 
-  // --- FUNGSI BARU UNTUK NAVIGASI TAB ---
   function activateRaporTab(tabName) {
     const page = document.getElementById('halaman-input-rapor-detail');
-    
-    // Nonaktifkan semua link
+
     page.querySelectorAll('.tab-link').forEach(link => {
       link.classList.remove('active');
     });
-    
-    // Nonaktifkan semua content
+
     page.querySelectorAll('.tab-content').forEach(content => {
       content.classList.remove('active');
     });
-    
-    // Aktifkan link dan content yang dipilih
+
     page.querySelector(`.tab-link[data-tab="${tabName}"]`).classList.add('active');
     page.querySelector(`#tab-${tabName}-content`).classList.add('active');
+
+    // --- PERUBAHAN DI SINI ---
+    // Hanya scroll jika tab yang diklik adalah tab input (bukan rekap)
+    if (tabName === 'pengetahuan' || tabName === 'keterampilan') {
+      autoScrollToBottom();
+    }
+    // --- AKHIR PERUBAHAN ---
   }
 
   function onTokenCheck(response) {
@@ -1154,7 +1274,8 @@
   }
 
   function hasilLogin(response) {
-    setLoading(false);
+    resetButtonLoading(document.getElementById('btn-login'));
+
     if (response.status === "sukses") {
       localStorage.setItem('sessionToken', response.token);
       jenjangBaseCache = response.jenjang;
@@ -1174,7 +1295,7 @@
   }
 
   function hasilRegistrasi(response) {
-    setLoading(false);
+    resetButtonLoading(document.getElementById('btn-registrasi'));
     
     // --- PERUBAHAN DI SINI ---
     if (response.status === "pending") {
@@ -1261,6 +1382,18 @@
     }
     // `setLoading(false)` sudah dipanggil di dalam `setTableInputLock`
     // --- AKHIR PERUBAHAN ---
+
+    // --- TAMBAHKAN BLOK INI ---
+    // Reset tombol auth jika sedang loading
+    const btnLogin = document.getElementById('btn-login');
+    if (btnLogin && btnLogin.classList.contains('loading')) {
+      resetButtonLoading(btnLogin);
+    }
+    const btnReg = document.getElementById('btn-registrasi');
+    if (btnReg && btnReg.classList.contains('loading')) {
+      resetButtonLoading(btnReg);
+    }
+    // --- AKHIR TAMBAHAN ---
     
     const errorMsg = error.message;
 
@@ -2769,7 +2902,7 @@
     const container = document.getElementById('input-nilai-table-container');
     const btnSimpan = document.getElementById('btn-simpan-input-nilai');
     const btnBersihkan = document.getElementById('btn-bersihkan-input-nilai');
-    
+
     if (response.status !== 'sukses') {
       container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat data: ${response.message}</p>`;
       btnSimpan.disabled = true;
@@ -2779,11 +2912,11 @@
     }
 
     globalGridData = response.data;
-    
+
     populateNilaiFilter(globalGridData.siswaList);
 
     renderNilaiGridTable(); 
-    
+
     const { siswaList, mapelList } = globalGridData;
     if (siswaList && siswaList.length > 0 && mapelList && mapelList.length > 0) {
       btnSimpan.disabled = false;
@@ -2792,6 +2925,10 @@
       btnSimpan.disabled = true;
       btnBersihkan.disabled = true;
     }
+
+    // --- PERUBAHAN DI SINI ---
+    autoScrollToBottom();
+    // --- AKHIR PERUBAHAN ---
   }
 
   function renderNilaiGridTable() {
