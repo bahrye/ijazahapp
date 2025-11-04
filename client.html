@@ -18,15 +18,8 @@
     nilaiData: {}
   };
 
-  // --- FUNGSI TOAST BARU ---
   let currentProsesToast = null;
 
-  /**
-   * Menampilkan notifikasi toast global (DENGAN FUNGSI GESER & ANTI-BLINK).
-   * @param {string} message Pesan yang ditampilkan.
-   * @param {'proses' | 'sukses' | 'gagal'} type Jenis notifikasi.
-   * @param {number} [duration=4000] Durasi (ms). 0 = tetap tampil.
-   */
   function showToast(message, type = 'proses', duration = 4000) {
     const container = document.getElementById('global-toast-container');
     if (!container) return;
@@ -53,7 +46,7 @@
       <div class="toast-message">${message}</div>
     `;
     
-    toast.isDismissing = false; // <-- PERUBAHAN: Tambahkan flag 'isDismissing'
+    toast.isDismissing = false; 
 
     container.appendChild(toast);
     
@@ -65,15 +58,11 @@
       currentProsesToast = toast;
     }
 
-    // --- LOGIKA GESER & TUTUP OTOMATIS ---
-
     let autoHideTimerId = null;
 
     const removeToast = () => {
-      // --- PERUBAHAN: Cek flag 'isDismissing' ---
       if (toast.isDismissing) return;
       toast.isDismissing = true;
-      // --- AKHIR PERUBAHAN ---
 
       if (autoHideTimerId) {
         clearTimeout(autoHideTimerId);
@@ -96,14 +85,13 @@
       autoHideTimerId = setTimeout(removeToast, duration);
     }
     
-    // --- Logika Geser ---
     let touchStartX = 0;
     let touchCurrentX = 0;
     let isSwiping = false;
     const swipeThreshold = 50; 
 
     toast.addEventListener('touchstart', (e) => {
-      if (toast.isDismissing) return; // <-- PERUBAHAN
+      if (toast.isDismissing) return; 
       if (autoHideTimerId) {
           clearTimeout(autoHideTimerId);
           autoHideTimerId = null;
@@ -115,7 +103,7 @@
     }, { passive: true });
 
     toast.addEventListener('touchmove', (e) => {
-      if (!isSwiping || toast.isDismissing) return; // <-- PERUBAHAN
+      if (!isSwiping || toast.isDismissing) return; 
       touchCurrentX = e.touches[0].clientX;
       const diffX = touchCurrentX - touchStartX;
       toast.style.transform = `translateX(${diffX}px)`;
@@ -125,22 +113,17 @@
       if (!isSwiping) return;
       isSwiping = false;
 
-      if (toast.isDismissing) return; // <-- PERUBAHAN
+      if (toast.isDismissing) return; 
       
       const diffX = touchCurrentX - touchStartX;
       
       if (Math.abs(diffX) > swipeThreshold) {
-        // --- Geser Berhasil (Tutup Toast) ---
-        
-        toast.isDismissing = true; // <-- PERUBAHAN: Set flag
+        toast.isDismissing = true; 
         
         toast.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
         toast.style.transform = `translateX(${diffX > 0 ? '100%' : '-100%'})`;
         toast.style.opacity = '0';
         
-        // --- PERUBAHAN: Panggil 'remove' yang lebih sederhana ---
-        // Kita tidak memanggil removeToast() karena itu memicu animasi .hide
-        // Kita hanya perlu membersihkan referensi dan DOM
         setTimeout(() => {
           if (type === 'proses' && toast === currentProsesToast) {
               currentProsesToast = null;
@@ -148,10 +131,9 @@
           if (toast.parentNode) {
               toast.parentNode.removeChild(toast);
           }
-        }, 300); // 300ms = durasi transisi
+        }, 300); 
 
       } else {
-        // --- Gagal Geser (Kembalikan Toast) ---
         toast.style.transition = 'transform 0.3s cubic-bezier(0.21, 1.02, 0.73, 1)';
         toast.style.transform = 'translateX(0)';
         
@@ -164,15 +146,11 @@
 
   function hideToast() {
     if (currentProsesToast) {
-      
-      // --- PERUBAHAN: Cek flag 'isDismissing' ---
-      // Jika toast sedang digeser, biarkan geseran itu yang menyelesaikan
       if (currentProsesToast.isDismissing) {
           return; 
       }
-      // --- AKHIR PERUBAHAN ---
-
-      currentProsesToast.isDismissing = true; // Set flag
+      
+      currentProsesToast.isDismissing = true; 
       currentProsesToast.classList.add('hide');
       
       currentProsesToast.addEventListener('animationend', () => {
@@ -184,23 +162,19 @@
     }
   }
 
-  function setLoading(isLoading, message = 'Memuat data...') {
-    // Nonaktifkan loader layar penuh yang lama
+  function setLoading(isLoading, message = 'Memuat data...', blockUI = true) {
     document.getElementById('loader').style.display = 'none';
     
     const uiBlocker = document.getElementById('global-ui-blocker');
 
     if (isLoading) {
-      // Tampilkan toast "proses"
       showToast(message, 'proses');
-      // Tampilkan overlay pemblokir
-      if (uiBlocker) {
+      
+      if (uiBlocker && blockUI) {
         uiBlocker.style.display = 'block';
       }
     } else {
-      // Sembunyikan toast "proses"
       hideToast();
-      // Sembunyikan overlay pemblokir
       if (uiBlocker) {
         uiBlocker.style.display = 'none';
       }
@@ -228,48 +202,14 @@
       isError = true;
     }
 
-    // Tampilkan notifikasi toast global (hanya pesan)
     if (isError) {
       showToast(message, 'gagal');
     } else {
       showToast(message, 'sukses');
     }
-
-    // --- PERUBAHAN ---
-    // Seluruh blok 'if (el)' di bawah ini telah dihapus.
-    // Kita tidak lagi berinteraksi dengan elemen di halaman.
-    /*
-    const el = document.getElementById(elementId);
-    if (el) {
-      el.innerText = message;
-      el.className = isError ? 'message error' : 'message success';
-      el.style.display = 'block';
-
-      if (!isError) {
-        setTimeout(() => {
-          const currentEl = document.getElementById(elementId);
-          if (currentEl) {
-             hideMessage(elementId);
-          }
-        }, 3000);
-      }
-    }
-    */
-    // --- AKHIR PERUBAHAN ---
   }
 
   function hideMessage(elementId) {
-    // --- PERUBAHAN ---
-    // Fungsi ini dikosongkan karena
-    // elemen pesan di halaman tidak lagi digunakan.
-    /*
-    const el = document.getElementById(elementId);
-    if(el) {
-      el.style.display = 'none';
-      el.innerText = '';
-    }
-    */
-    // --- AKHIR PERUBAHAN ---
   }
 
   function tampilHalaman(idHalaman) {
@@ -364,10 +304,8 @@
   }
 
   function showInfoModal(title, message, isError, onOkCallback) {
-    // Ganti modal dengan sistem toast baru (hanya pesan)
     showToast(message, isError ? 'gagal' : 'sukses');
 
-    // Jika ada callback dan BUKAN error, jalankan callback
     if (!isError && typeof onOkCallback === 'function') {
       setTimeout(onOkCallback, 500); 
     }
@@ -507,7 +445,7 @@
   document.addEventListener('DOMContentLoaded', (event) => {
 
     document.getElementById('btn-login').addEventListener('click', () => {
-      setLoading(true);
+      setLoading(true, 'Login...', false);
       hideMessage('login-error');
       const email = document.getElementById('login-email').value;
       const pass = document.getElementById('login-password').value;
@@ -518,7 +456,7 @@
     });
 
     document.getElementById('btn-registrasi').addEventListener('click', () => {
-      setLoading(true);
+      setLoading(true, 'Mendaftar...');
       hideMessage('reg-message');
 
       const namaSekolah = document.getElementById('reg-nama-sekolah').value.toUpperCase();
@@ -539,7 +477,7 @@
     });
 
     document.getElementById('btn-logout').addEventListener('click', () => {
-      setLoading(true);
+      setLoading(true, 'Logout...');
       google.script.run
         .withSuccessHandler(onLogout)
         .withFailureHandler(onGagal)
@@ -829,13 +767,13 @@
     document.getElementById('btn-ambil-default').addEventListener('click', () => {
         const title = "Ambil Mapel Default";
         const message = "Ini akan mengambil mapel default dari master dan menambahkan yang hilang. Lanjutkan?";
-        const callback = function() { setLoading(true); google.script.run.withSuccessHandler(onTableRefreshed).withFailureHandler(onGagal).syncDefaultMapel(); };
+        const callback = function() { setLoading(true, 'Menyinkronkan mapel...'); google.script.run.withSuccessHandler(onTableRefreshed).withFailureHandler(onGagal).syncDefaultMapel(); };
         showConfirmationModal(title, message, callback, 'primary');
     });
     document.getElementById('btn-hapus-semua').addEventListener('click', () => {
         const title = "PERINGATAN!";
         const message = "Anda yakin ingin menghapus <strong>SEMUA</strong> mata pelajaran? Tindakan ini tidak bisa dibatalkan.";
-        const callback = function() { setLoading(true); google.script.run.withSuccessHandler(onTableRefreshed).withFailureHandler(onGagal).deleteAllMapel(); };
+        const callback = function() { setLoading(true, 'Menghapus semua mapel...'); google.script.run.withSuccessHandler(onTableRefreshed).withFailureHandler(onGagal).deleteAllMapel(); };
         showConfirmationModal(title, message, callback, 'danger');
     });
     document.getElementById('btn-tambah-mapel-baru').addEventListener('click', () => { showModalMapel('add'); });
@@ -1183,7 +1121,18 @@
       showMessage('kelas-message', 'Error: ' + errorMsg, true);
     }
     else if (document.getElementById('halaman-siswa').style.display !== 'none') {
+      document.getElementById('btn-tambah-siswa-baru').disabled = false;
+      document.getElementById('btn-import-siswa').disabled = false;
+      document.getElementById('btn-hapus-semua-siswa').disabled = false;
+      document.getElementById('siswa-filter-kelas').disabled = false;
+      document.getElementById('siswa-sort-by').disabled = false;
       showMessage('siswa-message', 'Error: ' + errorMsg, true);
+    }
+    else if (document.getElementById('halaman-mapel').style.display !== 'none') {
+      document.getElementById('btn-tambah-mapel-baru').disabled = false;
+      document.getElementById('btn-ambil-default').disabled = false;
+      document.getElementById('btn-hapus-semua').disabled = false;
+      showMessage('mapel-message', 'Error: ' + errorMsg, true);
     }
     else if (document.getElementById('halaman-input-nilai-detail').style.display !== 'none') {
       showMessage('input-nilai-message', 'Error: ' + errorMsg, true);
@@ -1197,6 +1146,10 @@
     else if (document.getElementById('halaman-rekap-rapor').style.display !== 'none') {
       showMessage('rekap-rapor-message', 'Error: ' + errorMsg, true);
     }
+    else if (document.getElementById('halaman-semester').style.display !== 'none') {
+      setFormDisabled('form-semester', false);
+      showMessage('semester-message', 'Error: ' + errorMsg, true);
+    }
     else {
       showInfoModal('Terjadi Error', errorMsg, true);
     }
@@ -1204,9 +1157,14 @@
 
   function bukaHalamanMapel() {
     tampilHalaman('halaman-mapel');
-    setLoading(true, 'Memuat data mapel...');
+    setLoading(true, 'Memuat data mapel...', false); 
     setMapelTipeDirty(false);
     document.getElementById('mapel-table-container').innerHTML = "<p>Memuat data mapel...</p>";
+
+    document.getElementById('btn-tambah-mapel-baru').disabled = true;
+    document.getElementById('btn-ambil-default').disabled = true;
+    document.getElementById('btn-hapus-semua').disabled = true;
+    document.getElementById('btn-simpan-tipe-ujian').disabled = true;
 
     google.script.run
       .withSuccessHandler(onMapelLoaded)
@@ -1216,6 +1174,11 @@
 
   function onMapelLoaded(response) {
       setLoading(false);
+
+      document.getElementById('btn-tambah-mapel-baru').disabled = false;
+      document.getElementById('btn-ambil-default').disabled = false;
+      document.getElementById('btn-hapus-semua').disabled = false;
+
       const container = document.getElementById('mapel-table-container');
 
       if (response.status === "sukses") {
@@ -1285,7 +1248,7 @@
   }
 
   function simpanMapel() {
-      setLoading(true, 'Menyimpan data...');
+      setLoading(true, 'Menyimpan mapel...');
       hideMessage('modal-mapel-error');
 
       const mode = document.getElementById('modal-mapel-mode').value;
@@ -1310,7 +1273,7 @@
       const message = `Yakin ingin menghapus mapel dengan ID: <strong>${id}</strong>?<br><br><strong>PERINGATAN:</strong> Menghapus mapel yang sudah memiliki nilai dapat merusak data.`;
 
       const callback = function() {
-        setLoading(true);
+        setLoading(true, 'Menghapus mapel...');
         google.script.run
           .withSuccessHandler(onMapelSaved)
           .withFailureHandler(onGagal)
@@ -1346,7 +1309,7 @@
   }
 
   function simpanTipeUjian() {
-      setLoading(true, 'Menyimpan data...');
+      setLoading(true, 'Menyimpan tipe ujian...');
       hideMessage('mapel-message');
       
       const allCheckboxes = document.querySelectorAll('#mapel-table-container .mapel-tipe-cek');
@@ -1389,7 +1352,7 @@
 
   function bukaHalamanDataSekolah() {
     tampilHalaman('halaman-data-sekolah');
-    setLoading(true, 'Memuat data sekolah...');
+    setLoading(true, 'Memuat data sekolah...', false);
     hideMessage('data-sekolah-message');
     document.getElementById('form-data-sekolah').reset();
     setFormDisabled('form-data-sekolah', true);
@@ -1474,7 +1437,7 @@
   }
 
   function simpanDataSekolah() {
-      setLoading(true, 'Menyimpan data...');
+      setLoading(true, 'Menyimpan data sekolah...');
       hideMessage('data-sekolah-message');
 
       const dataToSave = {
@@ -1550,7 +1513,7 @@
 
   function bukaHalamanBobot() {
     tampilHalaman('halaman-bobot');
-    setLoading(true, 'Memuat data bobot...');
+    setLoading(true, 'Memuat data bobot...', false); 
     hideMessage('bobot-message');
     document.getElementById('form-bobot').reset();
     setFormDisabled('form-bobot', true);
@@ -1575,7 +1538,7 @@
   }
 
   function simpanBobot() {
-      setLoading(true, 'Menyimpan data...');
+      setLoading(true, 'Menyimpan data bobot...');
       hideMessage('bobot-message');
 
       const bobotRapor = parseInt(document.getElementById('bobot-rapor').value, 10) || 0;
@@ -1648,7 +1611,7 @@
 
   function bukaHalamanKelas() {
     tampilHalaman('halaman-kelas');
-    setLoading(true, 'Memuat data kelas...');
+    setLoading(true, 'Memuat data kelas...', false); 
     hideMessage('kelas-message');
     document.getElementById('kelas-list-container').innerHTML = "<p>Memuat data kelas...</p>";
     setFormDisabled('form-kelas', true);
@@ -1672,7 +1635,7 @@
   }
 
   function simpanKelas() {
-      setLoading(true, 'Menyimpan data...');
+      setLoading(true, 'Menyimpan data kelas...');
       hideMessage('kelas-message');
 
       const list = getCurrentKelasList()
@@ -1703,8 +1666,14 @@
 
   function bukaHalamanSiswa() {
     tampilHalaman('halaman-siswa');
-    setLoading(true, 'Memuat data siswa...');
+    setLoading(true, 'Memuat data siswa...', false); 
     document.getElementById('siswa-table-container').innerHTML = "<p>Memuat data siswa...</p>";
+
+    document.getElementById('btn-tambah-siswa-baru').disabled = true;
+    document.getElementById('btn-import-siswa').disabled = true;
+    document.getElementById('btn-hapus-semua-siswa').disabled = true;
+    document.getElementById('siswa-filter-kelas').disabled = true;
+    document.getElementById('siswa-sort-by').disabled = true;
 
     google.script.run
       .withSuccessHandler(onSiswaLoaded)
@@ -1715,6 +1684,13 @@
   function onSiswaLoaded(response) {
       setLoading(false);
       setSiswaOrderDirty(false);
+
+      document.getElementById('btn-tambah-siswa-baru').disabled = false;
+      document.getElementById('btn-import-siswa').disabled = false;
+      document.getElementById('btn-hapus-semua-siswa').disabled = false;
+      document.getElementById('siswa-filter-kelas').disabled = false;
+      document.getElementById('siswa-sort-by').disabled = false;
+
       const container = document.getElementById('siswa-table-container');
 
       if (response.status === "sukses") {
@@ -1937,7 +1913,7 @@
   }
 
   function simpanSiswa() {
-      setLoading(true, 'Menyimpan data...');
+      setLoading(true, 'Menyimpan data siswa...');
       hideMessage('modal-siswa-error');
 
       const dataSiswa = {
@@ -1988,7 +1964,7 @@
       const message = `Yakin ingin menghapus siswa: <strong>${namaSiswa}</strong> (ID: ${siswaID})?<br><br><strong>PERINGATAN:</strong> Semua data nilai yang terkait dengan siswa ini juga akan hilang.`;
 
       const callback = function() {
-        setLoading(true);
+        setLoading(true, 'Menghapus siswa...');
         google.script.run
           .withSuccessHandler(onSiswaSaved)
           .withFailureHandler(onGagal)
@@ -2003,7 +1979,7 @@
       const message = "Anda yakin ingin menghapus <strong>SEMUA</strong> data siswa? Tindakan ini tidak bisa dibatalkan dan akan menghapus semua data nilai yang terkait.";
 
       const callback = function() {
-        setLoading(true);
+        setLoading(true, 'Menghapus semua siswa...');
         google.script.run
           .withSuccessHandler(onSiswaTableRefreshed)
           .withFailureHandler(onGagal)
@@ -2048,7 +2024,7 @@
   }
 
   function downloadTemplateSiswa() {
-    setLoading(true);
+    setLoading(true, 'Membuat template...');
     hideMessage('template-message');
     google.script.run
       .withSuccessHandler(onTemplateUrlReceived)
@@ -2086,7 +2062,7 @@
 
 
   function prosesImportFileSiswa() {
-    setLoading(true);
+    setLoading(true, 'Mengimpor siswa...');
     document.getElementById('import-siswa-results').style.display = 'none';
     hideMessage('template-message');
 
@@ -2214,7 +2190,7 @@
   }
 
   function downloadTemplateNilai() {
-    setLoading(true);
+    setLoading(true, 'Membuat template nilai...');
     hideMessage('template-nilai-message');
     
     const kelasDipilih = document.getElementById('upload-nilai-filter-kelas').value;
@@ -2255,7 +2231,7 @@
   }
 
   function prosesUploadFileNilai() {
-    setLoading(true);
+    setLoading(true, 'Mengupload nilai...');
     document.getElementById('import-nilai-results').style.display = 'none';
     hideMessage('template-nilai-message');
 
@@ -2377,7 +2353,7 @@
       judulHalaman.dataset.tipeUjian = 'Praktek';
     }
 
-    setLoading(true, 'Memuat data nilai...');
+    setLoading(true, 'Memuat data nilai...', false); 
     google.script.run
       .withSuccessHandler(onNilaiGridLoaded)
       .withFailureHandler(onGagal) 
@@ -2546,27 +2522,22 @@
 
     const rowInputs = document.querySelectorAll(`.input-nilai[data-siswa-id="${siswaId}"]`);
     
-    // --- PERUBAHAN DIMULAI DI SINI ---
     let sum = 0;
-    let count = 0; // Variabel baru untuk menghitung pembagi
+    let count = 0; 
 
     rowInputs.forEach(input => {
-      const value = input.value; // Dapatkan nilai sebagai string
+      const value = input.value; 
       
-      // Cek apakah nilainya TIDAK kosong
       if (value !== "" && value !== null && value !== undefined) {
-        // Jika tidak kosong (termasuk "0"), kita hitung
         const numValue = parseFloat(value);
         if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
           sum += numValue;
-          count++; // Tambahkan ke pembagi
+          count++; 
         }
       }
     });
 
-    // Bagi dengan 'count' (jumlah nilai valid), bukan 'mapelCount'
     const average = (count > 0) ? (sum / count) : 0;
-    // --- AKHIR PERUBAHAN ---
     
     jumlahCell.innerText = sum;
     rataCell.innerText = average.toFixed(2);
@@ -2590,31 +2561,25 @@
       });
     });
 
-    // --- PERUBAHAN DI SINI ---
     google.script.run
-      .withSuccessHandler((response) => onNilaiUjianSaved(response, dataToSave)) // Kirim dataToSave ke callback
+      .withSuccessHandler((response) => onNilaiUjianSaved(response, dataToSave)) 
       .withFailureHandler(onGagal)
       .saveNilaiUjianBatch(dataToSave);
-    // --- AKHIR PERUBAHAN ---
   }
 
-  function onNilaiUjianSaved(response, savedData) { // Terima 'savedData'
+  function onNilaiUjianSaved(response, savedData) { 
     if (response.status === 'sukses') {
       setLoading(false);
       showMessage('input-nilai-message', response.message, false);
       
-      // --- PERUBAHAN HEMAT KUOTA ---
-      // Alih-alih memuat ulang, perbarui data lokal
       if (globalGridData && globalGridData.nilaiData) {
         savedData.forEach(item => {
           const key = `${item.siswaId}_${item.mapelId}`;
           const nilai = item.nilai;
           
           if (nilai === "" || nilai === null || nilai === undefined) {
-            // Jika nilai dihapus, hapus dari data lokal
             delete globalGridData.nilaiData[key];
           } else {
-            // Jika ada nilai, ubah jadi angka dan simpan
             const numValue = parseInt(nilai, 10);
             if (!isNaN(numValue)) {
               globalGridData.nilaiData[key] = numValue;
@@ -2625,7 +2590,6 @@
         });
         console.log("Cache nilai ujian lokal berhasil diperbarui.");
       }
-      // --- AKHIR PERUBAHAN ---
 
     } else {
       setLoading(false);
@@ -2643,7 +2607,7 @@
     document.getElementById('rekap-nilai-filter-kelas').innerHTML = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
     globalGridData = { siswaList: [], mapelList: [], nilaiRekapData: {} };
 
-    setLoading(true, 'Membuat rekapitulasi nilai...');
+    setLoading(true, 'Membuat rekapitulasi nilai...', false);
     google.script.run
       .withSuccessHandler(onRekapNilaiLoaded)
       .withFailureHandler(onGagal) 
@@ -2823,7 +2787,7 @@
 
   function bukaHalamanInputRapor() {
     tampilHalaman('halaman-input-rapor');
-    setLoading(true, 'Memuat daftar semester...');
+    setLoading(true, 'Memuat daftar semester...', false);
     const container = document.getElementById('rapor-semester-card-container');
     container.innerHTML = '<p>Memuat daftar semester...</p>';
 
@@ -2880,7 +2844,7 @@
     judulHalaman.innerText = `Input Nilai Rapor...`;
     judulHalaman.dataset.semesterId = semesterId;
     
-    setLoading(true, 'Memuat data nilai rapor...');
+    setLoading(true, 'Memuat data nilai rapor...', false); 
     google.script.run
       .withSuccessHandler(onNilaiRaporGridLoaded) 
       .withFailureHandler(onGagal) 
@@ -3008,34 +2972,29 @@
 
     const rowInputs = document.querySelectorAll(`#halaman-input-rapor-detail .input-nilai[data-siswa-id="${siswaId}"]`);
     
-    // --- PERUBAHAN DIMULAI DI SINI ---
     let sum = 0;
-    let count = 0; // Variabel baru untuk menghitung pembagi
+    let count = 0; 
 
     rowInputs.forEach(input => {
-      const value = input.value; // Dapatkan nilai sebagai string
+      const value = input.value; 
       
-      // Cek apakah nilainya TIDAK kosong
       if (value !== "" && value !== null && value !== undefined) {
-        // Jika tidak kosong (termasuk "0"), kita hitung
         const numValue = parseFloat(value);
         if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
           sum += numValue;
-          count++; // Tambahkan ke pembagi
+          count++; 
         }
       }
     });
     
-    // Bagi dengan 'count' (jumlah nilai valid), bukan 'mapelCount'
     const average = (count > 0) ? (sum / count) : 0;
-    // --- AKHIR PERUBAHAN ---
     
     jumlahCell.innerText = sum;
     rataCell.innerText = average.toFixed(2);
   }
 
   function simpanInputNilaiRapor() {
-    setLoading(true, 'Menyimpan nilai...');
+    setLoading(true, 'Menyimpan nilai rapor...');
     hideMessage('input-rapor-message');
     
     const semesterId = document.getElementById('judul-halaman-input-rapor').dataset.semesterId;
@@ -3051,31 +3010,25 @@
       });
     });
 
-    // --- PERUBAHAN DI SINI ---
     google.script.run
-      .withSuccessHandler((response) => onNilaiRaporSaved(response, dataToSave)) // Kirim dataToSave ke callback
+      .withSuccessHandler((response) => onNilaiRaporSaved(response, dataToSave)) 
       .withFailureHandler(onGagal)
       .saveNilaiRaporBatch(dataToSave);
-    // --- AKHIR PERUBAHAN ---
   }
 
-  function onNilaiRaporSaved(response, savedData) { // Terima 'savedData'
+  function onNilaiRaporSaved(response, savedData) { 
     if (response.status === 'sukses') {
       setLoading(false);
       showMessage('input-rapor-message', response.message, false);
       
-      // --- PERUBAHAN HEMAT KUOTA ---
-      // Alih-alih memuat ulang, perbarui data lokal
       if (globalRaporGridData && globalRaporGridData.nilaiData) {
          savedData.forEach(item => {
           const key = `${item.siswaId}_${item.mapelId}`;
           const nilai = item.nilai;
           
           if (nilai === "" || nilai === null || nilai === undefined) {
-            // Jika nilai dihapus, hapus dari data lokal
             delete globalRaporGridData.nilaiData[key];
           } else {
-            // Jika ada nilai, ubah jadi angka dan simpan
             const numValue = parseInt(nilai, 10);
             if (!isNaN(numValue)) {
               globalRaporGridData.nilaiData[key] = numValue;
@@ -3086,7 +3039,6 @@
         });
         console.log("Cache nilai rapor lokal berhasil diperbarui.");
       }
-      // --- AKHIR PERUBAHAN ---
 
     } else {
       setLoading(false);
@@ -3126,7 +3078,7 @@
     document.getElementById('rekap-rapor-filter-kelas').innerHTML = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
     globalRaporGridData = { siswaList: [], mapelList: [], nilaiRekapData: {} };
 
-    setLoading(true, 'Membuat rekapitulasi rapor...');
+    setLoading(true, 'Membuat rekapitulasi rapor...', false);
     google.script.run
       .withSuccessHandler(onRekapRaporLoaded) 
       .withFailureHandler(onGagal) 
@@ -3245,7 +3197,7 @@
 
   function bukaHalamanSemester() {
     tampilHalaman('halaman-semester');
-    setLoading(true, 'Memuat pengaturan semester...');
+    setLoading(true, 'Memuat pengaturan semester...', false); 
     hideMessage('semester-message');
     document.getElementById('form-semester').reset();
     setFormDisabled('form-semester', true);
@@ -3286,7 +3238,7 @@
   }
 
   function simpanSemester() {
-    setLoading(true, 'Menyimpan data...');
+    setLoading(true, 'Menyimpan data semester...');
     hideMessage('semester-message');
 
     const nilaiSemester = document.getElementById('pilihan-semester').value;
