@@ -2546,16 +2546,27 @@
 
     const rowInputs = document.querySelectorAll(`.input-nilai[data-siswa-id="${siswaId}"]`);
     
+    // --- PERUBAHAN DIMULAI DI SINI ---
     let sum = 0;
-    
+    let count = 0; // Variabel baru untuk menghitung pembagi
+
     rowInputs.forEach(input => {
-      const value = parseFloat(input.value);
-      if (!isNaN(value) && value >= 0 && value <= 100) {
-        sum += value;
+      const value = input.value; // Dapatkan nilai sebagai string
+      
+      // Cek apakah nilainya TIDAK kosong
+      if (value !== "" && value !== null && value !== undefined) {
+        // Jika tidak kosong (termasuk "0"), kita hitung
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+          sum += numValue;
+          count++; // Tambahkan ke pembagi
+        }
       }
     });
 
-    const average = (mapelCount > 0) ? (sum / mapelCount) : 0;
+    // Bagi dengan 'count' (jumlah nilai valid), bukan 'mapelCount'
+    const average = (count > 0) ? (sum / count) : 0;
+    // --- AKHIR PERUBAHAN ---
     
     jumlahCell.innerText = sum;
     rataCell.innerText = average.toFixed(2);
@@ -2668,8 +2679,11 @@
       container.innerHTML = '<p style="text-align: center; padding: 20px;">Belum ada data siswa.</p>';
       return;
     }
+    
     if (!mapelList || mapelList.length === 0) {
-      container.innerHTML = '<p style="text-align: center; padding: 20px;">Belum ada data mata pelajaran.</p>';
+      const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
+      const pesan = `Tidak ada mapel yang diatur untuk ${tipeUjian === 'UM' ? 'Ujian Sekolah/Madrasah' : 'Ujian Praktek'}. Harap centang di menu "Kelola Mapel".`;
+      container.innerHTML = `<p style="text-align: center; padding: 20px;">${pesan}</p>`;
       return;
     }
 
@@ -2677,9 +2691,12 @@
       ? siswaList
       : siswaList.filter(siswa => siswa.kelas === selectedKelas);
 
-    if (filteredSiswaList.length === 0) {
+    if (filteredSiswaList.length === 0 && selectedKelas !== 'semua') {
         container.innerHTML = '<p style="text-align: center; padding: 20px;">Tidak ada siswa di kelas yang dipilih.</p>';
         return;
+    } else if (filteredSiswaList.length === 0 && selectedKelas === 'semua') {
+       container.innerHTML = '<p style="text-align: center; padding: 20px;">Tidak ada data siswa.</p>';
+       return;
     }
 
     let html = '<table class="input-nilai-table">';
@@ -2717,9 +2734,10 @@
           >
             ${namaFormatted}
           </span>
-        </td>`; 
+        </td>`;
       
       let sum = 0;
+      let count = 0; 
       
       mapelList.forEach(mapel => {
         const key = `${siswa.id}_${mapel.id}`;
@@ -2737,6 +2755,7 @@
               }
             }
             sum += nilai;
+            count++; 
         }
         
         html += `<td class="col-mapel" style="text-align: center; font-weight: 500;">
@@ -2744,11 +2763,9 @@
           </td>`;
       });
       
-      const mapelCount = mapelList.length;
-      const average = (mapelCount > 0) ? (sum / mapelCount) : 0;
+      const average = (count > 0) ? (sum / count) : 0;
       
       const pembulatan = Math.round(average);
-
       const sumTampil = parseFloat(sum.toFixed(2));
       
       html += `<td class="col-total col-total-jumlah">${sumTampil}</td>`;
@@ -2975,14 +2992,29 @@
     if (!jumlahCell || !rataCell) return;
 
     const rowInputs = document.querySelectorAll(`#halaman-input-rapor-detail .input-nilai[data-siswa-id="${siswaId}"]`);
+    
+    // --- PERUBAHAN DIMULAI DI SINI ---
     let sum = 0;
+    let count = 0; // Variabel baru untuk menghitung pembagi
+
     rowInputs.forEach(input => {
-      const value = parseFloat(input.value);
-      if (!isNaN(value) && value >= 0 && value <= 100) {
-        sum += value;
+      const value = input.value; // Dapatkan nilai sebagai string
+      
+      // Cek apakah nilainya TIDAK kosong
+      if (value !== "" && value !== null && value !== undefined) {
+        // Jika tidak kosong (termasuk "0"), kita hitung
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+          sum += numValue;
+          count++; // Tambahkan ke pembagi
+        }
       }
     });
-    const average = (mapelCount > 0) ? (sum / mapelCount) : 0;
+    
+    // Bagi dengan 'count' (jumlah nilai valid), bukan 'mapelCount'
+    const average = (count > 0) ? (sum / count) : 0;
+    // --- AKHIR PERUBAHAN ---
+    
     jumlahCell.innerText = sum;
     rataCell.innerText = average.toFixed(2);
   }
@@ -3142,6 +3174,8 @@
       html += `<td><span class="clickable-nama-siswa" data-nisn="${siswa.nisn}" data-nama-lengkap="${siswa.nama}" title="Klik untuk lihat NISN">${namaFormatted}</span></td>`; 
       
       let sum = 0;
+      let count = 0;
+      
       mapelList.forEach(mapel => {
         const key = `${siswa.id}_${mapel.id}`;
         const nilai = nilaiRekapData[key];
@@ -3158,13 +3192,13 @@
               }
             }
             sum += nilai;
+            count++;
         }
         
         html += `<td class="col-mapel" style="text-align: center; font-weight: 500;">${nilaiTampil}</td>`;
       });
       
-      const mapelCount = mapelList.length;
-      const average = (mapelCount > 0) ? (sum / mapelCount) : 0;
+      const average = (count > 0) ? (sum / count) : 0;
       const pembulatan = Math.round(average);
       const sumTampil = parseFloat(sum.toFixed(2));
       
