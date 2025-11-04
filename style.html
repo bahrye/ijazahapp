@@ -212,18 +212,22 @@
   }
 
   .page-sub-header {
+    /* Mobile-first: Tombol di atas, teks di bawah */
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column-reverse; /* Ini kuncinya: menukar urutan visual */
+    align-items: stretch; /* Membuat tombol jadi full-width */
     margin-bottom: 20px;
   }
+
   .page-sub-header p {
     margin: 0;
     color: var(--text-dark);
+    text-align: center; /* DIUBAH: Dibuat rata tengah di mobile */
   }
+
   .page-sub-header button.btn-aksi {
-    width: auto;
-    margin: 0;
+    width: 100%; /* Tombol full-width di mobile */
+    margin: 0 0 15px 0; /* Beri jarak 15px di bawah tombol (di atas teks) */
     flex-shrink: 0;
     background-color: var(--primary-color);
     padding: 10px 15px;
@@ -233,6 +237,23 @@
     background-color: var(--primary-dark);
   }
 
+  /* Desktop: Kembalikan ke layout lama (side-by-side) */
+  @media (min-width: 576px) {
+    .page-sub-header {
+      flex-direction: row; /* Kembali ke baris */
+      justify-content: space-between; /* Saling menjauh */
+      align-items: center; /* Tengah secara vertikal */
+    }
+
+    .page-sub-header p {
+      text-align: left; /* DIUBAH: Kembalikan ke rata kiri di desktop */
+    }
+    
+    .page-sub-header button.btn-aksi {
+      width: auto; /* Lebar tombol kembali auto */
+      margin: 0; /* Hapus margin mobile */
+    }
+  }
 
   #btn-tambah-mapel-baru,
   #btn-tambah-siswa-baru {
@@ -322,14 +343,14 @@
   #btn-kembali-ke-input-rapor,
   #btn-kembali-ke-input-rapor-2 {
     width: auto;
-    padding: 8px 12px;
-    font-size: 14px;
+    padding: 12px 16px; /* DIUBAH: Dari 8px 12px */
+    font-size: 15px;     /* DIUBAH: Dari 14px */
     font-weight: 700;
     margin: 0;
     background-color: var(--secondary-color);
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px; /* DIUBAH: Dari 6px (agar lebih besar) */
     gap: 8px;
   }
 
@@ -1176,16 +1197,16 @@
 
   #btn-kembali-ke-input-ujian,
   #btn-kembali-ke-input-ujian-2 {
-      width: auto;
-      padding: 8px 12px;
-      font-size: 14px;
-      font-weight: 700;
-      margin: 0;
-      background-color: var(--secondary-color);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      gap: 8px; 
+    width: auto;
+    padding: 12px 16px; /* DIUBAH: Dari 8px 12px */
+    font-size: 15px;     /* DIUBAH: Dari 14px */
+    font-weight: 700;
+    margin: 0;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 8px; /* DIUBAH: Dari 6px (agar lebih besar) */
+    gap: 8px;
   }
   #btn-kembali-ke-input-ujian:hover,
   #btn-kembali-ke-input-ujian-2:hover {
@@ -1961,4 +1982,27 @@
     box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25);
   }
   /* --- AKHIR TAMBAHAN BARU --- */
+
+  /* Aturan untuk semua pesan loading di kontainer NON-GRID */
+  #mapel-table-container p,
+  #kelas-list-container p,
+  #siswa-table-container p,
+  #input-nilai-table-container p,
+  #rekap-nilai-table-container p,
+  #input-rapor-table-container p,
+  #input-rapor-keterampilan-table-container p,
+  #rekap-rapor-semester-table-container p,
+  #rekap-rapor-table-container p {
+    text-align: center;
+    padding: 20px 0;
+    color: var(--text-light);
+  }
+
+  /* Aturan KHUSUS untuk pesan loading di kontainer GRID */
+  #rapor-semester-card-container p {
+    grid-column: 1 / -1; /* <-- INI BARIS PERBAIKANNYA */
+    text-align: center;
+    padding: 20px 0;
+    color: var(--text-light);
+  }
 </style>
