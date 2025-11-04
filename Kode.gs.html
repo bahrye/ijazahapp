@@ -354,12 +354,17 @@ function validateAndRefreshSession() {
   
   const lastActivity = parseInt(lastActivityStr, 10);
   const now = new Date().getTime();
-  const threeHours = 3 * 60 * 60 * 1000;
+
+  // --- PERUBAHAN DI SINI ---
+  // Mengembalikan durasi menjadi 3 jam
+  const threeHours = 3 * 60 * 60 * 1000; 
   
-  if (now - lastActivity > threeHours) {
+  if (now - lastActivity > threeHours) { // Menggunakan variabel 'threeHours'
     userProperties.deleteAllProperties();
+    // Mengembalikan pesan error
     throw new Error("Sesi Anda telah berakhir (3 jam tidak aktif). Silakan login ulang.");
   }
+  // --- AKHIR PERUBAHAN ---
   
   userProperties.setProperty('lastActivity', now.toString());
   return userProperties;
