@@ -251,13 +251,19 @@
     }
   }
 
-  function setLoading(isLoading, message = 'Memuat data...', blockUI = true) {
+  function setLoading(isLoading, message = 'Memuat data...', blockUI = true, showLoadingToast = true) {
     document.getElementById('loader').style.display = 'none';
     
     const uiBlocker = document.getElementById('global-ui-blocker');
 
     if (isLoading) {
-      showToast(message, 'proses');
+      
+      // --- PERUBAHAN DI SINI ---
+      // Hanya tampilkan toast jika showLoadingToast adalah true
+      if (showLoadingToast) {
+        showToast(message, 'proses');
+      }
+      // --- AKHIR PERUBAHAN ---
       
       if (uiBlocker && blockUI) {
         uiBlocker.style.display = 'block';
@@ -1523,7 +1529,7 @@
 
   function bukaHalamanMapel() {
     tampilHalaman('halaman-mapel');
-    setLoading(true, 'Memuat data mapel...', false); 
+    setLoading(true, 'Memuat data mapel...', false, false);
     setMapelTipeDirty(false);
     document.getElementById('mapel-table-container').innerHTML = "<p>Memuat data mapel...</p>";
 
@@ -2010,7 +2016,7 @@
 
   function bukaHalamanKelas() {
     tampilHalaman('halaman-kelas');
-    setLoading(true, 'Memuat data kelas...', false); 
+    setLoading(true, 'Memuat data kelas...', false, false);
     hideMessage('kelas-message');
     document.getElementById('kelas-list-container').innerHTML = "<p>Memuat data kelas...</p>";
     setFormDisabled('form-kelas', true);
@@ -2065,7 +2071,7 @@
 
   function bukaHalamanSiswa() {
     tampilHalaman('halaman-siswa');
-    setLoading(true, 'Memuat data siswa...', false); 
+    setLoading(true, 'Memuat data siswa...', false, false);
     document.getElementById('siswa-table-container').innerHTML = "<p>Memuat data siswa...</p>";
 
     document.getElementById('btn-tambah-siswa-baru').disabled = true;
@@ -2990,7 +2996,7 @@
       judulHalaman.dataset.tipeUjian = 'Praktek';
     }
 
-    setLoading(true, 'Memuat data nilai...', false); 
+    setLoading(true, 'Memuat data nilai...', false, false);
     google.script.run
       .withSuccessHandler(onNilaiGridLoaded)
       .withFailureHandler(onGagal) 
@@ -3257,7 +3263,7 @@
     document.getElementById('rekap-nilai-filter-kelas').innerHTML = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
     globalGridData = { siswaList: [], mapelList: [], nilaiRekapData: {} };
 
-    setLoading(true, 'Membuat rekapitulasi nilai...', false);
+    setLoading(true, 'Membuat rekapitulasi nilai...', false, false);
     google.script.run
       .withSuccessHandler(onRekapNilaiLoaded)
       .withFailureHandler(onGagal) 
@@ -3437,7 +3443,7 @@
 
   function bukaHalamanInputRapor() {
     tampilHalaman('halaman-input-rapor');
-    setLoading(true, 'Memuat daftar semester...', false);
+    setLoading(true, 'Memuat daftar semester...', false, false);
     const container = document.getElementById('rapor-semester-card-container');
     container.innerHTML = '<p>Memuat daftar semester...</p>';
 
@@ -3510,7 +3516,7 @@
     judulHalaman.innerText = `Input Nilai Rapor...`;
     judulHalaman.dataset.semesterId = semesterId;
     
-    setLoading(true, 'Memuat data nilai rapor...', false); 
+    setLoading(true, 'Memuat data nilai rapor...', false, false);
     google.script.run
       .withSuccessHandler(onNilaiRaporGridLoaded) 
       .withFailureHandler(onGagal) 
@@ -3887,7 +3893,7 @@
     document.getElementById('rekap-rapor-filter-kelas').innerHTML = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
     globalRaporGridData = { siswaList: [], mapelList: [], nilaiRekapData: {} };
 
-    setLoading(true, 'Membuat rekapitulasi rapor...', false);
+    setLoading(true, 'Membuat rekapitulasi rapor...', false, false);
     google.script.run
       .withSuccessHandler(onRekapRaporLoaded) 
       .withFailureHandler(onGagal) 
@@ -4006,7 +4012,7 @@
 
   function bukaHalamanSemester() {
     tampilHalaman('halaman-semester');
-    setLoading(true, 'Memuat pengaturan semester...', false); 
+    setLoading(true, 'Memuat pengaturan semester...', false, false);
     hideMessage('semester-message');
     document.getElementById('form-semester').reset();
     setFormDisabled('form-semester', true);
