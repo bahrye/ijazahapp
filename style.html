@@ -1676,11 +1676,11 @@
     position: fixed;
     top: 20px;
     
-    /* --- PERUBAHAN DI SINI --- */
-    right: 20px; /* <-- UBAH: Tentukan posisi di kanan */
-    left: auto; /* <-- UBAH: Hapus posisi kiri */
-    transform: none; /* <-- UBAH: Hapus transform */
-    /* --- AKHIR PERUBAHAN --- */
+    /* --- PERBAIKAN: Peletakan di tengah --- */
+    left: 50%; /* <-- DIUBAH: Tentukan posisi di tengah */
+    transform: translateX(-50%); /* <-- DIUBAH: Geser 50% dari lebarnya sendiri */
+    right: auto; /* <-- DIUBAH: Hapus posisi kanan */
+    /* --- AKHIR PERBAIKAN --- */
 
     z-index: 10001;
     width: 90%;
@@ -1688,10 +1688,9 @@
     display: flex;
     flex-direction: column;
 
-    /* --- PERUBAHAN DI SINI (Opsional tapi disarankan) --- */
-    /* Ubah dari 'center' menjadi 'flex-end' agar toast rata ke kanan */
-    align-items: flex-end; 
-    /* --- AKHIR PERUBAHAN --- */
+    /* --- PERBAIKAN: Buat toast rata tengah --- */
+    align-items: center; 
+    /* --- AKHIR PERBAIKAN --- */
     
     gap: 10px;
     pointer-events: none;
@@ -1709,13 +1708,13 @@
     animation: toast-slide-in 0.3s ease-out;
     pointer-events: auto;
     opacity: 0;
-    transform: translateY(-20px);
+    /* transform: translateY(-20px); */ /* <-- DIHAPUS: Ini menyebabkan slide dari atas */
     border: 1px solid rgba(0,0,0,0.05);
   }
 
   .global-toast.show {
     opacity: 1;
-    transform: translateY(0);
+    /* transform: translateY(0); */ /* <-- DIHAPUS: Ini menyebabkan slide dari atas */
   }
 
   .global-toast.hide {
@@ -1776,22 +1775,22 @@
   @keyframes toast-slide-in {
     from {
       opacity: 0;
-      transform: translateY(-20px);
+      /* transform: translateY(-20px); */ /* <-- DIHAPUS: Animasi hanya fade-in */
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      /* transform: translateY(0); */ /* <-- DIHAPUS: Animasi hanya fade-in */
     }
   }
 
   @keyframes toast-fade-out {
     from {
       opacity: 1;
-      transform: translateY(0);
+      /* transform: translateY(0); */ /* <-- DIHAPUS: Animasi hanya fade-out */
     }
     to {
       opacity: 0;
-      transform: translateY(-20px);
+      /* transform: translateY(-20px); */ /* <-- DIHAPUS: Animasi hanya fade-out */
     }
   }
   /* Referensi animasi spin (jika belum ada) */
