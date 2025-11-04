@@ -1926,4 +1926,39 @@
   button.loading .spinner-inline {
     display: inline-block;
   }
+
+  /* Keyframe untuk getar dan flash merah */
+  @keyframes shake-and-flash {
+    0%, 100% {
+      transform: translateX(0);
+      background-color: var(--bg-white);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-6px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(6px);
+    }
+    30%, 60% {
+      /* Ini adalah flash merah di tengah getaran */
+      background-color: rgba(220, 53, 69, 0.1); 
+    }
+  }
+
+  /* Kelas yang akan kita tambahkan via JavaScript */
+  .login-fail-shake {
+    animation: shake-and-flash 0.6s ease-in-out;
+  }
+
+  /* --- TAMBAHAN BARU: Style untuk Input Error --- */
+  .input-error {
+    border-color: var(--danger-color);
+  }
+  
+  .input-error:focus {
+    /* Pastikan glow-nya juga merah saat error dan difokuskan */
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25);
+  }
+  /* --- AKHIR TAMBAHAN BARU --- */
 </style>
