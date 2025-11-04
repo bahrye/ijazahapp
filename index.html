@@ -153,11 +153,12 @@
         </div>
         <div class="page-header">
           <h2>Input Nilai Rapor</h2>
-           <div class="header-buttons">
-            <button id="btn-buka-upload-rapor" class="btn-aksi"><i class="fas fa-upload"></i>Upload Nilai Rapor</button>
-          </div>
         </div>
-        <p>Pilih semester yang akan diinput nilainya.</p>
+
+        <div class="page-sub-header">
+          <p>Pilih semester yang akan diinput nilainya.</p>
+          <button id="btn-buka-upload-rapor" class="btn-aksi"><i class="fas fa-upload"></i>Upload Nilai Rapor</button>
+        </div>
         
         <div class="dashboard-menu-grid dashboard-grid-input" id="rapor-semester-card-container">
           <p>Memuat daftar semester...</p>
@@ -202,6 +203,7 @@
         <div class="tab-content-wrapper">
           
           <div id="tab-pengetahuan-content" class="tab-content active">
+            <p class="table-content-header">Input Nilai Pengetahuan</p>
             <div class="input-nilai-table-container" id="input-rapor-table-container">
               <p>Memuat data...</p>
               <div class="table-blocker-overlay"></div> </div>
@@ -213,6 +215,7 @@
           </div>
 
           <div id="tab-keterampilan-content" class="tab-content">
+            <p class="table-content-header">Input Nilai Keterampilan</p>
             <div class="input-nilai-table-container" id="input-rapor-keterampilan-table-container">
               <p>Memuat data...</p>
               <div class="table-blocker-overlay"></div> </div>
@@ -224,13 +227,14 @@
           </div>
 
           <div id="tab-rekap-content" class="tab-content">
-          <div class="input-nilai-table-container" id="rekap-rapor-semester-table-container">
+            <p class="table-content-header">Rekapitulasi Nilai</p>
+            <div class="input-nilai-table-container" id="rekap-rapor-semester-table-container">
               <p>Memuat data...</p>
             </div>
           </div>
 
         </div>
-        </div>
+      </div>
     </div>
 
     <div class="container" id="halaman-rekap-rapor" style="display: none;">
