@@ -1121,20 +1121,35 @@
 
   function hasilRegistrasi(response) {
     setLoading(false);
-    if (response.status === "sukses") {
-      showMessage('reg-message', response.message, false);
+    
+    // --- PERUBAHAN DI SINI ---
+    if (response.status === "pending") {
+      // Ini adalah status SUKSES BARU (menunggu verifikasi)
+      // Tampilkan pesan sukses (bukan error)
+      showMessage('reg-message', response.message, false); 
 
+      // Kosongkan form
       document.getElementById('reg-nama-sekolah').value = "";
       document.getElementById('reg-jenjang').value = "";
       document.getElementById('reg-email').value = "";
       document.getElementById('reg-password').value = "";
+      
+      // JANGAN pindah halaman, biarkan user di halaman registrasi
+      // untuk melihat pesan sukses.
 
-      setTimeout(() => {
+    } else if (response.status === "gagal") {
+      // Ini adalah GAGAL (email sudah ada, dll)
+      showMessage('reg-message', response.message, true);
+    
+    } else {
+      // Fallback untuk status 'sukses' (seharusnya tidak terjadi lagi dari registrasi)
+       showMessage('reg-message', "Registrasi berhasil! (Status tidak dikenal)", false);
+       // Pindahkan ke login jika status 'sukses' lama masih ada
+       setTimeout(() => {
         tampilHalaman('halaman-login');
       }, 2500);
-    } else {
-      showMessage('reg-message', response.message, true);
     }
+    // --- AKHIR PERUBAHAN ---
   }
 
   function onLogout(response) {
