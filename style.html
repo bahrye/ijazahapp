@@ -221,7 +221,7 @@
     margin: 0;
     color: var(--text-dark);
   }
-  .page-sub-header button#btn-buka-upload-nilai {
+  .page-sub-header button.btn-aksi {
     width: auto;
     margin: 0;
     flex-shrink: 0;
@@ -229,7 +229,7 @@
     padding: 10px 15px;
     font-size: 14px;
   }
-  .page-sub-header button#btn-buka-upload-nilai:hover {
+  .page-sub-header button.btn-aksi:hover {
     background-color: var(--primary-dark);
   }
 
@@ -1531,7 +1531,8 @@
     color: var(--primary-dark);
   }
 
-  #btn-download-template-nilai {
+  #btn-download-template-nilai,
+  #btn-download-template-rapor {
     width: auto;
     background-color: var(--success-color);
     padding: 10px 18px;
@@ -1539,7 +1540,8 @@
     font-weight: 700;
     margin-top: 10px;
   }
-  #btn-download-template-nilai:hover {
+  #btn-download-template-nilai:hover,
+  #btn-download-template-rapor:hover {
     background-color: #157347;
   }
 
@@ -1558,14 +1560,17 @@
     font-size: 14px;
   }
 
-  #btn-proses-upload-nilai {
+  #btn-proses-upload-nilai,
+  #btn-proses-upload-nilai-rapor { /* <-- TAMBAHKAN INI */
     background-color: var(--success-color);
   }
-  #btn-proses-upload-nilai:hover {
+  #btn-proses-upload-nilai:hover,
+  #btn-proses-upload-nilai-rapor:hover { /* <-- TAMBAHKAN INI */
     background-color: #157347;
   }
-  #btn-batal-modal-upload-nilai {
-    background-color: var(--secondary-color);
+  #btn-batal-modal-upload-nilai,
+  #btn-batal-modal-upload-nilai-rapor { /* <-- TAMBAHKAN INI */
+    background-color: var(--danger-color); /* <-- UBAH KE WARNA INI */
   }
 
   .dynamic-tooltip {
@@ -1664,7 +1669,8 @@
   #btn-bersihkan-input-rapor-p:disabled,
   #btn-simpan-input-rapor-p:disabled,
   #btn-bersihkan-input-rapor-k:disabled,
-  #btn-simpan-input-rapor-k:disabled {
+  #btn-simpan-input-rapor-k:disabled,
+  #btn-proses-upload-nilai-rapor:disabled {
     background-color: var(--secondary-color) !important;
     opacity: 0.65;
     cursor: not-allowed;
@@ -1892,4 +1898,32 @@
     display: block;
   }
   /* === AKHIR TAMBAHAN BARU === */
+
+  .table-content-header {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-top: 0;
+    margin-bottom: 15px;
+  }
+
+  /* Spinner kecil di dalam tombol */
+  .spinner-inline {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  /* Sembunyikan ikon dan teks asli saat loading */
+  button.loading > *:not(.spinner-inline) {
+    display: none;
+  }
+
+  /* Tampilkan spinner saat loading */
+  button.loading .spinner-inline {
+    display: inline-block;
+  }
 </style>
