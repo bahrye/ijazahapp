@@ -13,11 +13,327 @@ const REKAP_NILAI_RAPOR_CACHE_KEY = 'rekap_nilai_rapor_v1';
 const TEMPLATE_SISWA_FILENAME = "template_import_siswa.xlsx";
 const TEMPLATE_SISWA_MIMETYPE = MimeType.MICROSOFT_EXCEL;
 
+const SHEET_REGISTRASI_PENDING = "Registrasi_Pending";
+const TOKEN_EXPIRY_HOURS = 24; // Token berlaku 24 jam
+
+/**
+ * Mengubah array byte (dari computeDigest) menjadi string heksadesimal.
+ */
+function bytesToHex(bytes) {
+  return bytes.map(byte => {
+    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+  }).join('');
+}
+
+/**
+ * Membuat string salt acak yang unik.
+ */
+function generateSalt() {
+  return Utilities.getUuid();
+}
+
+/**
+ * Membuat hash SHA-256 dari password dan salt.
+ * Mengembalikan hash sebagai string hex.
+ */
+function hashPassword(password, salt) {
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, password + salt, Utilities.Charset.UTF_8);
+  return bytesToHex(digest);
+}
+
+/**
+ * Memverifikasi apakah password inputan cocok dengan hash yang tersimpan.
+ */
+function verifyPassword(inputPassword, storedHash, storedSalt) {
+  const newHash = hashPassword(inputPassword, storedSalt);
+  return newHash === storedHash;
+}
+
+/**
+ * Fungsi baru untuk mendapatkan atau membuat sheet Registrasi_Pending.
+ */
+function getSheetRegistrasiPending(masterSS) {
+  let sheet = masterSS.getSheetByName(SHEET_REGISTRASI_PENDING);
+  if (!sheet) {
+    sheet = masterSS.insertSheet(SHEET_REGISTRASI_PENDING);
+    // Kolom: Email, NamaSekolah, Jenjang, Password, Token, Timestamp
+    sheet.appendRow(['Email', 'NamaSekolah', 'Jenjang', 'Password', 'VerificationToken', 'Timestamp']);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
 function doGet(e) {
+  // Cek apakah ada parameter 'v' (untuk verifikasi)
+  if (e.parameter.v) {
+    const token = e.parameter.v;
+    // Proses token dan dapatkan pesan HTML
+    const message = prosesVerifikasiToken(token);
+    
+    // Tampilkan halaman 'verifikasi.html' dan ganti kontennya dengan pesan hasil
+    return HtmlService.createTemplateFromFile('verifikasi')
+      .evaluate()
+      .setTitle('Verifikasi Akun')
+      .setContent(`<div>${message}</div>`); // Mengganti konten <body>
+  }
+  
+  // Jika tidak ada parameter 'v', jalankan aplikasi utama seperti biasa
   return HtmlService.createTemplateFromFile('index')
     .evaluate()
     .setTitle('Pengolahan Nilai Ijazah')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+}
+
+// --- FUNGSI BARU ---
+/**
+ * Mengirim email verifikasi ke pengguna.
+ */
+function kirimEmailVerifikasi(email, namaSekolah, token) {
+  try {
+    const url = ScriptApp.getService().getUrl() + '?v=' + token;
+    const subject = "Verifikasi Akun Aplikasi Nilai Ijazah";
+    const body = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <p>Halo, Admin ${namaSekolah},</p>
+        <p>Terima kasih telah mendaftar di Aplikasi Pengolahan Nilai Ijazah.</p>
+        <p>Untuk mengaktifkan akun Anda, silakan klik tombol di bawah ini:</p>
+        <p style="margin: 25px 0;">
+          <a href="${url}" style="font-size: 16px; font-weight: bold; padding: 12px 20px; background-color: #0d6efd; color: white; text-decoration: none; border-radius: 5px;">
+            Aktivasi Akun Saya
+          </a>
+        </p>
+        <p>Jika tombol di atas tidak berfungsi, salin dan tempel URL berikut di browser Anda:</p>
+        <p style="word-break: break-all;">${url}</p>
+        <p>Link ini akan kedaluwarsa dalam ${TOKEN_EXPIRY_HOURS} jam.</p>
+        <br>
+        <p>Terima kasih.</p>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      htmlBody: body,
+      name: "Admin Aplikasi Ijazah" // Nama pengirim
+    });
+    Logger.log("Email verifikasi terkirim ke: " + email);
+  } catch (e) {
+    Logger.log(`Gagal mengirim email verifikasi ke ${email}: ${e.message}`);
+    // Sebaiknya jangan gagalkan registrasi jika email gagal, cukup log saja
+  }
+}
+
+// --- FUNGSI BARU (HASIL REFATOR DARI prosesRegistrasi) ---
+/**
+ * Fungsi ini berisi LOGIKA PEMBUATAN SPREADSHEET YANG SEBENARNYA.
+ * Dipanggil HANYA SETELAH verifikasi berhasil.
+ */
+function buatDatabaseSekolahBaru(namaSekolah, jenjang, email, password, masterSS) {
+  let newSSID = null; 
+  try {
+    let targetFolder;
+    try {
+      targetFolder = DriveApp.getFolderById(TARGET_FOLDER_ID);
+    } catch (folderError) {
+      Logger.log("Error mengambil folder: " + folderError);
+      throw new Error("Error: Folder target tidak ditemukan atau tidak dapat diakses. ID: " + TARGET_FOLDER_ID);
+    }
+
+    // (Ini adalah LOGIKA LAMA Anda dari prosesRegistrasi, baris 246-333)
+    const namaSekolahUpper = namaSekolah.toUpperCase();
+    const newSpreadsheet = SpreadsheetApp.create("Database Nilai - " + namaSekolahUpper); 
+    newSSID = newSpreadsheet.getId();
+    Logger.log("Spreadsheet baru dibuat (via verifikasi): " + newSSID);
+
+    const newFile = DriveApp.getFileById(newSSID);
+    targetFolder.addFile(newFile); 
+    DriveApp.getRootFolder().removeFile(newFile); 
+    Logger.log("Spreadsheet dipindahkan ke folder: " + targetFolder.getName());
+
+    const defaultSheet = newSpreadsheet.getSheets()[0];
+    
+    const sheetSiswa = newSpreadsheet.insertSheet('Siswa');
+    sheetSiswa.appendRow([
+        'SiswaID', 'NamaSiswa', 'NISN', 'NIS_Lokal', 'JenisKelamin', 
+        'TempatLahir', 'TglLahir', 'Kelas'
+      ]);
+    sheetSiswa.getRange('C:D').setNumberFormat('@');
+      
+    
+    const sheetKelas = newSpreadsheet.insertSheet('Kelas');
+    sheetKelas.appendRow(['NamaKelas']); 
+
+    let defaultKelas = '';
+    switch (jenjang) {
+      case 'SD/MI':
+        defaultKelas = 'VI';
+        break;
+      case 'SMP/MTS':
+        defaultKelas = 'IX';
+        break;
+      case 'SMA/MA':
+        defaultKelas = 'XII';
+        break;
+    }
+    
+    if (defaultKelas) {
+      sheetKelas.appendRow([defaultKelas]);
+    }
+    
+    const sheetMapel = newSpreadsheet.insertSheet('Mapel');
+    sheetMapel.appendRow(['MapelID', 'NamaMapel', 'isUS', 'isUP']); 
+
+    const defaultMapel = getDynamicDefaultMapel(jenjang, masterSS);
+    if (defaultMapel.length > 0) {
+      sheetMapel.getRange(2, 1, defaultMapel.length, 4).setValues(defaultMapel);
+    }
+
+    newSpreadsheet.insertSheet('Nilai_Rapor')
+      .appendRow([
+        'SiswaID', 'MapelID', 
+        'Sem1_P', 'Sem1_K', 'Sem2_P', 'Sem2_K', 
+        'Sem3_P', 'Sem3_K', 'Sem4_P', 'Sem4_K', 'Sem5_P', 'Sem5_K'
+      ]);
+
+    newSpreadsheet.insertSheet('Nilai_Ujian')
+      .appendRow(['SiswaID', 'MapelID', 'UjianMadrasah', 'UjianPraktek']);
+      
+    // --- PERBAIKAN SKEMA RAPOR ---
+    // Pastikan sheet baru juga menggunakan skema yang benar
+    newSpreadsheet.insertSheet('Nilai_Rapor_Akhir')
+      .appendRow(['SiswaID', 'MapelID', 'SemesterID', 'Nilai_P', 'Nilai_K']);
+    // --- AKHIR PERBAIKAN ---
+    
+    const sheetSetting = newSpreadsheet.insertSheet('Pengaturan');
+    sheetSetting.appendRow(['Setting', 'Value']);
+    sheetSetting.appendRow(['Bobot_Rapor', 60]);
+    sheetSetting.appendRow(['Bobot_Ujian', 40]);
+    sheetSetting.appendRow(['Jumlah_Semester', 5]);
+    sheetSetting.appendRow(['KKM', 76]);
+
+    const sheetDataSekolah = newSpreadsheet.insertSheet('Data_Sekolah');
+    sheetDataSekolah.appendRow([
+      'JenjangPilihan', 'NPSN', 'NSM', 'Alamat', 'Provinsi', 
+      'KabKot', 'PilihanKabKot', 'Kecamatan', 'KelDes', 'PilihanKelDes', 
+      'KodePos', 'Telepon', 'Email', 'Website', 'NamaKepsek', 'NIPKepsek'
+    ]);
+    let jenjangPilihanDefault = '';
+    if (jenjang === 'SD/MI') {
+      jenjangPilihanDefault = 'MI';
+    } else if (jenjang === 'SMP/MTS') {
+      jenjangPilihanDefault = 'MTS';
+    } else if (jenjang === 'SMA/MA') {
+      jenjangPilihanDefault = 'MA';
+    }
+    
+    sheetDataSekolah.appendRow([
+      jenjangPilihanDefault, 
+      '', '', '', '', 
+      '', 'Kabupaten', '', '', 'Kelurahan', 
+      '', '', '', '', '', ''
+    ]);
+    sheetDataSekolah.getRange('A2:P2').setNumberFormat('@');
+
+    newSpreadsheet.deleteSheet(defaultSheet);
+    // (AKHIR DARI LOGIKA LAMA)
+
+    // Kembalikan SSID yang baru dibuat
+    return newSSID;
+
+  } catch (e) {
+    Logger.log(e);
+    // Jika gagal, hapus spreadsheet yang mungkin setengah jadi
+    if (newSSID) {
+      DriveApp.getFileById(newSSID).setTrashed(true);
+    }
+    // Lempar error ke 'prosesVerifikasiToken'
+    throw new Error("Gagal membuat database: " + e.message);
+  }
+}
+
+function prosesVerifikasiToken(token) {
+  if (!token) {
+    return "<h1>Token Tidak Ditemukan</h1><p>Permintaan verifikasi tidak valid.</p>";
+  }
+  
+  let masterSS;
+  let sheetSekolah;
+  let sheetPending;
+  
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  
+  try {
+    masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
+    sheetSekolah = masterSS.getSheetByName('Sheet_Sekolah');
+    sheetPending = getSheetRegistrasiPending(masterSS); 
+
+    const dataPending = sheetPending.getDataRange().getValues();
+    const now = new Date();
+    const expiryLimit = now.getTime() - (TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
+
+    for (let i = dataPending.length - 1; i >= 1; i--) {
+      const row = dataPending[i];
+      const dbToken = row[4];
+      const dbTimestamp = new Date(row[5]).getTime();
+
+      if (dbToken === token) {
+        if (dbTimestamp < expiryLimit) {
+          sheetPending.deleteRow(i + 1);
+          return "<h1>Token Kedaluwarsa</h1><p>Link verifikasi Anda sudah kedaluwarsa (lebih dari " + TOKEN_EXPIRY_HOURS + " jam). Silakan lakukan registrasi ulang.</p>";
+        }
+
+        const email = row[0];
+        const namaSekolah = row[1];
+        const jenjang = row[2];
+        const password = row[3];
+        
+        const dataSekolah = sheetSekolah.getDataRange().getValues();
+        for (let j = 1; j < dataSekolah.length; j++) {
+          if (dataSekolah[j][3] === email) {
+            sheetPending.deleteRow(i + 1);
+            return "<h1>Akun Sudah Aktif</h1><p>Akun Anda dengan email ini sudah terverifikasi dan aktif. Silakan login.</p>";
+          }
+        }
+
+        try {
+          const newSSID = buatDatabaseSekolahBaru(namaSekolah, jenjang, email, password, masterSS);
+          
+          const newSalt = generateSalt();
+          const newHash = hashPassword(password, newSalt);
+          
+          const newSekolahID = "SKL-" + (sheetSekolah.getLastRow());
+          sheetSekolah.appendRow([
+            newSekolahID, 
+            namaSekolah.toUpperCase(), 
+            jenjang, 
+            email, 
+            newHash, 
+            newSSID,
+            newSalt
+          ]);
+
+          sheetPending.deleteRow(i + 1);
+          
+          clearMasterSheetCache();
+          
+          return "<h1>Verifikasi Berhasil!</h1><p>Akun Anda telah berhasil diaktifkan. Anda sekarang dapat menutup halaman ini dan login ke aplikasi.</p>";
+          
+        } catch (e) {
+          Logger.log(`Verifikasi sukses untuk ${email} TAPI GAGAL buat DB: ${e.message}`);
+          return `<h1>Verifikasi Berhasil, Namun...</h1><p>Terjadi error saat membuat database untuk sekolah Anda. Silakan hubungi admin. (Error: ${e.message})</p>`;
+        }
+      }
+    }
+    
+    return "<h1>Token Tidak Valid</h1><p>Token verifikasi Anda tidak ditemukan. Mungkin sudah digunakan atau tidak valid.</p>";
+
+  } catch (e) {
+    Logger.log(e);
+    return `<h1>Error Server</h1><p>Terjadi error: ${e.message}. Silakan coba lagi nanti.</p>`;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function include(filename) {
@@ -136,9 +452,21 @@ function prosesLogin(email, password) {
     for (let i = 1; i < dataSekolah.length; i++) {
       const row = dataSekolah[i];
       const dbEmail = row[3];
-      const dbPassword = row[4];
       
-      if (dbEmail === email && dbPassword === password) {
+      const dbHashOrPassword = row[4];
+      const dbSalt = row[6];
+
+      let passwordIsValid = false;
+
+      if (dbEmail === email) {
+        if (dbSalt) {
+          passwordIsValid = verifyPassword(password, dbHashOrPassword, dbSalt);
+        } else {
+          passwordIsValid = (dbHashOrPassword === password);
+        }
+      }
+      
+      if (passwordIsValid) {
         
         const token = Utilities.getUuid();
         const now = new Date().getTime(); 
@@ -176,151 +504,80 @@ function prosesLogin(email, password) {
 }
 
 function prosesRegistrasi(namaSekolah, jenjang, email, password) {
-  let newSSID = null; 
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+
   try {
     if (!namaSekolah || !jenjang || !email || !password) {
       return { status: "gagal", message: "Semua data wajib diisi." };
     }
 
     const masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
-    let sheetSekolah = masterSS.getSheetByName('Sheet_Sekolah');
     
-    if (!sheetSekolah) {
+    let sheetSekolah = masterSS.getSheetByName('Sheet_Sekolah');
+    if (sheetSekolah) {
+      const dataSekolah = sheetSekolah.getDataRange().getValues();
+      for (let i = 1; i < dataSekolah.length; i++) {
+        if (dataSekolah[i][3] === email) {
+          return { status: "gagal", message: "Email ini sudah terdaftar dan aktif." };
+        }
+      }
+    } else {
        sheetSekolah = masterSS.insertSheet('Sheet_Sekolah');
-       sheetSekolah.appendRow(['SekolahID', 'NamaSekolah', 'Jenjang', 'EmailAdmin', 'Password', 'SpreadsheetID']);
+       sheetSekolah.appendRow(['SekolahID', 'NamaSekolah', 'Jenjang', 'EmailAdmin', 'HashedPassword', 'SpreadsheetID', 'Salt']);
     }
     
-    const dataSekolah = sheetSekolah.getDataRange().getValues();
+    const sheetPending = getSheetRegistrasiPending(masterSS);
+    const dataPending = sheetPending.getDataRange().getValues();
+    const now = new Date();
+    const expiryLimit = now.getTime() - (TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
 
-    for (let i = 1; i < dataSekolah.length; i++) {
-      if (dataSekolah[i][3] === email) {
-        return { status: "gagal", message: "Email ini sudah terdaftar." };
+    for (let i = dataPending.length - 1; i >= 1; i--) {
+      const row = dataPending[i];
+      const dbEmail = row[0];
+      const dbTimestamp = new Date(row[5]).getTime();
+
+      if (dbEmail === email) {
+        if (dbTimestamp < expiryLimit) {
+          sheetPending.deleteRow(i + 1);
+          Logger.log(`Registrasi pending kedaluwarsa untuk ${email} dihapus.`);
+          break; 
+        } else {
+          const dbNamaSekolah = row[1];
+          const dbToken = row[4];
+          kirimEmailVerifikasi(email, dbNamaSekolah, dbToken);
+          return { 
+            status: "pending", 
+            message: "Email ini sudah terdaftar dan menunggu verifikasi. Kami telah mengirim ulang link verifikasi ke email Anda." 
+          };
+        }
       }
     }
 
-    let targetFolder;
-    try {
-      targetFolder = DriveApp.getFolderById(TARGET_FOLDER_ID);
-    } catch (folderError) {
-      Logger.log("Error mengambil folder: " + folderError);
-      return { status: "gagal", message: "Error: Folder target tidak ditemukan atau tidak dapat diakses. ID: " + TARGET_FOLDER_ID };
-    }
-
+    const verificationToken = Utilities.getUuid() + Utilities.getUuid();
     const namaSekolahUpper = namaSekolah.toUpperCase();
 
-    const newSpreadsheet = SpreadsheetApp.create("Database Nilai - " + namaSekolahUpper); 
-    newSSID = newSpreadsheet.getId();
-    Logger.log("Spreadsheet baru dibuat (manual): " + newSSID);
-
-    const newFile = DriveApp.getFileById(newSSID);
-    targetFolder.addFile(newFile); 
-    DriveApp.getRootFolder().removeFile(newFile); 
-    Logger.log("Spreadsheet dipindahkan ke folder: " + targetFolder.getName());
-
-    const defaultSheet = newSpreadsheet.getSheets()[0];
-    
-    const sheetSiswa = newSpreadsheet.insertSheet('Siswa');
-    sheetSiswa.appendRow([
-        'SiswaID', 'NamaSiswa', 'NISN', 'NIS_Lokal', 'JenisKelamin', 
-        'TempatLahir', 'TglLahir', 'Kelas'
-      ]);
-    sheetSiswa.getRange('C:D').setNumberFormat('@');
-      
-    
-    const sheetKelas = newSpreadsheet.insertSheet('Kelas');
-    sheetKelas.appendRow(['NamaKelas']); 
-
-    let defaultKelas = '';
-    switch (jenjang) {
-      case 'SD/MI':
-        defaultKelas = 'VI';
-        break;
-      case 'SMP/MTS':
-        defaultKelas = 'IX';
-        break;
-      case 'SMA/MA':
-        defaultKelas = 'XII';
-        break;
-    }
-    
-    if (defaultKelas) {
-      sheetKelas.appendRow([defaultKelas]);
-    }
-    
-    const sheetMapel = newSpreadsheet.insertSheet('Mapel');
-    sheetMapel.appendRow(['MapelID', 'NamaMapel', 'isUS', 'isUP']); 
-
-    const defaultMapel = getDynamicDefaultMapel(jenjang, masterSS);
-    if (defaultMapel.length > 0) {
-      sheetMapel.getRange(2, 1, defaultMapel.length, 4).setValues(defaultMapel);
-    }
-
-    newSpreadsheet.insertSheet('Nilai_Rapor')
-      .appendRow([
-        'SiswaID', 'MapelID', 
-        'Sem1_P', 'Sem1_K', 'Sem2_P', 'Sem2_K', 
-        'Sem3_P', 'Sem3_K', 'Sem4_P', 'Sem4_K', 'Sem5_P', 'Sem5_K'
-      ]);
-
-    newSpreadsheet.insertSheet('Nilai_Ujian')
-      .appendRow(['SiswaID', 'MapelID', 'UjianMadrasah', 'UjianPraktek']);
-      
-    newSpreadsheet.insertSheet('Nilai_Rapor_Akhir')
-      .appendRow(['SiswaID', 'MapelID', 'SemesterID', 'Nilai']);
-    
-    const sheetSetting = newSpreadsheet.insertSheet('Pengaturan');
-    sheetSetting.appendRow(['Setting', 'Value']);
-    sheetSetting.appendRow(['Bobot_Rapor', 60]);
-    sheetSetting.appendRow(['Bobot_Ujian', 40]);
-    sheetSetting.appendRow(['Jumlah_Semester', 5]);
-    sheetSetting.appendRow(['KKM', 76]);
-
-    const sheetDataSekolah = newSpreadsheet.insertSheet('Data_Sekolah');
-    sheetDataSekolah.appendRow([
-      'JenjangPilihan', 'NPSN', 'NSM', 'Alamat', 'Provinsi', 
-      'KabKot', 'PilihanKabKot', 'Kecamatan', 'KelDes', 'PilihanKelDes', 
-      'KodePos', 'Telepon', 'Email', 'Website', 'NamaKepsek', 'NIPKepsek'
+    sheetPending.appendRow([
+      email,
+      namaSekolahUpper,
+      jenjang,
+      password,
+      verificationToken,
+      now 
     ]);
-    let jenjangPilihanDefault = '';
-    if (jenjang === 'SD/MI') {
-      jenjangPilihanDefault = 'MI';
-    } else if (jenjang === 'SMP/MTS') {
-      jenjangPilihanDefault = 'MTS';
-    } else if (jenjang === 'SMA/MA') {
-      jenjangPilihanDefault = 'MA';
-    }
     
-    sheetDataSekolah.appendRow([
-      jenjangPilihanDefault, 
-      '', '', '', '', 
-      '', 'Kabupaten', '', '', 'Kelurahan', 
-      '', '', '', '', '', ''
-    ]);
-    sheetDataSekolah.getRange('A2:P2').setNumberFormat('@');
+    kirimEmailVerifikasi(email, namaSekolahUpper, verificationToken);
 
-    newSpreadsheet.deleteSheet(defaultSheet);
-    
-    const newSekolahID = "SKL-" + (sheetSekolah.getLastRow());
-    
-    sheetSekolah.appendRow([
-      newSekolahID, 
-      namaSekolahUpper, 
-      jenjang, 
-      email, 
-      password, 
-      newSSID
-    ]);
-
-    clearMasterSheetCache();
-
-    return { status: "sukses", message: "Registrasi berhasil! Anda akan diarahkan ke halaman login." };
+    return { 
+      status: "pending", 
+      message: "Registrasi awal berhasil! Kami telah mengirimkan link verifikasi ke email Anda. Silakan cek inbox (atau folder spam)." 
+    };
     
   } catch (e) {
     Logger.log(e);
-    if (newSSID) {
-      DriveApp.getFileById(newSSID).setTrashed(true);
-    }
     return { status: "gagal", message: "Terjadi error di server: " + e.message };
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -2639,5 +2896,65 @@ function saveNilaiRaporBatch(dataToSave, tipeNilai) {
   } catch (e) {
     Logger.log(e);
     return { status: "gagal", message: e.message };
+  }
+}
+
+/**
+ * FUNGSI MIGRASI SATU KALI.
+ * Jalankan ini secara manual dari editor Apps Script.
+ * Ini akan mengubah semua password plain text di Sheet_Sekolah menjadi hash.
+ */
+function MIGRASI_PasswordLama() {
+  Logger.log("Memulai migrasi password...");
+  
+  let masterSS;
+  let sheetSekolah;
+  
+  try {
+    masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
+    sheetSekolah = masterSS.getSheetByName('Sheet_Sekolah');
+    if (!sheetSekolah) {
+      Logger.log("Sheet_Sekolah tidak ditemukan. Migrasi dibatalkan.");
+      return;
+    }
+    
+    const range = sheetSekolah.getDataRange();
+    const values = range.getValues();
+    let migratedCount = 0;
+    
+    // Mulai dari i = 1 untuk melewati header
+    for (let i = 1; i < values.length; i++) {
+      const plainPass = values[i][4]; // Kolom E
+      const salt = values[i][6];      // Kolom G
+      
+      // Jika 'salt' KOSONG dan 'plainPass' ADA ISINYA, maka itu akun lama
+      if (!salt && plainPass) {
+        const newSalt = generateSalt();
+        const newHash = hashPassword(plainPass, newSalt);
+        
+        // Update HashedPassword (Kolom E)
+        sheetSekolah.getRange(i + 1, 5).setValue(newHash);
+        // Update Salt (Kolom G)
+        sheetSekolah.getRange(i + 1, 7).setValue(newSalt);
+        
+        migratedCount++;
+        Logger.log(`Password untuk baris ${i+1} (Email: ${values[i][3]}) telah di-hash.`);
+      }
+    }
+    
+    if (migratedCount > 0) {
+      // Bersihkan cache agar data baru dibaca
+      clearMasterSheetCache();
+      Logger.log(`Migrasi Selesai. ${migratedCount} password telah di-hash dan diamankan. Cache dibersihkan.`);
+      SpreadsheetApp.flush();
+      Browser.msgBox(`Migrasi Selesai. ${migratedCount} password telah di-hash dan diamankan.`);
+    } else {
+      Logger.log("Migrasi Selesai. Tidak ada password plain text yang ditemukan untuk dimigrasi.");
+      Browser.msgBox("Migrasi Selesai. Tidak ada password lama yang ditemukan.");
+    }
+    
+  } catch (e) {
+    Logger.log("Gagal total saat migrasi: " + e.message);
+    Browser.msgBox("Migrasi Gagal: " + e.message);
   }
 }
