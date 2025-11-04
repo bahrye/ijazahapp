@@ -112,6 +112,16 @@
             <span>Input Nilai Rapor</span>
           </button>
         </div>
+
+        <hr class="dashboard-divider">
+
+        <h3 class="dashboard-section-header">Hasil Akhir</h3>
+        <div class="dashboard-menu-grid dashboard-grid-input">
+          <button class="dashboard-card" id="btn-buka-nilai-ijazah">
+            <i class="fas fa-file-invoice"></i>
+            <span>Nilai Ijazah</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -870,6 +880,58 @@
               <button type="submit" id="btn-simpan-semester"><i class="fas fa-save"></i>Simpan Perubahan</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <div class="container" id="halaman-nilai-ijazah" style="display: none;">
+      <div class="page">
+        <div class="page-top-nav">
+          <button type="button" id="btn-kembali-ke-dashboard-9"><i class="fas fa-arrow-circle-left"></i>Kembali ke Dasbor</button>
+        </div>
+        <div class="page-header">
+          <h2 id="judul-halaman-nilai-ijazah">Nilai Ijazah</h2> 
+        </div>
+        <p id="nilai-ijazah-message" class="message" style="display: none;"></p>
+        
+        <div class="filter-bar">
+          <div class="form-group">
+            <label for="ijazah-filter-kelas">Tampilkan Kelas</label>
+            <select id="ijazah-filter-kelas">
+              <option value="semua">-- Tampilkan Semua Kelas --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="tab-bar" id="ijazah-tab-bar">
+          <button class="tab-link active" data-tab="ujian">Nilai Ujian (Berbobot)</button>
+          <button class="tab-link" data-tab="rapor">Nilai Rapor (Berbobot)</button>
+          <button class="tab-link" data-tab="ijazah">Nilai Ijazah (Final)</button>
+        </div>
+
+        <div class="tab-content-wrapper">
+          
+          <div id="tab-ujian-content" class="tab-content active">
+            <p class="table-content-header">Nilai Ujian (Setelah Diberi Bobot)</p>
+            <div class="input-nilai-table-container" id="ijazah-ujian-table-container">
+              <p>Memuat data...</p>
+            </div>
+          </div>
+
+          <div id="tab-rapor-content" class="tab-content">
+            <p class="table-content-header">Nilai Rapor (Setelah Diberi Bobot)</p>
+            <div class="input-nilai-table-container" id="ijazah-rapor-table-container">
+              <p>Memuat data...</p>
+            </div>
+          </div>
+
+          <div id="tab-ijazah-content" class="tab-content">
+            <p class="table-content-header">Nilai Ijazah (Hasil Akhir)</p>
+            <div class="input-nilai-table-container" id="ijazah-final-table-container">
+              <p>Memuat data...</p>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
 
