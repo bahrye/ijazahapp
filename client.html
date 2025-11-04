@@ -1,4 +1,84 @@
 <script>
+  /**
+   * Manajer sederhana untuk melacak riwayat Undo/Redo
+   */
+  const undoManager = {
+    history: [],
+    historyIndex: -1,
+    
+    /**
+     * @param {Array<Object>} changes - Array objek {input, oldValue, newValue}
+     */
+    pushState: function(changes) {
+      if (!changes || changes.length === 0) return;
+      
+      // Hapus riwayat "redo" jika kita membuat perubahan baru
+      if (this.historyIndex < this.history.length - 1) {
+        this.history = this.history.slice(0, this.historyIndex + 1);
+      }
+      
+      this.history.push(changes);
+      this.historyIndex = this.history.length - 1;
+      
+      // Batasi riwayat agar tidak terlalu besar (opsional)
+      if (this.history.length > 50) {
+        this.history.shift();
+        this.historyIndex--;
+      }
+    },
+    
+    clearHistory: function() {
+      this.history = [];
+      this.historyIndex = -1;
+    },
+
+    undo: function() {
+      if (this.historyIndex < 0) return;
+      
+      const changes = this.history[this.historyIndex];
+      const affectedSiswaIds = new Set();
+      
+      for (let i = changes.length - 1; i >= 0; i--) {
+        const change = changes[i];
+        change.input.value = change.oldValue;
+        affectedSiswaIds.add(change.input.dataset.siswaId);
+      }
+      
+      this.historyIndex--;
+      this.triggerTotalUpdates(changes[0].input, affectedSiswaIds);
+    },
+    
+    redo: function() {
+      if (this.historyIndex >= this.history.length - 1) return;
+      
+      this.historyIndex++;
+      const changes = this.history[this.historyIndex];
+      const affectedSiswaIds = new Set();
+      
+      for (const change of changes) {
+        change.input.value = change.newValue;
+        affectedSiswaIds.add(change.input.dataset.siswaId);
+      }
+      
+      this.triggerTotalUpdates(changes[0].input, affectedSiswaIds);
+    },
+    
+    triggerTotalUpdates: function(anyInput, siswaIds) {
+      const page = anyInput.closest('.container');
+      
+      if (page.id === 'halaman-input-nilai-detail') {
+        const mapelCount = globalGridData.mapelList.length;
+        siswaIds.forEach(siswaId => updateRowTotals(siswaId, mapelCount));
+      } else if (page.id === 'halaman-input-rapor-detail') {
+        const tabPane = anyInput.closest('.tab-content');
+        const tipeNilai = (tabPane.id === 'tab-keterampilan-content') ? 'K' : 'P';
+        const data = (tipeNilai === 'P') ? globalRaporData.P : globalRaporData.K;
+        const mapelCount = data.mapelList.length;
+        siswaIds.forEach(siswaId => updateRowTotalsRapor(siswaId, mapelCount, tipeNilai));
+      }
+    }
+  };
+
   let jenjangBaseCache = '';
   let jenjangPilihanCache = '';
   const LAST_PAGE_KEY = 'lastVisitedPageId';
@@ -35,6 +115,114 @@
     dataRapor: {},
     dataIjazah: {}
   };
+
+  function handleKeyDown(e) {
+    // Ctrl+Z untuk Undo
+    if (e.ctrlKey && e.key === 'z') {
+      e.preventDefault();
+      undoManager.undo();
+    }
+    // Ctrl+Y atau Ctrl+Shift+Z untuk Redo
+    if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+      e.preventDefault();
+      undoManager.redo();
+    }
+  }
+
+  function handlePasteEvent(e) {
+    const anchorInput = e.target;
+    
+    // Pastikan paste terjadi di input nilai
+    if (!anchorInput || !anchorInput.classList.contains('input-nilai')) {
+      return;
+    }
+    
+    // Hentikan perilaku paste default
+    e.preventDefault();
+    
+    // Dapatkan data dari clipboard
+    const pasteData = (e.clipboardData || window.clipboardData).getData('text');
+    if (!pasteData) return;
+
+    // Parse data (Excel/Sheets memisahkan kolom dengan tab, baris dengan newline)
+    const dataRows = pasteData.replace(/\r/g, '').split('\n').map(row => row.split('\t'));
+    
+    const table = anchorInput.closest('.input-nilai-table');
+    if (!table) return;
+
+    // Dapatkan grid dari input yang terlihat di DOM
+    const visibleRows = Array.from(table.querySelectorAll('tbody tr'));
+    const visibleInputsGrid = visibleRows.map(row => Array.from(row.querySelectorAll('.input-nilai')));
+    
+    // Temukan posisi (indeks baris & kolom) dari sel tempat paste
+    let anchorRowIndex = -1;
+    let anchorColIndex = -1;
+    
+    for (let i = 0; i < visibleInputsGrid.length; i++) {
+      const j = visibleInputsGrid[i].indexOf(anchorInput);
+      if (j > -1) {
+        anchorRowIndex = i;
+        anchorColIndex = j;
+        break;
+      }
+    }
+    
+    if (anchorRowIndex === -1) return; // Tidak ditemukan (seharusnya tidak terjadi)
+    
+    const changes = [];
+    const affectedSiswaIds = new Set();
+    
+    // Loop melalui data yang di-paste dan terapkan ke grid
+    for (let i = 0; i < dataRows.length; i++) {
+      const targetRowIndex = anchorRowIndex + i;
+      
+      // Jika data paste lebih panjang dari tabel, hentikan
+      if (!visibleInputsGrid[targetRowIndex]) break; 
+      
+      const dataCells = dataRows[i];
+      
+      for (let j = 0; j < dataCells.length; j++) {
+        const targetColIndex = anchorColIndex + j;
+        
+        // Jika data paste lebih lebar dari tabel, hentikan
+        const targetInput = visibleInputsGrid[targetRowIndex][targetColIndex];
+        if (!targetInput) break; 
+        
+        let newValue = dataCells[j].trim().replace(/[^\d]/g, ''); // Bersihkan nilai
+        
+        if (newValue !== '') {
+          let numValue = parseInt(newValue, 10);
+          if (numValue > 100) numValue = 100; // Batasi maks 100
+          if (numValue < 0) numValue = 0;   // Batasi min 0
+          newValue = numValue.toString();
+        }
+        
+        const oldValue = targetInput.value;
+        
+        if (oldValue !== newValue) {
+          targetInput.value = newValue;
+          changes.push({ input: targetInput, oldValue, newValue });
+          affectedSiswaIds.add(targetInput.dataset.siswaId);
+        }
+      }
+    }
+    
+    // Simpan perubahan ini ke undo stack
+    undoManager.pushState(changes);
+    
+    // Perbarui total baris untuk semua siswa yang terpengaruh
+    const page = anchorInput.closest('.container');
+    if (page.id === 'halaman-input-nilai-detail') {
+      const mapelCount = globalGridData.mapelList.length;
+      affectedSiswaIds.forEach(siswaId => updateRowTotals(siswaId, mapelCount));
+    } else if (page.id === 'halaman-input-rapor-detail') {
+      const tabPane = anchorInput.closest('.tab-content');
+      const tipeNilai = (tabPane.id === 'tab-keterampilan-content') ? 'K' : 'P';
+      const data = (tipeNilai === 'P') ? globalRaporData.P : globalRaporData.K;
+      const mapelCount = data.mapelList.length;
+      affectedSiswaIds.forEach(siswaId => updateRowTotalsRapor(siswaId, mapelCount, tipeNilai));
+    }
+  }
 
   /**
    * Menampilkan status loading di dalam tombol.
@@ -1261,6 +1449,13 @@
       }
     });
 
+    document.addEventListener('keydown', handleKeyDown);
+    
+    document.getElementById('halaman-input-nilai-detail')
+      .addEventListener('paste', handlePasteEvent);
+      
+    document.getElementById('halaman-input-rapor-detail')
+      .addEventListener('paste', handlePasteEvent);
 
     window.addEventListener('mousemove', resetInactivityTimer);
     window.addEventListener('mousedown', resetInactivityTimer);
@@ -1290,6 +1485,9 @@
 
   function activateRaporTab(tabName) {
     const page = document.getElementById('halaman-input-rapor-detail');
+    
+    const tabClasses = ['tab-pengetahuan-active', 'tab-keterampilan-active', 'tab-rekap-active'];
+    let newActiveClass = '';
 
     page.querySelectorAll('.tab-link').forEach(link => {
       link.classList.remove('active');
@@ -1301,13 +1499,23 @@
 
     page.querySelector(`.tab-link[data-tab="${tabName}"]`).classList.add('active');
     page.querySelector(`#tab-${tabName}-content`).classList.add('active');
+    
+    if (tabName === 'pengetahuan') {
+      newActiveClass = 'tab-pengetahuan-active';
+    } else if (tabName === 'keterampilan') {
+      newActiveClass = 'tab-keterampilan-active';
+    } else if (tabName === 'rekap') {
+      newActiveClass = 'tab-rekap-active';
+    }
+    
+    page.classList.remove(...tabClasses);
+    if (newActiveClass) {
+      page.classList.add(newActiveClass);
+    }
 
-    // --- PERUBAHAN DI SINI ---
-    // Hanya scroll jika tab yang diklik adalah tab input (bukan rekap)
     if (tabName === 'pengetahuan' || tabName === 'keterampilan') {
       autoScrollToBottom();
     }
-    // --- AKHIR PERUBAHAN ---
   }
 
   function onTokenCheck(response) {
@@ -3210,6 +3418,8 @@
     setTableInputLock('halaman-input-nilai-detail', true, 'Menyimpan nilai ujian...');
     // --- AKHIR PERUBAHAN ---
 
+    undoManager.clearHistory();
+
     hideMessage('input-nilai-message');
     
     const tipeUjian = document.getElementById('judul-halaman-input-nilai').dataset.tipeUjian;
@@ -3712,6 +3922,8 @@
     // Pesan akan diperbarui nanti di onNilaiRaporSaved
     setTableInputLock('halaman-input-rapor-detail', true, `Menyimpan nilai ${tipeText}...`); 
     // --- AKHIR PERUBAHAN ---
+
+    undoManager.clearHistory();
 
     hideMessage('input-rapor-message');
     
@@ -4291,6 +4503,9 @@
   function activateIjazahTab(tabName) {
     const page = document.getElementById('halaman-nilai-ijazah');
 
+    const tabClasses = ['tab-ujian-active', 'tab-rapor-active', 'tab-ijazah-active'];
+    let newActiveClass = '';
+
     page.querySelectorAll('.tab-link').forEach(link => {
       link.classList.remove('active');
     });
@@ -4301,6 +4516,19 @@
 
     page.querySelector(`.tab-link[data-tab="${tabName}"]`).classList.add('active');
     page.querySelector(`#tab-${tabName}-content`).classList.add('active');
+    
+    if (tabName === 'ujian') {
+      newActiveClass = 'tab-ujian-active';
+    } else if (tabName === 'rapor') {
+      newActiveClass = 'tab-rapor-active';
+    } else if (tabName === 'ijazah') {
+      newActiveClass = 'tab-ijazah-active';
+    }
+    
+    page.classList.remove(...tabClasses);
+    if (newActiveClass) {
+      page.classList.add(newActiveClass);
+    }
   }
 
   function renderNilaiIjazahTabel(tipeTabel) {
