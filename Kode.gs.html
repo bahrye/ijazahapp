@@ -2438,7 +2438,9 @@ function getRekapitulasiNilaiRaporData() {
     
     const mapelListFull = getMapelDataInternal(ss); 
     
-    const mapelList = mapelListFull.map(m => ({ id: m.id, nama: m.nama })); 
+    const filteredMapelList = mapelListFull.filter(m => m.isUS === true || m.isUP === true);
+    
+    const mapelList = filteredMapelList.map(m => ({ id: m.id, nama: m.nama })); 
     
     const sheetNilai = getNilaiRaporSheet(ss);
     const dataNilai = sheetNilai.getDataRange().getValues();
@@ -2478,7 +2480,7 @@ function getRekapitulasiNilaiRaporData() {
     
     const nilaiRekapData = {};
     siswaList.forEach(siswa => {
-      mapelListFull.forEach(mapel => { 
+      filteredMapelList.forEach(mapel => { 
         const key = `${siswa.id}_${mapel.id}`;
         const nilaiArray = nilaiMap.get(key);
         
@@ -2690,7 +2692,10 @@ function getNilaiRaporGridData(semesterId) {
     }));
     
     const mapelListFull = getMapelDataInternal(ss); 
-    const mapelList = mapelListFull.map(m => ({ id: m.id, nama: m.nama })); 
+    
+    const filteredMapelList = mapelListFull.filter(m => m.isUS === true || m.isUP === true);
+
+    const mapelList = filteredMapelList.map(m => ({ id: m.id, nama: m.nama })); 
     
     const sheetNilai = getNilaiRaporSheet(ss);
     const dataNilai = sheetNilai.getDataRange().getValues();
