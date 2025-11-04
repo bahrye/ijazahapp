@@ -28,6 +28,14 @@
 
   let originalButtonContent = new Map();
 
+  let globalIjazahData = {
+    siswaList: [],
+    mapelList: [],
+    dataUjian: {},
+    dataRapor: {},
+    dataIjazah: {}
+  };
+
   /**
    * Menampilkan status loading di dalam tombol.
    * @param {HTMLElement} button Tombol yang akan diubah.
@@ -313,7 +321,8 @@
       'halaman-data-sekolah', 'halaman-bobot', 'halaman-kelas', 'halaman-siswa',
       'halaman-input-ujian', 'halaman-input-nilai-detail',
       'halaman-rekap-nilai', 'halaman-semester',
-      'halaman-input-rapor', 'halaman-input-rapor-detail', 'halaman-rekap-rapor'
+      'halaman-input-rapor', 'halaman-input-rapor-detail', 'halaman-rekap-rapor',
+      'halaman-nilai-ijazah'
     ];
     const authSubPages = ['halaman-login', 'halaman-registrasi'];
 
@@ -335,6 +344,7 @@
     hideMessage('semester-message');
     hideMessage('input-rapor-message');
     hideMessage('rekap-rapor-message');
+    hideMessage('nilai-ijazah-message');
 
     const targetElement = document.getElementById(idHalaman);
     if (targetElement) {
@@ -523,6 +533,9 @@
         case 'halaman-rekap-rapor':
             bukaHalamanInputRapor();
             break;
+        case 'halaman-nilai-ijazah':
+            bukaHalamanNilaiIjazah();
+            break;
         default:
             console.warn("ID halaman tersimpan tidak valid:", pageId, ". Menampilkan dashboard.");
             tampilHalaman('halaman-utama');
@@ -542,12 +555,8 @@
     document.getElementById('btn-login').addEventListener('click', jalankanLogin);
 
     document.getElementById('btn-registrasi').addEventListener('click', () => {
-      // --- TAMBAHKAN INI ---
       const btnReg = document.getElementById('btn-registrasi');
       
-      // --- GANTI BARIS INI ---
-      // setLoading(true, 'Mendaftar...');
-      // --- MENJADI INI ---
       setButtonLoading(btnReg, 'Mendaftar...');
 
       hideMessage('reg-message');
@@ -558,9 +567,6 @@
       const password = document.getElementById('reg-password').value;
 
       if (!namaSekolah || !jenjang || !email || !password) {
-        // --- GANTI BARIS INI ---
-        // setLoading(false);
-        // --- MENJADI INI ---
         resetButtonLoading(btnReg);
         
         showMessage('reg-message', "Semua field wajib diisi.", true);
@@ -591,13 +597,11 @@
       tampilHalaman('halaman-login');
     });
     
-    // (Ini listener submit form, BIARKAN SEPERTI INI)
     document.getElementById('login-form').addEventListener('submit', (e) => {
       e.preventDefault();
       jalankanLogin(); 
     });
 
-    // (Ini listener untuk 'Enter' di kotak password, BIARKAN SEPERTI INI)
     document.getElementById('login-password').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.keyCode === 13) {
         e.preventDefault(); 
@@ -605,27 +609,20 @@
       }
     });
 
-    // --- TAMBAHKAN BLOK BARU DI BAWAH INI ---
-    // Pemicu 'Enter' cerdas dari kotak email
     document.getElementById('login-email').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.keyCode === 13) {
         
         const passInput = document.getElementById('login-password');
         
-        // Periksa apakah kotak password kosong
         if (passInput.value === "") {
-          // Jika password kosong, hentikan 'Enter' agar tidak submit
           e.preventDefault();
-          // Pindahkan fokus ke kotak password
           passInput.focus();
         } else {
-          // Jika password sudah terisi, jalankan login
           e.preventDefault();
           jalankanLogin();
         }
       }
     });
-    // --- AKHIR BLOK BARU ---
 
     document.getElementById('reg-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -793,8 +790,6 @@
     });
     document.getElementById('data-jenjang-pilihan').addEventListener('change', updateTampilanNSM);
 
-    // --- TAMBAHKAN BLOK BARU INI ---
-    // Hapus status error pada input data sekolah saat pengguna mengetik
     const dataSekolahFieldsToWatch = [
       'data-jenjang-pilihan', 'data-npsn', 'data-alamat', 'data-kepsek', 'data-nsm'
     ];
@@ -802,17 +797,13 @@
     dataSekolahFieldsToWatch.forEach(id => {
       const el = document.getElementById(id);
       if (el) {
-        // Gunakan 'change' untuk <select> dan 'input' untuk lainnya
         const eventType = (el.tagName.toLowerCase() === 'select') ? 'change' : 'input';
         el.addEventListener(eventType, () => {
           el.classList.remove('input-error');
         });
       }
     });
-    // --- AKHIR BLOK BARU ---
 
-    // --- TAMBAHKAN BLOK BARU INI ---
-    // Hapus status error pada input modal siswa saat pengguna mengetik/mengubah
     const modalSiswaFieldsToWatch = [
       'modal-siswa-nama', 
       'modal-siswa-nisn', 
@@ -823,14 +814,12 @@
     modalSiswaFieldsToWatch.forEach(id => {
       const el = document.getElementById(id);
       if (el) {
-        // Gunakan 'change' untuk <select> dan 'input' untuk lainnya
         const eventType = (el.tagName.toLowerCase() === 'select') ? 'change' : 'input';
         el.addEventListener(eventType, () => {
           el.classList.remove('input-error');
         });
       }
     });
-    // --- AKHIR BLOK BARU ---
 
     document.getElementById('form-bobot').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1092,14 +1081,12 @@
 
     window.addEventListener('scroll', hideDynamicTooltip, true);
 
-    // --- TAMBAHKAN EVENT LISTENER UNTUK TAB ---
     document.querySelector('#halaman-input-rapor-detail .tab-bar').addEventListener('click', (e) => {
       if (e.target.classList.contains('tab-link')) {
         const tabName = e.target.dataset.tab;
         activateRaporTab(tabName);
       }
     });
-    // --- AKHIR PENAMBAHAN ---
 
     document.getElementById('btn-buka-upload-rapor').addEventListener('click', bukaModalUploadNilaiRapor);
     document.getElementById('btn-tutup-modal-upload-nilai-rapor').addEventListener('click', tutupModalUploadNilaiRapor);
@@ -1194,7 +1181,6 @@
           }
         }
         
-        // --- LOGIKA BARU UNTUK TOTAL ROW ---
         const tableContainer = e.target.closest('.input-nilai-table-container');
         if (!tableContainer) return;
 
@@ -1204,7 +1190,6 @@
         const siswaId = e.target.dataset.siswaId;
 
         updateRowTotalsRapor(siswaId, mapelCount, tipeNilai);
-        // --- AKHIR LOGIKA BARU ---
       }
     });
 
@@ -1238,7 +1223,6 @@
       }
     });
 
-    // --- GANTI LISTENER FILTER KELAS ---
     document.getElementById('input-rapor-filter-kelas').addEventListener('change', () => {
       renderNilaiRaporGridTable('P');
       renderNilaiRaporGridTable('K');
@@ -1246,13 +1230,43 @@
     });
     document.getElementById('rekap-rapor-filter-kelas').addEventListener('change', renderRekapRaporTable);
 
-    // --- TAMBAHAN BARU: Event Listener untuk Inactivity ---
+    document.getElementById('btn-buka-nilai-ijazah').addEventListener('click', bukaHalamanNilaiIjazah);
+    document.getElementById('btn-kembali-ke-dashboard-9').addEventListener('click', () => {
+      tampilHalaman('halaman-utama');
+    });
+    document.getElementById('ijazah-tab-bar').addEventListener('click', (e) => {
+      if (e.target.classList.contains('tab-link')) {
+        const tabName = e.target.dataset.tab;
+        activateIjazahTab(tabName);
+      }
+    });
+    document.getElementById('ijazah-filter-kelas').addEventListener('change', () => {
+      renderNilaiIjazahTabel('ujian');
+      renderNilaiIjazahTabel('rapor');
+      renderNilaiIjazahTabel('ijazah');
+    });
+
+    document.getElementById('halaman-nilai-ijazah').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const targetNama = e.target.closest('.clickable-nama-siswa');
+      if (targetNama) {
+        const nisn = targetNama.dataset.nisn;
+        showDynamicTooltip(targetNama, `NISN: ${nisn}`);
+        return; 
+      }
+      const targetMapel = e.target.closest('.clickable-mapel-header');
+      if (targetMapel) {
+        const namaMapel = targetMapel.dataset.mapelNama;
+        showDynamicTooltip(targetMapel, namaMapel);
+      }
+    });
+
+
     window.addEventListener('mousemove', resetInactivityTimer);
     window.addEventListener('mousedown', resetInactivityTimer);
     window.addEventListener('keypress', resetInactivityTimer);
     window.addEventListener('touchstart', resetInactivityTimer);
     window.addEventListener('scroll', resetInactivityTimer);
-    // --- AKHIR TAMBAHAN BARU ---
 
     const token = localStorage.getItem('sessionToken');
     const lastPageId = localStorage.getItem(LAST_PAGE_KEY);
@@ -4216,6 +4230,181 @@
         }
       }
     }
+  }
+
+  function bukaHalamanNilaiIjazah() {
+    tampilHalaman('halaman-nilai-ijazah');
+    hideMessage('nilai-ijazah-message');
+    
+    document.getElementById('ijazah-ujian-table-container').innerHTML = '<p>Memuat data...</p>';
+    document.getElementById('ijazah-rapor-table-container').innerHTML = '<p>Memuat data...</p>';
+    document.getElementById('ijazah-final-table-container').innerHTML = '<p>Memuat data...</p>';
+    
+    document.getElementById('ijazah-filter-kelas').innerHTML = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
+    globalIjazahData = { siswaList: [], mapelList: [], dataUjian: {}, dataRapor: {}, dataIjazah: {} };
+
+    setLoading(true, 'Menghitung nilai ijazah...', false, false);
+    google.script.run
+      .withSuccessHandler(onNilaiIjazahLoaded)
+      .withFailureHandler(onGagal) 
+      .getNilaiIjazahData();
+  }
+
+  function onNilaiIjazahLoaded(response) {
+    setLoading(false);
+    
+    if (response.status !== 'sukses') {
+      document.getElementById('ijazah-ujian-table-container').innerHTML = `<p class="message error" style="display:block;">Gagal memuat data: ${response.message}</p>`;
+      document.getElementById('ijazah-rapor-table-container').innerHTML = '';
+      document.getElementById('ijazah-final-table-container').innerHTML = '';
+      globalIjazahData = { siswaList: [], mapelList: [], dataUjian: {}, dataRapor: {}, dataIjazah: {} };
+      return;
+    }
+
+    globalIjazahData = response.data;
+    
+    populateNilaiIjazahFilter(globalIjazahData.siswaList);
+
+    renderNilaiIjazahTabel('ujian');
+    renderNilaiIjazahTabel('rapor');
+    renderNilaiIjazahTabel('ijazah');
+    
+    activateIjazahTab('ujian');
+  }
+
+  function populateNilaiIjazahFilter(siswaList) {
+    const selectKelas = document.getElementById('ijazah-filter-kelas');
+    const selectedValue = selectKelas.value;
+  
+    const kelasSet = new Set(siswaList.map(siswa => siswa.kelas));
+    const kelasList = Array.from(kelasSet).sort();
+  
+    let optionsHtml = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
+    kelasList.forEach(kelas => {
+      optionsHtml += `<option value="${kelas}">${kelas}</option>`;
+    });
+  
+    selectKelas.innerHTML = optionsHtml;
+    selectKelas.value = selectedValue || 'semua';
+  }
+
+  function activateIjazahTab(tabName) {
+    const page = document.getElementById('halaman-nilai-ijazah');
+
+    page.querySelectorAll('.tab-link').forEach(link => {
+      link.classList.remove('active');
+    });
+
+    page.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+
+    page.querySelector(`.tab-link[data-tab="${tabName}"]`).classList.add('active');
+    page.querySelector(`#tab-${tabName}-content`).classList.add('active');
+  }
+
+  function renderNilaiIjazahTabel(tipeTabel) {
+    let container;
+    let nilaiDataMap;
+    let showStatusColumn = false; 
+
+    if (tipeTabel === 'ujian') {
+      container = document.getElementById('ijazah-ujian-table-container');
+      nilaiDataMap = globalIjazahData.dataUjian;
+    } else if (tipeTabel === 'rapor') {
+      container = document.getElementById('ijazah-rapor-table-container');
+      nilaiDataMap = globalIjazahData.dataRapor;
+    } else {
+      container = document.getElementById('ijazah-final-table-container');
+      nilaiDataMap = globalIjazahData.dataIjazah;
+      showStatusColumn = true; 
+    }
+    
+    const { siswaList, mapelList, kkm } = globalIjazahData; 
+    const kkmValue = kkm || 76; 
+    
+    const selectedKelas = document.getElementById('ijazah-filter-kelas').value;
+    
+    if (!siswaList || siswaList.length === 0) {
+      container.innerHTML = '<p style="text-align: center; padding: 20px;">Belum ada data siswa.</p>';
+      return;
+    }
+    if (!mapelList || mapelList.length === 0) {
+      container.innerHTML = `<p style="text-align: center; padding: 20px;">Belum ada mapel yang diatur untuk Ijazah.</p>`;
+      return;
+    }
+
+    const filteredSiswaList = (selectedKelas === 'semua')
+      ? siswaList
+      : siswaList.filter(siswa => siswa.kelas === selectedKelas);
+
+    if (filteredSiswaList.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 20px;">Tidak ada siswa di kelas yang dipilih.</p>';
+        return;
+    }
+
+    let html = '<table class="input-nilai-table">';
+    html += '<thead><tr><th>Nama Siswa</th>';
+    mapelList.forEach(mapel => {
+      html += `<th class="col-mapel clickable-mapel-header" data-mapel-nama="${mapel.nama}" title="Klik untuk lihat nama mapel">${mapel.id}</th>`;
+    });
+    html += '<th class="th-total th-total-jumlah">Jumlah</th>';
+    html += '<th class="th-total th-total-rata">Rata-Rata</th>';
+    if (showStatusColumn) { 
+      html += '<th class="th-total th-total-bulat">Status</th>'; 
+    }
+    html += '</tr></thead>';
+    
+    html += '<tbody>';
+    filteredSiswaList.forEach(siswa => {
+      html += '<tr>';
+      const namaProper = toProperCase(siswa.nama);
+      const namaFormatted = formatNamaSiswa(namaProper);
+      html += `<td><span class="clickable-nama-siswa" data-nisn="${siswa.nisn}" data-nama-lengkap="${siswa.nama}" title="Klik untuk lihat NISN">${namaFormatted}</span></td>`; 
+      
+      let sum = 0;
+      let count = 0;
+      
+      mapelList.forEach(mapel => {
+        const key = `${siswa.id}_${mapel.id}`;
+        const nilai = nilaiDataMap[key];
+        
+        let nilaiTampil = '-';
+        if (nilai !== null && nilai !== undefined) {
+            const nilaiBulat = Math.round(nilai);
+            nilaiTampil = nilaiBulat;
+            sum += nilaiBulat;
+            count++;
+        }
+        
+        html += `<td class="col-mapel" style="text-align: center; font-weight: 500;">${nilaiTampil}</td>`;
+      });
+      
+      const average = (count > 0) ? (sum / count) : 0;
+      const sumTampil = parseFloat(sum.toFixed(2));
+      
+      html += `<td class="col-total col-total-jumlah">${sumTampil}</td>`;
+      html += `<td class="col-total col-total-rata">${average.toFixed(2)}</td>`;
+      
+      if (showStatusColumn) { 
+        let statusText = '';
+        let statusClass = '';
+        
+        if (average >= kkmValue) {
+          statusText = 'LULUS';
+          statusClass = 'status-lulus';
+        } else {
+          statusText = 'TIDAK LULUS';
+          statusClass = 'status-tidak-lulus';
+        }
+        html += `<td class="col-total col-total-bulat ${statusClass}">${statusText}</td>`; 
+      }
+      
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+
+    container.innerHTML = html;
   }
 
 </script>
