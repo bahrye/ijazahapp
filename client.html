@@ -53,7 +53,7 @@
     
     toast.isDismissing = false; 
 
-    container.appendChild(toast);
+    container.prepend(toast);
     
     requestAnimationFrame(() => {
       toast.classList.add('show');
