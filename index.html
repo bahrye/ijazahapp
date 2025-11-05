@@ -541,14 +541,21 @@
             </select>
           </div>
           <div class="form-group filter-bar-action">
-            <button id="btn-simpan-urutan-siswa" class="btn-aksi" disabled>
-              <i class="fas fa-save"></i>Simpan Urutan
-            </button>
-          </div>
+            </div>
         </div>
 
         <div class="siswa-table-container" id="siswa-table-container">
           <p>Memuat data siswa...</p>
+        </div>
+        
+        <div class="floating-action-container" id="siswa-floating-actions">
+          <button id="btn-simpan-urutan-siswa" class="btn-aksi" disabled>
+            <i class="fas fa-save"></i>Simpan Urutan
+          </button>
+          
+          <button id="btn-batal-siswa-actions" class="btn-aksi btn-aksi-batal" title="Batalkan Perubahan">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -570,17 +577,26 @@
 
         <div class="table-toolbar">
           <p>Kelola mata pelajaran yang akan digunakan di sekolah Anda.</p>
-
-          <button id="btn-simpan-tipe-ujian" class="btn-aksi" disabled>
-            <i class="fas fa-save"></i>Simpan Tipe Ujian
-          </button>
-        </div>
+          </div>
 
         <div class="mapel-table-container" id="mapel-table-container">
           <p>Memuat data mapel...</p>
         </div>
         
         <p id="mapel-message" class="message" style="display: none; margin-top: 15px;"></p>
+        
+        <div class="floating-action-container" id="mapel-floating-actions">
+          <button id="btn-simpan-urutan-mapel" class="btn-aksi" disabled>
+            <i class="fas fa-save"></i>Simpan Urutan
+          </button>
+          <button id="btn-simpan-tipe-ujian" class="btn-aksi" disabled>
+            <i class="fas fa-tasks"></i>Simpan Tipe Ujian
+          </button>
+          
+          <button id="btn-batal-mapel-actions" class="btn-aksi btn-aksi-batal" title="Batalkan Perubahan">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
         
       </div>
     </div>
@@ -911,14 +927,20 @@
         <div class="tab-content-wrapper">
           
           <div id="tab-ujian-content" class="tab-content active">
-            <p class="table-content-header">Nilai Ujian (Setelah Diberi Bobot)</p>
+            <div class="table-header-toolbar">
+              <p class="table-content-header">Nilai Ujian (Setelah Diberi Bobot)</p>
+              <button id="btn-toggle-ujian-view" class="btn-aksi btn-aksi-toggle">Lihat Nilai Asli</button>
+            </div>
             <div class="input-nilai-table-container" id="ijazah-ujian-table-container">
               <p>Memuat data...</p>
             </div>
           </div>
 
           <div id="tab-rapor-content" class="tab-content">
-            <p class="table-content-header">Nilai Rapor (Setelah Diberi Bobot)</p>
+            <div class="table-header-toolbar">
+              <p class="table-content-header">Nilai Rapor (Setelah Diberi Bobot)</p>
+              <button id="btn-toggle-rapor-view" class="btn-aksi btn-aksi-toggle">Lihat Nilai Asli</button>
+            </div>
             <div class="input-nilai-table-container" id="ijazah-rapor-table-container">
               <p>Memuat data...</p>
             </div>
