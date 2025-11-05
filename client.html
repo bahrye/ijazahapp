@@ -121,6 +121,10 @@
   let showWeightedUjian = true;
   let showWeightedRapor = true;
 
+  // --- TAMBAHKAN INI ---
+  let isFormDirty = false;
+  // --- AKHIR TAMBAHAN ---
+
   function handleKeyDown(e) {
     // Ctrl+Z untuk Undo
     if (e.ctrlKey && e.key === 'z') {
@@ -770,6 +774,27 @@
     });
 
     document.getElementById('btn-logout').addEventListener('click', () => {
+      
+      // --- TAMBAHKAN BLOK INI ---
+      if (isFormDirty) {
+        const callback = function() { 
+          isFormDirty = false; // Reset flag saat dikonfirmasi
+          setLoading(true, 'Logout...');
+          google.script.run
+            .withSuccessHandler(onLogout)
+            .withFailureHandler(onGagal)
+            .prosesLogout();
+        };
+        showConfirmationModal(
+          "Perubahan Belum Disimpan", 
+          "Anda memiliki <strong>perubahan nilai yang belum disimpan</strong>. Jika Anda logout sekarang, perubahan tersebut akan hilang.<br><br>Yakin ingin tetap logout?",
+          callback, 
+          'danger' 
+        );
+        return; // Hentikan logout, tunggu konfirmasi
+      }
+      // --- AKHIR BLOK TAMBAHAN ---
+
       setLoading(true, 'Logout...');
       google.script.run
         .withSuccessHandler(onLogout)
@@ -869,10 +894,10 @@
       tampilHalaman('halaman-utama');
     });
     document.getElementById('btn-kembali-ke-input-ujian').addEventListener('click', () => {
-      bukaHalamanInputUjian();
+      handleNavigationConfirm(bukaHalamanInputUjian);
     });
     document.getElementById('btn-kembali-ke-input-ujian-2').addEventListener('click', () => {
-      bukaHalamanInputUjian();
+      handleNavigationConfirm(bukaHalamanInputUjian);
     });
     document.getElementById('btn-buka-upload-nilai').addEventListener('click', bukaModalUploadNilai);
 
@@ -901,6 +926,7 @@
 
     document.getElementById('halaman-input-nilai-detail').addEventListener('input', (e) => {
       if (e.target.classList.contains('input-nilai')) {
+        isFormDirty = true; // <-- TAMBAHKAN INI
         
         let input = e.target;
         let value = input.value;
@@ -1039,6 +1065,8 @@
         renderKelasList(list);
       }
     });
+
+    document.getElementById('btn-recalculate-ijazah').addEventListener('click', jalankanRekalkulasiIjazah);
 
     document.getElementById('btn-import-siswa').addEventListener('click', bukaModalImportSiswa);
     document.getElementById('btn-tambah-siswa-baru').addEventListener('click', () => { showModalSiswa('add', {}); });
@@ -1388,10 +1416,10 @@
       bukaHalamanRekapRapor();
     });
     document.getElementById('btn-kembali-ke-input-rapor').addEventListener('click', () => {
-      bukaHalamanInputRapor();
+      handleNavigationConfirm(bukaHalamanInputRapor);
     });
     document.getElementById('btn-kembali-ke-input-rapor-2').addEventListener('click', () => {
-      bukaHalamanInputRapor();
+      handleNavigationConfirm(bukaHalamanInputRapor);
     });
 
     document.getElementById('btn-simpan-input-rapor-p').addEventListener('click', () => simpanInputNilaiRapor('P'));
@@ -1402,7 +1430,8 @@
 
     document.getElementById('halaman-input-rapor-detail').addEventListener('input', (e) => {
       if (e.target.classList.contains('input-nilai')) {
-        
+        isFormDirty = true; // <-- TAMBAHKAN INI
+
         let input = e.target;
         let value = input.value;
         let cleanedValue = value.replace(/[^\d]/g, ''); 
@@ -1599,10 +1628,9 @@
       jenjangBaseCache = response.jenjang;
       jenjangPilihanCache = response.jenjangPilihan;
       
-      // --- BARU ---
-      // Mulai timer setelah token divalidasi
       resetInactivityTimer();
-      // --- AKHIR BARU ---
+      
+      updateRecalculateButtonState(); // <-- TAMBAHKAN INI
 
     } else {
       localStorage.removeItem('sessionToken');
@@ -1991,6 +2019,7 @@
       setLoading(false);
 
       if (response.status === "sukses") {
+        setIjazahDirty(true); // <-- TAMBAHKAN INI
         if (response.message) {
           showInfoModal("Sukses", response.message, false, bukaHalamanMapel);
         } else {
@@ -2005,6 +2034,7 @@
       setLoading(false);
 
       if (response.status === "sukses") {
+        setIjazahDirty(true); // <-- TAMBAHKAN INI
         tutupModalMapel();
         setMapelOrderDirty(false); 
         bukaHalamanMapel();
@@ -2048,6 +2078,7 @@
   function onMapelTipeUjianSaved(response) {
     setLoading(false);
     if (response.status === 'sukses') {
+      setIjazahDirty(true); // <-- TAMBAHKAN INI
       globalMapelList.forEach(m => {
         const cb_us = document.querySelector(`.mapel-tipe-cek[data-id="${m.id}"][data-tipe="us"]`);
         const cb_up = document.querySelector(`.mapel-tipe-cek[data-id="${m.id}"][data-tipe="up"]`);
@@ -2310,6 +2341,7 @@
   function onBobotSaved(response) {
       setLoading(false);
       if (response.status === 'sukses') {
+        setIjazahDirty(true); // <-- TAMBAHKAN INI
         showMessage('bobot-message', 'Data bobot berhasil disimpan!', false);
       } else {
         showMessage('bobot-message', response.message, true);
@@ -2733,6 +2765,7 @@ function populateSiswaFilters() {
       setLoading(false);
 
       if (response.status === "sukses") {
+        setIjazahDirty(true); // <-- TAMBAHKAN INI
         tutupModalSiswa();
         bukaHalamanSiswa();
       } else {
@@ -2773,6 +2806,7 @@ function populateSiswaFilters() {
   function onSiswaTableRefreshed(response) {
       setLoading(false);
       if (response.status === "sukses") {
+        setIjazahDirty(true); // <-- TAMBAHKAN INI
         showInfoModal("Sukses", response.message, false, bukaHalamanSiswa);
       } else {
         showInfoModal("Error", response.message, true, null);
@@ -2890,6 +2924,7 @@ function populateSiswaFilters() {
     }
 
     if (response.berhasilDiUpload > 0) {
+      setIjazahDirty(true); // <-- TAMBAHKAN INI
       siswaTelahDiImport = true;
     }
 
@@ -3066,6 +3101,7 @@ function populateSiswaFilters() {
     }
 
     if (response.berhasilDiUpload > 0) {
+      setIjazahDirty(true); // <-- TAMBAHKAN INI
       nilaiTelahDiUpload = true;
     }
 
@@ -3284,6 +3320,7 @@ function populateSiswaFilters() {
     }
 
     if (response.berhasilDiUpload > 0) {
+      setIjazahDirty(true); // <-- TAMBAHKAN INI
       nilaiRaporTelahDiUpload = true;
     }
 
@@ -3335,6 +3372,7 @@ function populateSiswaFilters() {
   }
 
   function bukaHalamanInputNilaiDetail(tipeUjian) {
+    isFormDirty = false; // <-- TAMBAHKAN INI
     tampilHalaman('halaman-input-nilai-detail');
     hideMessage('input-nilai-message');
     
@@ -3597,6 +3635,8 @@ function populateSiswaFilters() {
     
     if (response.status === 'sukses') {
       // Hentikan loading, BUKA KUNCI
+      isFormDirty = false; // <-- TAMBAHKAN INI
+      setIjazahDirty(true); // <-- TAMBAHKAN INI
       setTableInputLock('halaman-input-nilai-detail', false); 
       
       showMessage('input-nilai-message', response.message, false);
@@ -3805,6 +3845,8 @@ function populateSiswaFilters() {
       siswaIdsToUpdate.add(input.dataset.siswaId);
     });
 
+    isFormDirty = true; // <-- TAMBAHKAN INI
+
     if (mapelCount > 0) {
       siswaIdsToUpdate.forEach(siswaId => {
         updateRowTotals(siswaId, mapelCount);
@@ -3856,6 +3898,7 @@ function populateSiswaFilters() {
   }
 
   function bukaHalamanInputRaporDetail(semesterId) {
+    isFormDirty = false; // <-- TAMBAHKAN INI
     tampilHalaman('halaman-input-rapor-detail');
     hideMessage('input-rapor-message');
     
@@ -4127,6 +4170,8 @@ function populateSiswaFilters() {
 
     if (response.status === 'sukses') {
       // Perbarui SEMUA data lokal (P, K, dan Rekap) dengan data baru
+      isFormDirty = false; // <-- TAMBAHKAN INI
+      setIjazahDirty(true); // <-- TAMBAHKAN INI
       globalRaporData.P = response.dataP;
       globalRaporData.K = response.dataK;
       globalRaporData.Rekap = response.dataRekap;
@@ -4174,6 +4219,8 @@ function populateSiswaFilters() {
       input.value = '';
       siswaIdsToUpdate.add(input.dataset.siswaId);
     });
+
+    isFormDirty = true; // <-- TAMBAHKAN INI
 
     if (mapelCount > 0) {
       siswaIdsToUpdate.forEach(siswaId => {
@@ -4442,6 +4489,7 @@ function populateSiswaFilters() {
   function onSemesterSettingSaved(response) {
     setLoading(false);
     if (response.status === 'sukses') {
+      setIjazahDirty(true); // <-- TAMBAHKAN INI
       showMessage('semester-message', 'Pengaturan semester berhasil disimpan!', false);
     } else {
       showMessage('semester-message', response.message, true);
@@ -4630,6 +4678,9 @@ function populateSiswaFilters() {
     const exportControlsRapor = document.getElementById('export-controls-rapor');
     const exportControlsIjazah = document.getElementById('export-controls-ijazah');
 
+    const infoUpdateEl = document.getElementById('ijazah-info-update');
+    infoUpdateEl.style.display = 'none';
+
     if (response.status !== 'sukses') {
       document.getElementById('ijazah-ujian-table-container').innerHTML = `<p class="message error" style="display:block;">Gagal memuat data: ${response.message}</p>`;
       document.getElementById('ijazah-rapor-table-container').innerHTML = '';
@@ -4650,6 +4701,9 @@ function populateSiswaFilters() {
       if (exportControlsRapor) exportControlsRapor.style.display = 'none';
       if (exportControlsIjazah) exportControlsIjazah.style.display = 'none';
 
+      if (response.message.includes("belum pernah dikalkulasi")) {
+        showToast(response.message, 'gagal');
+      }
       return;
     }
 
@@ -5132,6 +5186,100 @@ function populateSiswaFilters() {
       }
     } else {
       showToast('Gagal memperbarui data: ' + response.message, 'gagal');
+    }
+  }
+
+  function jalankanRekalkulasiIjazah() {
+    const btn = document.getElementById('btn-recalculate-ijazah');
+    setButtonLoading(btn, 'Menghitung...');
+    
+    google.script.run
+      .withSuccessHandler(onRekalkulasiIjazahSukses)
+      .withFailureHandler(onGagalRekalkulasiIjazah)
+      .recalculateIjazahData();
+  }
+
+  function onRekalkulasiIjazahSukses(response) {
+    const btn = document.getElementById('btn-recalculate-ijazah');
+    resetButtonLoading(btn);
+
+    if (response.status === 'sukses') {
+      setIjazahDirty(false); // <-- TAMBAHKAN INI
+      showToast(response.message, 'sukses');
+      bukaHalamanNilaiIjazah();
+    } else {
+      showToast('Gagal menghitung: ' + response.message, 'gagal');
+    }
+  }
+
+  function onGagalRekalkulasiIjazah(error) {
+    const btn = document.getElementById('btn-recalculate-ijazah');
+    resetButtonLoading(btn);
+    onGagal(error); 
+  }
+
+  /**
+   * Menandai bahwa data sumber ijazah telah berubah (dirty).
+   * @param {boolean} isDirty 
+   */
+  function setIjazahDirty(isDirty) {
+    if (isDirty) {
+      localStorage.setItem('ijazahDataIsDirty', 'true');
+      console.log('Ijazah data flagged as DIRTY.');
+    } else {
+      localStorage.removeItem('ijazahDataIsDirty');
+      console.log('Ijazah data flagged as CLEAN.');
+    }
+    updateRecalculateButtonState();
+  }
+
+  /**
+   * Memperbarui tampilan visual tombol DAN TEKS berdasarkan status 'dirty'.
+   */
+  function updateRecalculateButtonState() {
+    const isDirty = localStorage.getItem('ijazahDataIsDirty') === 'true';
+    
+    const btnRecalcDashboard = document.getElementById('btn-buka-nilai-ijazah');
+    const btnRecalcPage = document.getElementById('btn-recalculate-ijazah');
+    const textReminder = document.getElementById('btn-recalculate-ijazah-text');
+    
+    if (isDirty) {
+      if (btnRecalcDashboard) btnRecalcDashboard.classList.add('btn-dirty-state');
+      if (btnRecalcPage) btnRecalcPage.classList.add('btn-dirty-state');
+      
+      // Tampilkan teks pengingat
+      if (textReminder) {
+        textReminder.style.display = 'inline-block';
+      }
+    } else {
+      if (btnRecalcDashboard) btnRecalcDashboard.classList.remove('btn-dirty-state');
+      if (btnRecalcPage) btnRecalcPage.classList.remove('btn-dirty-state');
+
+      // Sembunyikan teks pengingat
+      if (textReminder) {
+        textReminder.style.display = 'none';
+      }
+    }
+  }
+
+  /**
+   * Helper untuk memeriksa 'isFormDirty' sebelum pindah halaman.
+   * @param {function} targetPageFunction Fungsi yang akan dijalankan jika bersih (misal: bukaHalamanInputUjian)
+   */
+  function handleNavigationConfirm(targetPageFunction) {
+    if (isFormDirty) {
+      const callback = function() {
+        isFormDirty = false; // Reset flag
+        targetPageFunction(); // Lanjutkan navigasi
+      };
+      showConfirmationModal(
+        "Perubahan Belum Disimpan", 
+        "Anda memiliki <strong>perubahan nilai yang belum disimpan</strong> di halaman ini. Jika Anda pindah halaman, perubahan tersebut akan hilang.<br><br>Yakin ingin tetap pindah?",
+        callback, 
+        'danger' 
+      );
+    } else {
+      targetPageFunction(); // Langsung navigasi jika form bersih
     }
   }
 
