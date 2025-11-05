@@ -18,6 +18,8 @@ const TOKEN_EXPIRY_HOURS = 24; // Token berlaku 24 jam
 
 const NILAI_IJAZAH_CACHE_KEY = 'nilai_ijazah_v1';
 
+const SHEET_CACHE_IJAZAH = "Cache_Rekap_Ijazah";
+
 /**
  * Mengubah array byte (dari computeDigest) menjadi string heksadesimal.
  */
@@ -220,6 +222,12 @@ function buatDatabaseSekolahBaru(namaSekolah, jenjang, email, password, masterSS
     ]);
     sheetDataSekolah.getRange('A2:P2').setNumberFormat('@');
 
+    const sheetCacheIjazah = newSpreadsheet.insertSheet(SHEET_CACHE_IJAZAH);
+    sheetCacheIjazah.appendRow(['Meta', 'LastUpdated', 'Payload']);
+    sheetCacheIjazah.appendRow(['Data', null, null]);
+    sheetCacheIjazah.getRange('C2').setDataValidation(null);
+    sheetCacheIjazah.hideSheet();
+
     newSpreadsheet.deleteSheet(defaultSheet);
     
     return newSSID;
@@ -380,8 +388,7 @@ function clearRekapNilaiCache() {
   try {
     const userCache = CacheService.getUserCache();
     userCache.remove(REKAP_NILAI_CACHE_KEY);
-    userCache.remove(NILAI_IJAZAH_CACHE_KEY);
-    Logger.log("Cache Rekap Nilai dan Ijazah dibersihkan.");
+    Logger.log("Cache Rekap Nilai dibersihkan.");
   } catch (e) {
     Logger.log("Gagal membersihkan cache rekap nilai: " + e.message);
   }
@@ -404,7 +411,6 @@ function clearRekapNilaiRaporCache() {
   try {
     const userCache = CacheService.getUserCache();
     userCache.remove(REKAP_NILAI_RAPOR_CACHE_KEY);
-    userCache.remove(NILAI_IJAZAH_CACHE_KEY);
     Logger.log("Cache Rekap Nilai Rapor dan Ijazah dibersihkan.");
   } catch (e) {
     Logger.log("Gagal membersihkan cache rekap nilai rapor: " + e.message);
@@ -415,23 +421,11 @@ function clearNilaiRaporCache() {
   try {
     const userCache = CacheService.getUserCache();
     
-    // 1. Hapus cache rekap rapor utama
     userCache.remove(REKAP_NILAI_RAPOR_CACHE_KEY);
     Logger.log("Cache Rekap Nilai Rapor (Utama) dibersihkan.");
 
-    // 2. Dapatkan daftar semester untuk menghapus cache grid-nya
-    //    Kita bisa memanggil getSemesterList() karena properti pengguna 
-    //    sudah di-set oleh fungsi pemanggil (misal: saveMapelTipeUjianBatch).
-    const semesterListData = getSemesterList(); 
-    if (semesterListData.status === 'sukses') {
-      semesterListData.semesterList.forEach(semester => {
-        const cacheKey = NILAI_RAPOR_GRID_CACHE_KEY_PREFIX + semester.id;
-        userCache.remove(cacheKey);
-        Logger.log("Cache Grid Nilai Rapor dibersihkan untuk: " + semester.id);
-      });
-    } else {
-        Logger.log("Peringatan: Gagal mendapatkan daftar semester saat membersihkan cache grid rapor.");
-    }
+    userCache.remove(NILAI_IJAZAH_CACHE_KEY);
+    Logger.log("Cache Nilai Ijazah dibersihkan.");
     
   } catch (e) {
     Logger.log("Gagal membersihkan cache nilai rapor: " + e.message);
@@ -445,7 +439,6 @@ function clearSiswaCache() {
     
     clearNilaiUjianCache(); 
     clearNilaiRaporCache();
-    CacheService.getUserCache().remove(NILAI_IJAZAH_CACHE_KEY);
     
   } catch (e) {
     Logger.log("Gagal membersihkan cache siswa: " + e.message);
@@ -459,7 +452,6 @@ function clearMapelCache() {
     
     clearNilaiUjianCache();
     clearNilaiRaporCache();
-    CacheService.getUserCache().remove(NILAI_IJAZAH_CACHE_KEY);
   } catch (e) {
     Logger.log("Gagal membersihkan cache mapel: " + e.message);
   }
@@ -493,46 +485,8 @@ function prosesLogin(email, password) {
     }
 
     if (!passwordIsValid || !cachedRow) {
+      clearMasterSheetCache();
       return { status: "gagal", message: "Email atau password salah." };
-    }
-
-    Logger.log(`Verifikasi live data untuk: ${email}`);
-    
-    let masterSS;
-    let sheetSekolah;
-    try {
-      masterSS = SpreadsheetApp.openById(MASTER_SHEET_ID);
-      sheetSekolah = masterSS.getSheetByName('Sheet_Sekolah');
-      if (!sheetSekolah) {
-        throw new Error("Sheet_Sekolah tidak ditemukan.");
-      }
-    } catch (e) {
-      Logger.log("Gagal membuka Master Sheet saat verifikasi login: " + e.message);
-      return { status: "gagal", message: "Gagal memverifikasi akun. Hubungi Admin." };
-    }
-
-    const emailColumnRange = sheetSekolah.getRange('D:D');
-    const textFinder = emailColumnRange.createTextFinder(email).matchEntireCell(true);
-    const foundCell = textFinder.findNext();
-
-    let liveRowFound = false;
-
-    if (foundCell) {
-      const rowIndex = foundCell.getRow();
-      const livePassDataRange = sheetSekolah.getRange(rowIndex, 5, 1, 3); 
-      const livePassDataValues = livePassDataRange.getValues()[0];
-      const liveHash = livePassDataValues[0]; 
-      const liveSalt = livePassDataValues[2]; 
-      
-      if (verifyPassword(password, liveHash, liveSalt)) {
-          liveRowFound = true;
-      }
-    }
-
-    if (!liveRowFound) {
-        Logger.log(`Login GAGAL untuk ${email}: Ditemukan di cache, TAPI tidak ada di live data (mungkin dihapus atau password diubah).`);
-        clearMasterSheetCache(); 
-        return { status: "gagal", message: "Email atau password salah." };
     }
 
     const token = Utilities.getUuid();
@@ -2691,6 +2645,15 @@ function getSemesterList() {
 
 function getNilaiRaporGridData(semesterId) {
   try {
+    const userCache = CacheService.getUserCache();
+    const cacheKey = NILAI_RAPOR_GRID_CACHE_KEY_PREFIX + semesterId;
+    const cachedData = userCache.get(cacheKey);
+
+    if (cachedData != null) {
+      Logger.log("Mengambil Nilai Rapor Grid dari USER CACHE untuk: " + semesterId);
+      return JSON.parse(cachedData);
+    }
+    
     Logger.log("Mengambil Nilai Rapor Grid dari SPREADSHEET untuk: " + semesterId);
 
     const userProperties = validateAndRefreshSession();
@@ -2797,6 +2760,8 @@ function getNilaiRaporGridData(semesterId) {
       }
     };
     
+    userCache.put(cacheKey, JSON.stringify(response), 600);
+    
     return response;
     
   } catch (e) {
@@ -2819,7 +2784,6 @@ function saveNilaiRaporBatch(dataToSave, tipeNilai) {
     const dataRange = sheet.getDataRange();
     const data = dataRange.getValues(); 
     
-    // Kolom 3 = Nilai_P, Kolom 4 = Nilai_K (index 3 dan 4)
     const kolomIndex = (tipeNilai === 'P') ? 3 : 4; 
     
     const dataMap = new Map();
@@ -2837,11 +2801,10 @@ function saveNilaiRaporBatch(dataToSave, tipeNilai) {
       const key = `${item.siswaId}_${item.mapelId}_${item.semesterId}`;
       let nilaiBaru = (item.nilai === "" || item.nilai === null || item.nilai === undefined) ? null : "'" + item.nilai;
       
-      // Validasi tambahan
       if (nilaiBaru !== null) {
         let num = parseInt(item.nilai, 10);
         if (isNaN(num) || num < 0 || num > 100) {
-          nilaiBaru = null; // Abaikan nilai tidak valid
+          nilaiBaru = null; 
         }
       }
 
@@ -2849,8 +2812,7 @@ function saveNilaiRaporBatch(dataToSave, tipeNilai) {
       
       if (existingEntry) {
         const rowIndex = existingEntry.rowIndex;
-        // Cek data[rowIndex][kolomIndex]
-        if (data[rowIndex][kolomIndex] != nilaiBaru) { // Perbandingan nilai
+        if (data[rowIndex][kolomIndex] != nilaiBaru) { 
           data[rowIndex][kolomIndex] = nilaiBaru;
           changesMade = true;
         }
@@ -2858,7 +2820,7 @@ function saveNilaiRaporBatch(dataToSave, tipeNilai) {
         let newRow = [item.siswaId, item.mapelId, item.semesterId, null, null];
         newRow[kolomIndex] = nilaiBaru;
         rowsToAppend.push(newRow);
-        dataMap.set(key, {}); // Tandai sudah ada untuk batch ini
+        dataMap.set(key, {}); 
       }
     });
     
@@ -2867,13 +2829,13 @@ function saveNilaiRaporBatch(dataToSave, tipeNilai) {
     }
     
     if (rowsToAppend.length > 0) {
-      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 5) // 5 kolom
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, 5) 
            .setValues(rowsToAppend);
     }
     
-    // Hapus cache
     const userCache = CacheService.getUserCache();
     const semesterIdsToClear = new Set(dataToSave.map(item => item.semesterId));
+    
     semesterIdsToClear.forEach(semId => {
       if (semId) {
         userCache.remove(NILAI_RAPOR_GRID_CACHE_KEY_PREFIX + semId);
@@ -3370,14 +3332,45 @@ function getRekapRaporInternal(ss, siswaList, mapelListFull, semesterIds) {
 
 function getNilaiIjazahData() {
   try {
-    const userCache = CacheService.getUserCache();
-    const cachedData = userCache.get(NILAI_IJAZAH_CACHE_KEY);
-
-    if (cachedData != null) {
-      Logger.log("Mengambil Nilai Ijazah dari USER CACHE");
-      return JSON.parse(cachedData);
+    const userProperties = validateAndRefreshSession();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    
+    let sheet = ss.getSheetByName(SHEET_CACHE_IJAZAH);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_CACHE_IJAZAH);
+      sheet.appendRow(['Meta', 'LastUpdated', 'Payload']);
+      sheet.appendRow(['Data', null, null]);
+      sheet.getRange('C2').setDataValidation(null);
+      sheet.hideSheet();
     }
-    Logger.log("Mengambil Nilai Ijazah dari SPREADSHEET (Perhitungan)");
+
+    const payloadCell = sheet.getRange('C2');
+    const payloadJson = payloadCell.getValue();
+
+    if (!payloadJson) {
+      return { 
+        status: "gagal", 
+        message: "Data Ijazah belum pernah dikalkulasi. Silakan klik tombol 'Hitung Ulang Nilai' terlebih dahulu." 
+      };
+    }
+
+    const payload = JSON.parse(payloadJson);
+    
+    return {
+      status: "sukses",
+      data: payload 
+    };
+
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
+}
+
+function recalculateIjazahData() {
+  try {
+    Logger.log("Memulai kalkulasi ulang Nilai Ijazah...");
 
     const userProperties = validateAndRefreshSession();
     const spreadsheetID = userProperties.getProperty('spreadsheetID');
@@ -3437,27 +3430,45 @@ function getNilaiIjazahData() {
       });
     });
     
-    const response = {
-      status: "sukses",
-      data: {
-        siswaList: siswaList,
-        mapelList: mapelListIjazah,
-        dataUjian: dataUjianWeighted,
-        dataRapor: dataRaporWeighted,
-        dataIjazah: dataIjazahFinal,
-        dataUjianOriginal: dataUjianOriginal,
-        dataRaporOriginal: dataRaporOriginal,
-        kkm: kkmValue,
-        bobotUjianPct: bobotResponse.bobotUjian,
-        bobotRaporPct: bobotResponse.bobotRapor
-      }
+    const responsePayload = {
+      siswaList: siswaList,
+      mapelList: mapelListIjazah,
+      dataUjian: dataUjianWeighted,
+      dataRapor: dataRaporWeighted,
+      dataIjazah: dataIjazahFinal,
+      dataUjianOriginal: dataUjianOriginal,
+      dataRaporOriginal: dataRaporOriginal,
+      kkm: kkmValue,
+      bobotUjianPct: bobotResponse.bobotUjian,
+      bobotRaporPct: bobotResponse.bobotRapor
     };
 
-    userCache.put(NILAI_IJAZAH_CACHE_KEY, JSON.stringify(response), 600);
-    return response;
+    const payloadJson = JSON.stringify(responsePayload);
+    const lastUpdated = new Date();
 
-  } catch (e) {
-    Logger.log(e);
+    let sheet = ss.getSheetByName(SHEET_CACHE_IJAZAH);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_CACHE_IJAZAH);
+      sheet.appendRow(['Meta', 'LastUpdated', 'Payload']);
+      sheet.appendRow(['Data', null, null]);
+      sheet.getRange('C2').setDataValidation(null);
+      sheet.hideSheet();
+    }
+
+    sheet.getRange('B2').setValue(lastUpdated);
+    sheet.getRange('C2').setValue(payloadJson);
+
+    Logger.log("Kalkulasi ulang Nilai Ijazah SUKSES. Cache sheet diperbarui.");
+
+    return { 
+      status: "sukses", 
+      message: `Nilai Ijazah berhasil dihitung ulang.`,
+      lastUpdated: lastUpdated.toISOString() 
+    };
+
+  } catch (e)
+  {
+    Logger.log("Gagal kalkulasi ulang Nilai Ijazah: " + e.message);
     return { status: "gagal", message: e.message };
   }
 }
