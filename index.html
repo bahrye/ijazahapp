@@ -72,7 +72,12 @@
         <h2 id="salam-sekolah">Selamat Datang, Admin</h2>
         <p>Ini adalah dashboard utama Anda. Silakan pilih menu di bawah ini:</p>
         
-        <h3 class="dashboard-section-header">Kelola Data</h3>
+        <div class="dashboard-section-header-flex">
+          <h3 class="dashboard-section-header">Kelola Data</h3>
+          <button id="btn-update-semua-data" class="btn-aksi btn-update-data" title="Memuat ulang semua data dari server">
+            <i class="fas fa-sync-alt"></i>Update Semua Data
+          </button>
+        </div>
         <div class="dashboard-menu-grid">
           <button class="dashboard-card" id="btn-buka-data-sekolah">
             <i class="fas fa-school"></i>
@@ -929,7 +934,17 @@
           <div id="tab-ujian-content" class="tab-content active">
             <div class="table-header-toolbar">
               <p class="table-content-header">Nilai Ujian (Setelah Diberi Bobot)</p>
-              <button id="btn-toggle-ujian-view" class="btn-aksi btn-aksi-toggle">Lihat Nilai Asli</button>
+              <div class="toolbar-button-group">
+                <button id="btn-toggle-ujian-view" class="btn-aksi btn-aksi-toggle">Lihat Nilai Asli</button>
+                <div class="export-button-group" id="export-controls-ujian" style="display: none;">
+                  <button class="btn-aksi btn-export-icon" data-tipe="pdf" data-tab="ujian" title="Ekspor ke PDF">
+                    <i class="fas fa-file-pdf"></i>
+                  </button>
+                  <button class="btn-aksi btn-export-icon" data-tipe="excel" data-tab="ujian" title="Ekspor ke Excel">
+                    <i class="fas fa-file-excel"></i>
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="input-nilai-table-container" id="ijazah-ujian-table-container">
               <p>Memuat data...</p>
@@ -939,7 +954,17 @@
           <div id="tab-rapor-content" class="tab-content">
             <div class="table-header-toolbar">
               <p class="table-content-header">Nilai Rapor (Setelah Diberi Bobot)</p>
-              <button id="btn-toggle-rapor-view" class="btn-aksi btn-aksi-toggle">Lihat Nilai Asli</button>
+              <div class="toolbar-button-group">
+                <button id="btn-toggle-rapor-view" class="btn-aksi btn-aksi-toggle">Lihat Nilai Asli</button>
+                <div class="export-button-group" id="export-controls-rapor" style="display: none;">
+                  <button class="btn-aksi btn-export-icon" data-tipe="pdf" data-tab="rapor" title="Ekspor ke PDF">
+                    <i class="fas fa-file-pdf"></i>
+                  </button>
+                  <button class="btn-aksi btn-export-icon" data-tipe="excel" data-tab="rapor" title="Ekspor ke Excel">
+                    <i class="fas fa-file-excel"></i>
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="input-nilai-table-container" id="ijazah-rapor-table-container">
               <p>Memuat data...</p>
@@ -947,7 +972,19 @@
           </div>
 
           <div id="tab-ijazah-content" class="tab-content">
-            <p class="table-content-header">Nilai Ijazah (Hasil Akhir)</p>
+            <div class="table-header-toolbar">
+              <p class="table-content-header">Nilai Ijazah (Hasil Akhir)</p>
+              <div class="toolbar-button-group">
+                <div class="export-button-group" id="export-controls-ijazah" style="display: none;">
+                  <button class="btn-aksi btn-export-icon" data-tipe="pdf" data-tab="ijazah" title="Ekspor ke PDF">
+                    <i class="fas fa-file-pdf"></i>
+                  </button>
+                  <button class="btn-aksi btn-export-icon" data-tipe="excel" data-tab="ijazah" title="Ekspor ke Excel">
+                    <i class="fas fa-file-excel"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
             <div class="input-nilai-table-container" id="ijazah-final-table-container">
               <p>Memuat data...</p>
             </div>
