@@ -125,11 +125,6 @@ function kirimEmailVerifikasi(email, namaSekolah, token) {
   }
 }
 
-// --- FUNGSI BARU (HASIL REFATOR DARI prosesRegistrasi) ---
-/**
- * Fungsi ini berisi LOGIKA PEMBUATAN SPREADSHEET YANG SEBENARNYA.
- * Dipanggil HANYA SETELAH verifikasi berhasil.
- */
 function buatDatabaseSekolahBaru(namaSekolah, jenjang, email, password, masterSS) {
   let newSSID = null; 
   try {
@@ -141,7 +136,6 @@ function buatDatabaseSekolahBaru(namaSekolah, jenjang, email, password, masterSS
       throw new Error("Error: Folder target tidak ditemukan atau tidak dapat diakses. ID: " + TARGET_FOLDER_ID);
     }
 
-    // (Ini adalah LOGIKA LAMA Anda dari prosesRegistrasi, baris 246-333)
     const namaSekolahUpper = namaSekolah.toUpperCase();
     const newSpreadsheet = SpreadsheetApp.create("Database Nilai - " + namaSekolahUpper); 
     newSSID = newSpreadsheet.getId();
@@ -157,7 +151,7 @@ function buatDatabaseSekolahBaru(namaSekolah, jenjang, email, password, masterSS
     const sheetSiswa = newSpreadsheet.insertSheet('Siswa');
     sheetSiswa.appendRow([
         'SiswaID', 'NamaSiswa', 'NISN', 'NIS_Lokal', 'JenisKelamin', 
-        'TempatLahir', 'TglLahir', 'Kelas'
+        'TempatLahir', 'TglLahir', 'Kelas', 'Urutan'
       ]);
     sheetSiswa.getRange('C:D').setNumberFormat('@');
       
@@ -183,28 +177,18 @@ function buatDatabaseSekolahBaru(namaSekolah, jenjang, email, password, masterSS
     }
     
     const sheetMapel = newSpreadsheet.insertSheet('Mapel');
-    sheetMapel.appendRow(['MapelID', 'NamaMapel', 'isUS', 'isUP']); 
+    sheetMapel.appendRow(['MapelID', 'NamaMapel', 'isUS', 'isUP', 'Urutan']); 
 
     const defaultMapel = getDynamicDefaultMapel(jenjang, masterSS);
     if (defaultMapel.length > 0) {
-      sheetMapel.getRange(2, 1, defaultMapel.length, 4).setValues(defaultMapel);
+      sheetMapel.getRange(2, 1, defaultMapel.length, 5).setValues(defaultMapel);
     }
-
-    newSpreadsheet.insertSheet('Nilai_Rapor')
-      .appendRow([
-        'SiswaID', 'MapelID', 
-        'Sem1_P', 'Sem1_K', 'Sem2_P', 'Sem2_K', 
-        'Sem3_P', 'Sem3_K', 'Sem4_P', 'Sem4_K', 'Sem5_P', 'Sem5_K'
-      ]);
 
     newSpreadsheet.insertSheet('Nilai_Ujian')
       .appendRow(['SiswaID', 'MapelID', 'UjianMadrasah', 'UjianPraktek']);
       
-    // --- PERBAIKAN SKEMA RAPOR ---
-    // Pastikan sheet baru juga menggunakan skema yang benar
     newSpreadsheet.insertSheet('Nilai_Rapor_Akhir')
       .appendRow(['SiswaID', 'MapelID', 'SemesterID', 'Nilai_P', 'Nilai_K']);
-    // --- AKHIR PERBAIKAN ---
     
     const sheetSetting = newSpreadsheet.insertSheet('Pengaturan');
     sheetSetting.appendRow(['Setting', 'Value']);
@@ -237,25 +221,22 @@ function buatDatabaseSekolahBaru(namaSekolah, jenjang, email, password, masterSS
     sheetDataSekolah.getRange('A2:P2').setNumberFormat('@');
 
     newSpreadsheet.deleteSheet(defaultSheet);
-    // (AKHIR DARI LOGIKA LAMA)
-
-    // Kembalikan SSID yang baru dibuat
+    
     return newSSID;
 
   } catch (e) {
     Logger.log(e);
-    // Jika gagal, hapus spreadsheet yang mungkin setengah jadi
     if (newSSID) {
       DriveApp.getFileById(newSSID).setTrashed(true);
     }
-    // Lempar error ke 'prosesVerifikasiToken'
     throw new Error("Gagal membuat database: " + e.message);
   }
 }
 
 function prosesVerifikasiToken(token) {
   if (!token) {
-    return "<h1>Token Tidak Ditemukan</h1><p>Permintaan verifikasi tidak valid.</p>";
+    return `<h1>Permintaan Tidak Valid</h1>
+            <p>Permintaan verifikasi tidak lengkap. Pastikan Anda menggunakan link yang benar dari email.</p>`;
   }
   
   let masterSS;
@@ -282,7 +263,8 @@ function prosesVerifikasiToken(token) {
       if (dbToken === token) {
         if (dbTimestamp < expiryLimit) {
           sheetPending.deleteRow(i + 1);
-          return "<h1>Token Kedaluwarsa</h1><p>Link verifikasi Anda sudah kedaluwarsa (lebih dari " + TOKEN_EXPIRY_HOURS + " jam). Silakan lakukan registrasi ulang.</p>";
+          return `<h1>Token Kedaluwarsa</h1>
+                  <p>Link verifikasi Anda sudah tidak berlaku (lebih dari ${TOKEN_EXPIRY_HOURS} jam). Untuk keamanan, silakan lakukan registrasi ulang.</p>`;
         }
 
         const email = row[0];
@@ -294,7 +276,10 @@ function prosesVerifikasiToken(token) {
         for (let j = 1; j < dataSekolah.length; j++) {
           if (dataSekolah[j][3] === email) {
             sheetPending.deleteRow(i + 1);
-            return "<h1>Akun Sudah Aktif</h1><p>Akun Anda dengan email ini sudah terverifikasi dan aktif. Silakan login.</p>";
+            const appUrl = ScriptApp.getService().getUrl();
+            return `<h1>Akun Sudah Aktif</h1>
+                    <p>Akun dengan email ini sudah terverifikasi dan aktif. Anda dapat langsung login.</p>
+                    <a href="${appUrl}" class="button-login">Menuju Halaman Login</a>`;
           }
         }
 
@@ -319,20 +304,29 @@ function prosesVerifikasiToken(token) {
           
           clearMasterSheetCache();
           
-          return "<h1>Verifikasi Berhasil!</h1><p>Akun Anda telah berhasil diaktifkan. Anda sekarang dapat menutup halaman ini dan login ke aplikasi.</p>";
+          const appUrl = ScriptApp.getService().getUrl();
+          return `<h1>Verifikasi Berhasil!</h1>
+                  <p>Akun Anda telah berhasil diaktifkan dan database sekolah Anda telah dibuat.</p>
+                  <p>Silakan klik tombol di bawah ini untuk masuk ke halaman login.</p>
+                  <a href="${appUrl}" class="button-login">Menuju Halaman Login</a>`;
           
         } catch (e) {
           Logger.log(`Verifikasi sukses untuk ${email} TAPI GAGAL buat DB: ${e.message}`);
-          return `<h1>Verifikasi Berhasil, Namun...</h1><p>Terjadi error saat membuat database untuk sekolah Anda. Silakan hubungi admin. (Error: ${e.message})</p>`;
+          return `<h1>Verifikasi Berhasil, Namun...</h1>
+                  <p>Akun Anda terverifikasi, tetapi terjadi error saat penyiapan database sekolah. Silakan hubungi admin untuk tindak lanjut.</p>
+                  <p style="font-size: 14px; color: #6c757d;">Detail Error: ${e.message}</p>`;
         }
       }
     }
     
-    return "<h1>Token Tidak Valid</h1><p>Token verifikasi Anda tidak ditemukan. Mungkin sudah digunakan atau tidak valid.</p>";
+    return `<h1>Token Tidak Valid</h1>
+            <p>Token verifikasi Anda tidak ditemukan. Link ini mungkin sudah digunakan atau tidak valid.</p>`;
 
   } catch (e) {
     Logger.log(e);
-    return `<h1>Error Server</h1><p>Terjadi error: ${e.message}. Silakan coba lagi nanti.</p>`;
+    return `<h1>Error Server</h1>
+            <p>Terjadi kegagalan di server. Silakan coba lagi beberapa saat, atau hubungi admin jika masalah berlanjut.</p>
+            <p style="font-size: 14px; color: #6c757d;">Detail Error: ${e.message}</p>`;
   } finally {
     lock.releaseLock();
   }
@@ -652,16 +646,17 @@ function prosesRegistrasi(namaSekolah, jenjang, email, password) {
 
 function prosesLogout() {
   try {
-    PropertiesService.getUserProperties().deleteAllProperties();
     
-    // --- PERBAIKAN DI SINI ---
-    // Panggil fungsi pembersih cache yang sudah ada.
-    // Fungsi-fungsi ini sudah otomatis membersihkan cache nilai dan rekap juga.
+    // 1. Panggil fungsi pembersih cache terlebih dahulu
+    //    Fungsi-fungsi ini MEMBUTUHKAN properti sesi untuk berjalan
     clearSiswaCache();
     clearMapelCache(); 
     
-    Logger.log("User cache dan properti dibersihkan saat logout.");
-    // --- AKHIR PERBAIKAN ---
+    Logger.log("User cache dibersihkan saat logout.");
+
+    // 2. SETELAH cache bersih, baru hapus properti sesi
+    PropertiesService.getUserProperties().deleteAllProperties();
+    Logger.log("Properti pengguna dibersihkan saat logout.");
 
     return { status: "sukses" };
   } catch (e) {
