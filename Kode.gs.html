@@ -757,7 +757,7 @@ function getDynamicDefaultMapel(jenjang, masterSpreadsheet) {
       
       if (jenjangData === jenjang || jenjangData === 'UMUM') {
         if (mapelID && namaMapel) { 
-          defaultMapel.push([mapelID, namaMapel, isUS_default, isUP_default]);
+          defaultMapel.push([mapelID, namaMapel, isUS_default, isUP_default, i + 1]);
         }
       }
     }
@@ -778,6 +778,15 @@ function getMapelSheet() {
   const sheetMapel = ss.getSheetByName('Mapel');
   if (!sheetMapel) throw new Error("Sheet 'Mapel' tidak ditemukan.");
   
+  try {
+    const header = sheetMapel.getRange('E1').getValue();
+    if (header !== 'Urutan') {
+      sheetMapel.getRange('E1').setValue('Urutan');
+    }
+  } catch (e) {
+    Logger.log("Gagal mengecek/membuat header Urutan Mapel: " + e.message);
+  }
+
   return sheetMapel;
 }
 
@@ -816,13 +825,17 @@ function createMapel(mapelID, namaMapel) {
     const sheetMapel = getMapelSheet(); 
     const data = sheetMapel.getDataRange().getValues();
     
+    let maxUrutan = 0;
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] && data[i][0].toUpperCase() === mapelID.toUpperCase()) {
         return { status: "gagal", message: "MapelID '" + mapelID + "' sudah ada." };
       }
+      const urutanNum = Number(data[i][4] || 0);
+      if (urutanNum > maxUrutan) maxUrutan = urutanNum;
     }
     
-    sheetMapel.appendRow([mapelID, namaMapel, false, false]);
+    const newUrutan = maxUrutan + 1;
+    sheetMapel.appendRow([mapelID, namaMapel, false, false, newUrutan]);
     
     clearMapelCache();
     return { status: "sukses" };
@@ -884,7 +897,7 @@ function syncDefaultMapel() {
     
     const sourceMap = new Map();
     sourceData.forEach(row => {
-      sourceMap.set(row[0], { name: row[1], isUS: row[2], isUP: row[3] });
+      sourceMap.set(row[0], { name: row[1], isUS: row[2], isUP: row[3], urutan: row[4] });
     });
 
     const sheetMapel = getMapelSheet(); 
@@ -892,7 +905,12 @@ function syncDefaultMapel() {
     const targetValues = targetRange.getValues();
     const targetHeader = targetValues.shift(); 
     
-    const targetIdSet = new Set(targetValues.map(row => row[0]));
+    const targetIdMap = new Map(targetValues.map((row, index) => [row[0], { row: row, index: index }]));
+    let maxUrutan = 0;
+    targetValues.forEach(row => {
+      const urutanNum = Number(row[4] || 0);
+      if (urutanNum > maxUrutan) maxUrutan = urutanNum;
+    });
 
     const mapelToAdd = [];
     let changesMade = false;
@@ -902,8 +920,8 @@ function syncDefaultMapel() {
       const sourceRowData = sourceMap.get(targetId); 
 
       if (sourceRowData) {
-        if (targetValues[i][2] !== sourceRowData.isUS || 
-            targetValues[i][3] !== sourceRowData.isUP) 
+        if (targetValues[i][2] != sourceRowData.isUS || 
+            targetValues[i][3] != sourceRowData.isUP) 
         {
           targetValues[i][2] = sourceRowData.isUS;
           targetValues[i][3] = sourceRowData.isUP;
@@ -913,19 +931,20 @@ function syncDefaultMapel() {
     }
 
     for (const [sourceId, sourceData] of sourceMap.entries()) {
-      if (!targetIdSet.has(sourceId)) {
-        mapelToAdd.push([sourceId, sourceData.name, sourceData.isUS, sourceData.isUP]);
+      if (!targetIdMap.has(sourceId)) {
+        maxUrutan++;
+        mapelToAdd.push([sourceId, sourceData.name, sourceData.isUS, sourceData.isUP, maxUrutan]);
       }
     }
     
     let message = "";
     if (changesMade) {
-      sheetMapel.getRange(2, 1, targetValues.length, 4).setValues(targetValues);
+      sheetMapel.getRange(2, 1, targetValues.length, targetValues[0].length).setValues(targetValues);
       message += "Data mapel yang ada telah diperbarui. ";
     }
     
     if (mapelToAdd.length > 0) {
-      sheetMapel.getRange(sheetMapel.getLastRow() + 1, 1, mapelToAdd.length, 4)
+      sheetMapel.getRange(sheetMapel.getLastRow() + 1, 1, mapelToAdd.length, 5)
                 .setValues(mapelToAdd);
       message += `Berhasil menambahkan ${mapelToAdd.length} mapel default yang hilang.`;
     }
@@ -987,6 +1006,44 @@ function saveMapelTipeUjianBatch(tipeUjianData) {
     if (changesMade) {
       dataRange.setValues(data);
       clearMapelCache(); 
+    }
+    
+    return { status: "sukses" };
+    
+  } catch (e) {
+    Logger.log(e);
+    return { status: "gagal", message: e.message };
+  }
+}
+
+function saveMapelUrutanBatch(urutanData) {
+  try {
+    validateAndRefreshSession();
+    const userProperties = PropertiesService.getUserProperties();
+    const spreadsheetID = userProperties.getProperty('spreadsheetID');
+    const ss = SpreadsheetApp.openById(spreadsheetID);
+    const sheet = getMapelSheet(ss);
+    
+    const dataRange = sheet.getDataRange();
+    const data = dataRange.getValues();
+    
+    const urutanMap = new Map(urutanData.map(item => [item.id, item.urutan]));
+    
+    let changesMade = false;
+    
+    for (let i = 1; i < data.length; i++) {
+      const id = data[i][0]; 
+      const newUrutan = urutanMap.get(id);
+      
+      if (newUrutan !== undefined && data[i][4] != newUrutan) { 
+        data[i][4] = newUrutan; 
+        changesMade = true;
+      }
+    }
+    
+    if (changesMade) {
+      dataRange.setValues(data);
+      clearMapelCache();
     }
     
     return { status: "sukses" };
@@ -1471,6 +1528,9 @@ function saveBobotData(bobotRapor, bobotUjian, kkm) {
     if (!foundKKM) { 
       sheet.appendRow(['KKM', kkmValue]);
     }
+
+    clearRekapNilaiCache();
+    clearRekapNilaiRaporCache();
 
     return { status: "sukses" };
     
@@ -3174,19 +3234,24 @@ function prosesUploadExcelNilaiRapor(fileData, semesterIdFromModal) {
 }
 
 function getMapelDataInternal(ss) {
-  const sheetMapel = ss.getSheetByName('Mapel');
-  if (!sheetMapel) throw new Error("Sheet 'Mapel' tidak ditemukan.");
+  const sheetMapel = getMapelSheet(ss);
   
   const data = sheetMapel.getDataRange().getValues();
   const headers = data.shift(); 
   
-  const mapel = data.map(row => ({ 
-                          id: row[0], 
-                          nama: row[1],
-                          isUS: row[2] || false, 
-                          isUP: row[3] || false  
-                        }))
-                        .filter(row => row.id); 
+  const mapel = data.map((row, index) => {
+    const idNum = index + 1;
+    return { 
+      id: row[0], 
+      nama: row[1],
+      isUS: row[2] || false, 
+      isUP: row[3] || false,
+      urutan: row[4] || idNum
+    };
+  })
+  .filter(row => row.id)
+  .sort((a, b) => a.urutan - b.urutan); 
+
   return mapel;
 }
 
@@ -3352,6 +3417,8 @@ function getNilaiIjazahData() {
 
     const mapelListIjazah = mapelListFull.filter(m => m.isUS === true || m.isUP === true);
 
+    const dataUjianOriginal = {};
+    const dataRaporOriginal = {};
     const dataUjianWeighted = {};
     const dataRaporWeighted = {};
     const dataIjazahFinal = {};
@@ -3367,6 +3434,8 @@ function getNilaiIjazahData() {
         const weightedRapor = nilaiRaporRaw * bobotRapor;
         const finalIjazah = weightedUjian + weightedRapor;
         
+        dataUjianOriginal[key] = nilaiUjianRaw;
+        dataRaporOriginal[key] = nilaiRaporRaw;
         dataUjianWeighted[key] = weightedUjian;
         dataRaporWeighted[key] = weightedRapor;
         dataIjazahFinal[key] = finalIjazah;
@@ -3381,7 +3450,11 @@ function getNilaiIjazahData() {
         dataUjian: dataUjianWeighted,
         dataRapor: dataRaporWeighted,
         dataIjazah: dataIjazahFinal,
-        kkm: kkmValue 
+        dataUjianOriginal: dataUjianOriginal,
+        dataRaporOriginal: dataRaporOriginal,
+        kkm: kkmValue,
+        bobotUjianPct: bobotResponse.bobotUjian,
+        bobotRaporPct: bobotResponse.bobotRapor
       }
     };
 
