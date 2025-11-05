@@ -2394,4 +2394,56 @@
   .btn-update-data i {
     font-size: 12px;
   }
+
+  /* Efek 'Dirty' untuk Tombol Kalkulasi Ulang */
+  @keyframes pulse-animation {
+    0% {
+      /* Mengganti warna pulse dari oranye ke hijau (var(--success-color)) */
+      box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(25, 135, 84, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
+    }
+  }
+
+  /* Tombol Hitung Ulang di halaman Ijazah */
+  #btn-recalculate-ijazah.btn-dirty-state {
+    /* Mengganti warna tombol dari oranye ke hijau */
+    background-color: var(--success-color) !important; /* Warna hijau */
+    animation: pulse-animation 2s infinite;
+    border: 1px solid #157347; /* Border hijau tua */
+  }
+
+  /* Tombol Menu "Nilai Ijazah" di Dashboard */
+  #btn-buka-nilai-ijazah.btn-dirty-state {
+    animation: pulse-animation 2s infinite;
+    /* Mengganti warna border dari oranye ke hijau */
+    border: 2px solid var(--success-color);
+  }
+
+  /* Teks Pengingat Update */
+  .recalculate-text-reminder {
+    display: none; /* Sembunyi secara default */
+    align-self: center;
+    margin-right: 15px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--success-color);
+    animation: text-glow-animation 1.5s infinite;
+  }
+
+  /* Animasi Berkedip (Glow) untuk Teks */
+  @keyframes text-glow-animation {
+    0%, 100% {
+      opacity: 1;
+      text-shadow: 0 0 5px rgba(25, 135, 84, 0.5);
+    }
+    50% {
+      opacity: 0.8;
+      text-shadow: 0 0 15px rgba(25, 135, 84, 1);
+    }
+  }
 </style>
