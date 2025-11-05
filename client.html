@@ -1487,6 +1487,15 @@
     document.getElementById('btn-toggle-rapor-view').addEventListener('click', toggleRaporView);
 
     document.getElementById('halaman-nilai-ijazah').addEventListener('click', (e) => {
+      const exportButton = e.target.closest('.btn-export-icon');
+      if (exportButton) {
+        e.preventDefault();
+        const tipeFile = exportButton.dataset.tipe;
+        const tipeData = exportButton.dataset.tab;
+        handleExportClick(exportButton, tipeFile, tipeData);
+        return; 
+      }
+      
       e.stopPropagation();
       const targetNama = e.target.closest('.clickable-nama-siswa');
       if (targetNama) {
@@ -1499,6 +1508,20 @@
         const namaMapel = targetMapel.dataset.mapelNama;
         showDynamicTooltip(targetMapel, namaMapel);
       }
+    });
+
+    document.getElementById('btn-update-semua-data').addEventListener('click', () => {
+      const title = "Konfirmasi Update Data";
+      const message = "Ini akan membersihkan cache dan memuat ulang semua data dari server. Ini dapat memperbaiki data yang tidak sinkron. Lanjutkan?";
+      const callback = function() { 
+        setLoading(true, 'Membersihkan cache dan memuat data...'); 
+        google.script.run
+          .withSuccessHandler(onUpdateSemuaDataSukses)
+          .withFailureHandler(onGagal)
+          .clearAllCaches(); // Memanggil fungsi baru di server
+      };
+      // Tampilkan modal konfirmasi
+      showConfirmationModal(title, message, callback, 'primary'); 
     });
 
     document.addEventListener('keydown', handleKeyDown);
@@ -4602,6 +4625,10 @@ function populateSiswaFilters() {
     
     const btnToggleUjian = document.getElementById('btn-toggle-ujian-view');
     const btnToggleRapor = document.getElementById('btn-toggle-rapor-view');
+    
+    const exportControlsUjian = document.getElementById('export-controls-ujian');
+    const exportControlsRapor = document.getElementById('export-controls-rapor');
+    const exportControlsIjazah = document.getElementById('export-controls-ijazah');
 
     if (response.status !== 'sukses') {
       document.getElementById('ijazah-ujian-table-container').innerHTML = `<p class="message error" style="display:block;">Gagal memuat data: ${response.message}</p>`;
@@ -4618,6 +4645,10 @@ function populateSiswaFilters() {
       
       if (btnToggleUjian) btnToggleUjian.style.display = 'none';
       if (btnToggleRapor) btnToggleRapor.style.display = 'none';
+      
+      if (exportControlsUjian) exportControlsUjian.style.display = 'none';
+      if (exportControlsRapor) exportControlsRapor.style.display = 'none';
+      if (exportControlsIjazah) exportControlsIjazah.style.display = 'none';
 
       return;
     }
@@ -4661,6 +4692,10 @@ function populateSiswaFilters() {
     renderNilaiIjazahTabel('ujian');
     renderNilaiIjazahTabel('rapor');
     renderNilaiIjazahTabel('ijazah');
+    
+    if (exportControlsUjian) exportControlsUjian.style.display = 'flex';
+    if (exportControlsRapor) exportControlsRapor.style.display = 'flex';
+    if (exportControlsIjazah) exportControlsIjazah.style.display = 'flex';
     
     activateIjazahTab('ujian');
   }
@@ -5007,6 +5042,97 @@ function populateSiswaFilters() {
     applySiswaFiltersAndRender();
     
     showMessage('siswa-message', 'Urutan siswa dikembalikan.', false);
+  }
+
+  function setExportButtonsLoading(isLoading, button) {
+    const allExportButtons = document.querySelectorAll('#halaman-nilai-ijazah .btn-export-icon');
+    
+    if (isLoading && button) {
+      allExportButtons.forEach(btn => {
+        if (btn !== button) {
+          btn.disabled = true;
+          btn.style.opacity = '0.5';
+        }
+      });
+      setButtonLoading(button, '');
+      button.style.width = '40px'; 
+    } else {
+      allExportButtons.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        if (btn.classList.contains('loading')) {
+          resetButtonLoading(btn);
+        }
+      });
+    }
+  }
+
+  function handleExportClick(button, tipeFile, tipeData) {
+    if (button.disabled) return;
+
+    setExportButtonsLoading(true, button);
+    
+    const kelasFilter = document.getElementById('ijazah-filter-kelas').value;
+    
+    let isWeighted = true;
+    if (tipeData === 'ujian') {
+      isWeighted = showWeightedUjian;
+    } else if (tipeData === 'rapor') {
+      isWeighted = showWeightedRapor;
+    }
+
+    google.script.run
+      .withSuccessHandler(onDataExported)
+      .withFailureHandler(onGagalExport) 
+      .exportDataIjazah(tipeFile, tipeData, kelasFilter, isWeighted);
+  }
+
+  function onDataExported(response) {
+    setExportButtonsLoading(false, null);
+
+    if (response.status === 'sukses') {
+      showToast('File ekspor berhasil dibuat. Mengunduh...', 'sukses');
+      try {
+        const dataUrl = `data:${response.mimeType};base64,${response.base64}`;
+        const link = document.createElement('a');
+        link.setAttribute('href', dataUrl);
+        link.setAttribute('download', response.fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {
+        showToast('Gagal memproses unduhan: ' + e.message, 'gagal');
+      }
+    } else {
+      showToast('Gagal membuat file ekspor: ' + response.message, 'gagal');
+    }
+  }
+
+  function onGagalExport(error) {
+    setExportButtonsLoading(false, null);
+    onGagal(error);
+  }
+
+  function onUpdateSemuaDataSukses(response) {
+    setLoading(false);
+    if (response.status === 'sukses') {
+      showToast('Semua data berhasil diperbarui dari server.', 'sukses');
+      
+      // Muat ulang data di halaman saat ini (jika bukan dashboard)
+      const currentPage = localStorage.getItem(LAST_PAGE_KEY) || 'halaman-utama';
+      if (currentPage !== 'halaman-utama') {
+        // Trik untuk memaksa halaman memuat ulang datanya:
+        // Pindah ke dashboard, lalu langsung kembali ke halaman saat ini.
+        // Ini akan memicu fungsi getSiswa(), getMapel(), dll.
+        bukaHalamanTersimpan('halaman-utama'); 
+        setTimeout(() => {
+          bukaHalamanTersimpan(currentPage);
+        }, 100);
+      }
+    } else {
+      showToast('Gagal memperbarui data: ' + response.message, 'gagal');
+    }
   }
 
 </script>
