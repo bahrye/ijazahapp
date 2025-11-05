@@ -88,6 +88,8 @@
   let globalSiswaList = [];
   let isSiswaOrderDirty = false;
   let isMapelTipeDirty = false;
+  let globalMapelList = [];
+  let isMapelOrderDirty = false;
   let globalGridData = {
     siswaList: [],
     mapelList: [],
@@ -115,6 +117,9 @@
     dataRapor: {},
     dataIjazah: {}
   };
+
+  let showWeightedUjian = true;
+  let showWeightedRapor = true;
 
   function handleKeyDown(e) {
     // Ctrl+Z untuk Undo
@@ -732,10 +737,7 @@
 
   function setMapelTipeDirty(isDirty) {
     isMapelTipeDirty = isDirty;
-    const btnSimpan = document.getElementById('btn-simpan-tipe-ujian');
-    if (btnSimpan) {
-      btnSimpan.disabled = !isDirty;
-    }
+    updateMapelFloatingActions();
   }
 
   document.addEventListener('DOMContentLoaded', (event) => {
@@ -1038,13 +1040,13 @@
       }
     });
 
-     document.getElementById('btn-import-siswa').addEventListener('click', bukaModalImportSiswa);
-     document.getElementById('btn-tambah-siswa-baru').addEventListener('click', () => { showModalSiswa('add', {}); });
-     document.getElementById('btn-hapus-semua-siswa').addEventListener('click', hapusSemuaSiswa);
-     document.getElementById('btn-simpan-siswa').addEventListener('click', simpanSiswa);
-     document.getElementById('btn-tutup-modal-siswa').addEventListener('click', tutupModalSiswa);
-     document.getElementById('btn-batal-modal-siswa').addEventListener('click', tutupModalSiswa);
-     document.getElementById('siswa-table-container').addEventListener('click', (e) => {
+    document.getElementById('btn-import-siswa').addEventListener('click', bukaModalImportSiswa);
+    document.getElementById('btn-tambah-siswa-baru').addEventListener('click', () => { showModalSiswa('add', {}); });
+    document.getElementById('btn-hapus-semua-siswa').addEventListener('click', hapusSemuaSiswa);
+    document.getElementById('btn-simpan-siswa').addEventListener('click', simpanSiswa);
+    document.getElementById('btn-tutup-modal-siswa').addEventListener('click', tutupModalSiswa);
+    document.getElementById('btn-batal-modal-siswa').addEventListener('click', tutupModalSiswa);
+    document.getElementById('siswa-table-container').addEventListener('click', (e) => {
       const target = e.target.closest('button');
       if (!target) return;
 
@@ -1085,16 +1087,15 @@
             targetSiswa.urutan = swapSiswa.urutan;
             swapSiswa.urutan = tempUrutan;
             
-            setSiswaOrderDirty(true);
-            
             applySiswaFiltersAndRender();
+            checkSiswaDirtyState();
           }
       }
     });
 
-    document.getElementById('siswa-filter-kelas').addEventListener('change', applySiswaFiltersAndRender);
-    document.getElementById('siswa-sort-by').addEventListener('change', applySiswaFiltersAndRender);
+    document.getElementById('btn-batal-siswa-actions').addEventListener('click', cancelSiswaChanges);
 
+    // TAMBAHKAN KEMBALI BLOK INI UNTUK MENGAKTIFKAN TOMBOL SIMPAN
     document.getElementById('btn-simpan-urutan-siswa').addEventListener('click', () => {
       setLoading(true, 'Menyimpan urutan...');
       hideMessage('siswa-message');
@@ -1108,6 +1109,9 @@
         .withFailureHandler(onGagal)
         .saveSiswaUrutanBatch(urutanData);
     });
+
+    document.getElementById('siswa-filter-kelas').addEventListener('change', applySiswaFiltersAndRender);
+    document.getElementById('siswa-sort-by').addEventListener('change', applySiswaFiltersAndRender);
 
     document.getElementById('btn-ambil-default').addEventListener('click', () => {
         const title = "Ambil Mapel Default";
@@ -1126,10 +1130,26 @@
     document.getElementById('btn-batal-modal').addEventListener('click', tutupModalMapel);
     document.getElementById('btn-simpan-mapel').addEventListener('click', simpanMapel);
     document.getElementById('btn-simpan-tipe-ujian').addEventListener('click', simpanTipeUjian);
+    document.getElementById('btn-simpan-urutan-mapel').addEventListener('click', () => {
+      setLoading(true, 'Menyimpan urutan...');
+      hideMessage('mapel-message');
+      
+      const urutanData = globalMapelList.map(mapel => {
+        return { id: mapel.id, urutan: mapel.urutan };
+      });
+      
+      google.script.run
+        .withSuccessHandler(onMapelUrutanSaved)
+        .withFailureHandler(onGagal)
+        .saveMapelUrutanBatch(urutanData);
+    });
+
+    // TAMBAHKAN LISTENER INI:
+    document.getElementById('btn-batal-mapel-actions').addEventListener('click', cancelMapelChanges);
 
     document.getElementById('mapel-table-container').addEventListener('change', (e) => {
         if (e.target.classList.contains('mapel-tipe-cek')) {
-          setMapelTipeDirty(true);
+          checkMapelDirtyState();
         }
     });
 
@@ -1144,6 +1164,35 @@
         } else if (target.classList.contains('btn-delete')) {
             const id = target.getAttribute('data-id');
             hapusMapel(id);
+        } else if (target.classList.contains('btn-move-up-mapel') || target.classList.contains('btn-move-down-mapel')) {
+          
+          const mapelID = target.dataset.id;
+          const direction = target.classList.contains('btn-move-up-mapel') ? 'up' : 'down';
+
+          const targetIndex = globalMapelList.findIndex(s => s.id === mapelID);
+          if (targetIndex === -1) return;
+          
+          let swapIndex = -1;
+          if (direction === 'up' && targetIndex > 0) {
+            swapIndex = targetIndex - 1;
+          } else if (direction === 'down' && targetIndex < globalMapelList.length - 1) {
+            swapIndex = targetIndex + 1;
+          }
+
+          if (swapIndex > -1) {
+            const targetMapel = globalMapelList[targetIndex];
+            const swapMapel = globalMapelList[swapIndex];
+
+            const tempUrutan = targetMapel.urutan;
+            targetMapel.urutan = swapMapel.urutan;
+            swapMapel.urutan = tempUrutan;
+            
+            globalMapelList.sort((a,b) => a.urutan - b.urutan);
+            
+            onMapelLoaded({ status: "sukses", mapel: globalMapelList, isReRender: true });
+            
+            checkMapelDirtyState();
+          }
         }
     });
 
@@ -1433,6 +1482,9 @@
       renderNilaiIjazahTabel('rapor');
       renderNilaiIjazahTabel('ijazah');
     });
+
+    document.getElementById('btn-toggle-ujian-view').addEventListener('click', toggleUjianView);
+    document.getElementById('btn-toggle-rapor-view').addEventListener('click', toggleRaporView);
 
     document.getElementById('halaman-nilai-ijazah').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1752,13 +1804,15 @@
   function bukaHalamanMapel() {
     tampilHalaman('halaman-mapel');
     setLoading(true, 'Memuat data mapel...', false, false);
+    
     setMapelTipeDirty(false);
+    setMapelOrderDirty(false); 
+    
     document.getElementById('mapel-table-container').innerHTML = "<p>Memuat data mapel...</p>";
 
     document.getElementById('btn-tambah-mapel-baru').disabled = true;
     document.getElementById('btn-ambil-default').disabled = true;
     document.getElementById('btn-hapus-semua').disabled = true;
-    document.getElementById('btn-simpan-tipe-ujian').disabled = true;
 
     google.script.run
       .withSuccessHandler(onMapelLoaded)
@@ -1776,19 +1830,33 @@
       const container = document.getElementById('mapel-table-container');
 
       if (response.status === "sukses") {
+        
+        if (!response.isReRender) {
+          response.mapel.forEach(m => {
+            m.originalUrutan = m.urutan;
+            m.originalIsUS = m.isUS || false;
+            m.originalIsUP = m.isUP || false;
+          });
+        }
+        globalMapelList = response.mapel;
+
         const jenjangPilihan = jenjangPilihanCache;
         const labelUjian = (jenjangPilihan === 'MI' || jenjangPilihan === 'MTS' || jenjangPilihan === 'MA') ? 'UM' : 'US';
 
         let html = '<table class="mapel-table">';
-        html += `<tr><th>Kode Mapel</th><th>Nama Mapel</th><th class="col-cek">${labelUjian}</th><th class="col-cek col-up">UP</th><th>Aksi</th></tr>`;
-
-        if (response.mapel.length === 0) {
+        html += `<thead><tr><th>Kode Mapel</th><th>Nama Mapel</th><th class="col-cek">${labelUjian}</th><th class="col-cek col-up">UP</th><th>Aksi</th></tr></thead>`;
+        
+        html += '<tbody>';
+        if (globalMapelList.length === 0) {
           html += '<tr><td colspan="5" style="text-align: center;">Belum ada data mapel.</td></tr>';
         }
 
-        response.mapel.forEach(mapel => {
+        globalMapelList.forEach((mapel, index) => {
           const isUS = mapel.isUS || false;
           const isUP = mapel.isUP || false;
+          
+          const isFirst = (index === 0);
+          const isLast = (index === globalMapelList.length - 1);
           
           html += `
             <tr>
@@ -1801,16 +1869,35 @@
                 <input type="checkbox" class="mapel-tipe-cek" data-id="${mapel.id}" data-tipe="up" ${isUP ? 'checked' : ''}>
               </td>
               <td>
-                <button class="btn-aksi btn-edit" data-id="${mapel.id}" data-nama="${mapel.nama}"><i class="fas fa-pencil-alt"></i>Edit</button>
-                <button class="btn-aksi btn-delete" data-id="${mapel.id}"><i class="fas fa-trash-alt"></i>Hapus</button>
+                <div class="btn-grup-gerak">
+                  <button 
+                    class="btn-aksi btn-move-up btn-move-up-mapel" 
+                    data-id="${mapel.id}" 
+                    ${isFirst ? 'disabled' : ''}
+                    title="Naikkan posisi">
+                      <i class="fas fa-arrow-up"></i>
+                  </button>
+                  <button 
+                    class="btn-aksi btn-move-down btn-move-down-mapel" 
+                    data-id="${mapel.id}" 
+                    ${isLast ? 'disabled' : ''}
+                    title="Turunkan posisi">
+                        <i class="fas fa-arrow-down"></i>
+                  </button>
+                </div>
+                <div class="btn-grup-aksi">
+                  <button class="btn-aksi btn-edit" data-id="${mapel.id}" data-nama="${mapel.nama}"><i class="fas fa-pencil-alt"></i>Edit</button>
+                  <button class="btn-aksi btn-delete" data-id="${mapel.id}"><i class="fas fa-trash-alt"></i>Hapus</button>
+                </div>
               </td>
             </tr>
           `;
         });
 
-        html += '</table>';
+        html += '</tbody></table>';
         container.innerHTML = html;
       } else {
+        globalMapelList = [];
         container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat mapel: ${response.message}</p>`;
       }
   }
@@ -1896,6 +1983,7 @@
 
       if (response.status === "sukses") {
         tutupModalMapel();
+        setMapelOrderDirty(false); 
         bukaHalamanMapel();
       } else {
         showMessage('modal-mapel-error', response.message, true);
@@ -1937,7 +2025,13 @@
   function onMapelTipeUjianSaved(response) {
     setLoading(false);
     if (response.status === 'sukses') {
-      setMapelTipeDirty(false);
+      globalMapelList.forEach(m => {
+        const cb_us = document.querySelector(`.mapel-tipe-cek[data-id="${m.id}"][data-tipe="us"]`);
+        const cb_up = document.querySelector(`.mapel-tipe-cek[data-id="${m.id}"][data-tipe="up"]`);
+        if (cb_us) m.originalIsUS = cb_us.checked;
+        if (cb_up) m.originalIsUP = cb_up.checked;
+      });
+      setMapelTipeDirty(false); 
       showMessage('mapel-message', 'Tipe ujian berhasil disimpan!', false);
     } else {
       showMessage('mapel-message', response.message, true);
@@ -2310,8 +2404,7 @@
 
   function onSiswaLoaded(response) {
       setLoading(false);
-      setSiswaOrderDirty(false);
-
+      
       document.getElementById('btn-tambah-siswa-baru').disabled = false;
       document.getElementById('btn-import-siswa').disabled = false;
       document.getElementById('btn-hapus-semua-siswa').disabled = false;
@@ -2321,9 +2414,14 @@
       const container = document.getElementById('siswa-table-container');
 
       if (response.status === "sukses") {
+        response.siswa.forEach(s => {
+          s.originalUrutan = s.urutan;
+        });
         globalSiswaList = response.siswa;
+        
         populateSiswaFilters();
         applySiswaFiltersAndRender();
+        setSiswaOrderDirty(false);
       } else {
         globalSiswaList = [];
         container.innerHTML = `<p class="message error" style="display:block;">Gagal memuat siswa: ${response.message}</p>`;
@@ -2332,15 +2430,15 @@
 
   function setSiswaOrderDirty(isDirty) {
     isSiswaOrderDirty = isDirty;
-    const btnSimpan = document.getElementById('btn-simpan-urutan-siswa');
-    if (btnSimpan) {
-      btnSimpan.disabled = !isDirty;
-    }
+    updateSiswaFloatingActions();
   }
 
   function onSiswaUrutanSaved(response) {
     setLoading(false);
     if (response.status === 'sukses') {
+      globalSiswaList.forEach(s => {
+        s.originalUrutan = s.urutan;
+      });
       setSiswaOrderDirty(false);
       showMessage('siswa-message', 'Urutan siswa berhasil disimpan!', false);
     } else {
@@ -2348,7 +2446,7 @@
     }
   }
 
-  function populateSiswaFilters() {
+function populateSiswaFilters() {
     const selectKelas = document.getElementById('siswa-filter-kelas');
     const selectedValue = selectKelas.value;
     
@@ -2362,7 +2460,7 @@
   
     selectKelas.innerHTML = optionsHtml;
     
-    selectKelas.value = selectedValue || 'semua';
+    selectKelas.value = selectedValue || (kelasList.length === 1 ? kelasList[0] : 'semua');
   }
   
   function applySiswaFiltersAndRender() {
@@ -2411,8 +2509,9 @@
     const container = document.getElementById('siswa-table-container');
     
     let html = '<table class="siswa-table">';
-    html += '<tr><th>Nama Siswa</th><th>NISN</th><th>Kelas</th><th>Aksi</th></tr>';
+    html += '<thead><tr><th>Nama Siswa</th><th>NISN</th><th>Kelas</th><th>Aksi</th></tr></thead>';
   
+    html += '<tbody>';
     if (siswaList.length === 0) {
       html += '<tr><td colspan="4" style="text-align: center;">Tidak ada data siswa yang sesuai dengan filter.</td></tr>';
     }
@@ -2469,7 +2568,7 @@
       `;
     });
   
-    html += '</table>';
+    html += '</tbody></table>';
     container.innerHTML = html;
   }
 
@@ -2521,20 +2620,25 @@
       const selectKelas = document.getElementById('modal-siswa-kelas');
       const btnSimpan = document.getElementById('btn-simpan-siswa');
       hideMessage('modal-siswa-error');
+      
+      const currentMode = document.getElementById('modal-siswa-mode').value;
 
       if (response.status !== 'sukses' || !response.kelas || response.kelas.length === 0) {
         selectKelas.innerHTML = '<option value="">-- Tidak ada data kelas --</option>';
         showMessage('modal-siswa-error', "Tidak dapat menambah/edit siswa. Harap isi data kelas terlebih dahulu di menu 'Kelola Kelas'.", true);
         btnSimpan.disabled = true;
       } else {
+        const kelasList = response.kelas;
         selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-        response.kelas.forEach(namaKelas => {
+        kelasList.forEach(namaKelas => {
           selectKelas.innerHTML += `<option value="${namaKelas}">${namaKelas}</option>`;
         });
         btnSimpan.disabled = false;
 
-        if (document.getElementById('modal-siswa-mode').value === 'edit') {
+        if (currentMode === 'edit') {
           document.getElementById('modal-siswa-kelas').value = siswaData.kelas;
+        } else if (currentMode === 'add' && kelasList.length === 1) {
+          document.getElementById('modal-siswa-kelas').value = kelasList[0];
         }
       }
   }
@@ -2603,7 +2707,6 @@
   }
 
   function onSiswaSaved(response) {
-      setSiswaOrderDirty(false);
       setLoading(false);
 
       if (response.status === "sukses") {
@@ -2830,10 +2933,17 @@
       selectKelas.innerHTML = '<option value="">-- Tidak ada data kelas --</option>';
       showMessage('template-nilai-message', "Tidak dapat membuat template. Harap isi data kelas terlebih dahulu di menu 'Kelola Kelas'.", true);
     } else {
+      const kelasList = response.kelas;
       selectKelas.innerHTML = '<option value="semua">-- Semua Kelas --</option>';
-      response.kelas.forEach(namaKelas => {
+      kelasList.forEach(namaKelas => {
         selectKelas.innerHTML += `<option value="${namaKelas}">${namaKelas}</option>`;
       });
+      
+      if (kelasList.length === 1) {
+        selectKelas.value = kelasList[0];
+      } else {
+        selectKelas.value = 'semua';
+      }
     }
   }
 
@@ -3025,10 +3135,18 @@
       selectKelas.innerHTML = '<option value="">-- Tidak ada data kelas --</option>';
       showMessage('template-rapor-message', "Tidak dapat membuat template. Harap isi data kelas terlebih dahulu.", true);
     } else {
+      const kelasList = response.kelas;
       selectKelas.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-      response.kelas.forEach(namaKelas => {
+      selectKelas.innerHTML += '<option value="semua">-- Semua Kelas --</option>';
+      kelasList.forEach(namaKelas => {
         selectKelas.innerHTML += `<option value="${namaKelas}">${namaKelas}</option>`;
       });
+      
+      if (kelasList.length === 1) {
+        selectKelas.value = kelasList[0];
+      } else if (kelasList.length > 1) {
+        selectKelas.value = 'semua';
+      }
     }
   }
 
@@ -3197,6 +3315,8 @@
     tampilHalaman('halaman-input-nilai-detail');
     hideMessage('input-nilai-message');
     
+    const page = document.getElementById('halaman-input-nilai-detail');
+
     const judulHalaman = document.getElementById('judul-halaman-input-nilai');
     const tableContainer = document.getElementById('input-nilai-table-container');
     const btnSimpan = document.getElementById('btn-simpan-input-nilai');
@@ -3213,9 +3333,15 @@
       const label = (jenjangPilihan === 'MI' || jenjangPilihan === 'MTS' || jenjangPilihan === 'MA') ? 'Ujian Madrasah' : 'Ujian Sekolah';
       judulHalaman.innerText = `Input Nilai ${label}`;
       judulHalaman.dataset.tipeUjian = 'UM';
+      
+      page.classList.remove('tipe-ujian-praktek');
+      page.classList.add('tipe-ujian-um');
     } else {
       judulHalaman.innerText = 'Input Nilai Ujian Praktek';
       judulHalaman.dataset.tipeUjian = 'Praktek';
+      
+      page.classList.remove('tipe-ujian-um');
+      page.classList.add('tipe-ujian-praktek');
     }
 
     setLoading(true, 'Memuat data nilai...', false, false);
@@ -3238,7 +3364,7 @@
     });
   
     selectKelas.innerHTML = optionsHtml;
-    selectKelas.value = selectedValue || 'semua';
+    selectKelas.value = selectedValue || (kelasList.length === 1 ? kelasList[0] : 'semua');
   }
 
   function onNilaiGridLoaded(response) {
@@ -3524,7 +3650,7 @@
     });
   
     selectKelas.innerHTML = optionsHtml;
-    selectKelas.value = selectedValue || 'semua';
+    selectKelas.value = selectedValue || (kelasList.length === 1 ? kelasList[0] : 'semua');
   }
 
   function renderRekapNilaiTable() {
@@ -3812,7 +3938,7 @@
       optionsHtml += `<option value="${kelas}">${kelas}</option>`;
     });
     selectKelas.innerHTML = optionsHtml;
-    selectKelas.value = selectedValue || 'semua';
+    selectKelas.value = selectedValue || (kelasList.length === 1 ? kelasList[0] : 'semua');
   }
 
   function renderNilaiRaporGridTable(tipeNilai) {
@@ -4153,7 +4279,7 @@
       optionsHtml += `<option value="${kelas}">${kelas}</option>`;
     });
     selectKelas.innerHTML = optionsHtml;
-    selectKelas.value = selectedValue || 'semua';
+    selectKelas.value = selectedValue || (kelasList.length === 1 ? kelasList[0] : 'semua');
   }
 
   function renderRekapRaporTable() {
@@ -4454,6 +4580,15 @@
     
     document.getElementById('ijazah-filter-kelas').innerHTML = '<option value="semua">-- Tampilkan Semua Kelas --</option>';
     globalIjazahData = { siswaList: [], mapelList: [], dataUjian: {}, dataRapor: {}, dataIjazah: {} };
+    showWeightedUjian = true;
+    showWeightedRapor = true;
+
+    const tabUjian = document.querySelector('#ijazah-tab-bar .tab-link[data-tab="ujian"]');
+    if (tabUjian) tabUjian.innerText = 'Nilai Ujian (...)';
+    const tabRapor = document.querySelector('#ijazah-tab-bar .tab-link[data-tab="rapor"]');
+    if (tabRapor) tabRapor.innerText = 'Nilai Rapor (...)';
+    const tabIjazah = document.querySelector('#ijazah-tab-bar .tab-link[data-tab="ijazah"]');
+    if (tabIjazah) tabIjazah.innerText = 'Nilai Ijazah (...)';
 
     setLoading(true, 'Menghitung nilai ijazah...', false, false);
     google.script.run
@@ -4465,12 +4600,58 @@
   function onNilaiIjazahLoaded(response) {
     setLoading(false);
     
+    const btnToggleUjian = document.getElementById('btn-toggle-ujian-view');
+    const btnToggleRapor = document.getElementById('btn-toggle-rapor-view');
+
     if (response.status !== 'sukses') {
       document.getElementById('ijazah-ujian-table-container').innerHTML = `<p class="message error" style="display:block;">Gagal memuat data: ${response.message}</p>`;
       document.getElementById('ijazah-rapor-table-container').innerHTML = '';
       document.getElementById('ijazah-final-table-container').innerHTML = '';
       globalIjazahData = { siswaList: [], mapelList: [], dataUjian: {}, dataRapor: {}, dataIjazah: {} };
+      
+      const tabUjian = document.querySelector('#ijazah-tab-bar .tab-link[data-tab="ujian"]');
+      if (tabUjian) tabUjian.innerText = 'Nilai Ujian (Gagal)';
+      const tabRapor = document.querySelector('#ijazah-tab-bar .tab-link[data-tab="rapor"]');
+      if (tabRapor) tabRapor.innerText = 'Nilai Rapor (Gagal)';
+      const tabIjazah = document.querySelector('#ijazah-tab-bar .tab-link[data-tab="ijazah"]');
+      if (tabIjazah) tabIjazah.innerText = 'Nilai Ijazah (Gagal)';
+      
+      if (btnToggleUjian) btnToggleUjian.style.display = 'none';
+      if (btnToggleRapor) btnToggleRapor.style.display = 'none';
+
       return;
+    }
+
+    if (btnToggleUjian) {
+      btnToggleUjian.style.display = 'inline-flex';
+      btnToggleUjian.innerText = 'Lihat Nilai Asli';
+      btnToggleUjian.classList.remove('toggled');
+      document.querySelector('#tab-ujian-content .table-content-header').innerText = 'Nilai Ujian (Setelah Diberi Bobot)';
+    }
+    if (btnToggleRapor) {
+      btnToggleRapor.style.display = 'inline-flex';
+      btnToggleRapor.innerText = 'Lihat Nilai Asli';
+      btnToggleRapor.classList.remove('toggled');
+      document.querySelector('#tab-rapor-content .table-content-header').innerText = 'Nilai Rapor (Setelah Diberi Bobot)';
+    }
+
+    const bobotUjian = response.data.bobotUjianPct || 0;
+    const bobotRapor = response.data.bobotRaporPct || 0;
+    const kkmValue = response.data.kkm || 0;
+    
+    const tabUjian = document.querySelector('#ijazah-tab-bar .tab-link[data-tab="ujian"]');
+    if (tabUjian) {
+      tabUjian.innerText = `Nilai Ujian (${bobotUjian}%)`;
+    }
+    
+    const tabRapor = document.querySelector('#ijazah-tab-bar .tab-link[data-tab="rapor"]');
+    if (tabRapor) {
+      tabRapor.innerText = `Nilai Rapor (${bobotRapor}%)`;
+    }
+    
+    const tabIjazah = document.querySelector('#ijazah-tab-bar .tab-link[data-tab="ijazah"]');
+    if (tabIjazah) {
+      tabIjazah.innerText = `Nilai Ijazah (${kkmValue})`;
     }
 
     globalIjazahData = response.data;
@@ -4497,7 +4678,7 @@
     });
   
     selectKelas.innerHTML = optionsHtml;
-    selectKelas.value = selectedValue || 'semua';
+    selectKelas.value = selectedValue || (kelasList.length === 1 ? kelasList[0] : 'semua');
   }
 
   function activateIjazahTab(tabName) {
@@ -4534,14 +4715,17 @@
   function renderNilaiIjazahTabel(tipeTabel) {
     let container;
     let nilaiDataMap;
-    let showStatusColumn = false; 
+    let showStatusColumn = false;
+    let useOriginal = false;
 
     if (tipeTabel === 'ujian') {
       container = document.getElementById('ijazah-ujian-table-container');
-      nilaiDataMap = globalIjazahData.dataUjian;
+      useOriginal = !showWeightedUjian;
+      nilaiDataMap = useOriginal ? globalIjazahData.dataUjianOriginal : globalIjazahData.dataUjian;
     } else if (tipeTabel === 'rapor') {
       container = document.getElementById('ijazah-rapor-table-container');
-      nilaiDataMap = globalIjazahData.dataRapor;
+      useOriginal = !showWeightedRapor;
+      nilaiDataMap = useOriginal ? globalIjazahData.dataRaporOriginal : globalIjazahData.dataRapor;
     } else {
       container = document.getElementById('ijazah-final-table-container');
       nilaiDataMap = globalIjazahData.dataIjazah;
@@ -4599,9 +4783,15 @@
         
         let nilaiTampil = '-';
         if (nilai !== null && nilai !== undefined) {
-            const nilaiBulat = Math.round(nilai);
-            nilaiTampil = nilaiBulat;
-            sum += nilaiBulat;
+            const nilaiAngka = parseFloat(nilai);
+            
+            if (tipeTabel === 'ijazah' || useOriginal) {
+              nilaiTampil = Math.round(nilaiAngka);
+              sum += Math.round(nilaiAngka);
+            } else {
+              nilaiTampil = nilaiAngka.toFixed(2);
+              sum += nilaiAngka;
+            }
             count++;
         }
         
@@ -4609,16 +4799,22 @@
       });
       
       const average = (count > 0) ? (sum / count) : 0;
-      const sumTampil = parseFloat(sum.toFixed(2));
       
-      html += `<td class="col-total col-total-jumlah">${sumTampil}</td>`;
+      if (tipeTabel === 'ijazah' || useOriginal) {
+         html += `<td class="col-total col-total-jumlah">${Math.round(sum)}</td>`;
+      } else {
+         html += `<td class="col-total col-total-jumlah">${sum.toFixed(2)}</td>`;
+      }
+
       html += `<td class="col-total col-total-rata">${average.toFixed(2)}</td>`;
       
       if (showStatusColumn) { 
         let statusText = '';
         let statusClass = '';
         
-        if (average >= kkmValue) {
+        const nilaiAkhirIjazah = (count > 0) ? (sum / count) : 0;
+        
+        if (nilaiAkhirIjazah >= kkmValue) {
           statusText = 'LULUS';
           statusClass = 'status-lulus';
         } else {
@@ -4633,6 +4829,184 @@
     html += '</tbody></table>';
 
     container.innerHTML = html;
+  }
+
+  function toggleUjianView() {
+    showWeightedUjian = !showWeightedUjian;
+    const btn = document.getElementById('btn-toggle-ujian-view');
+    const header = document.querySelector('#tab-ujian-content .table-content-header');
+    
+    if (showWeightedUjian) {
+      btn.innerText = 'Lihat Nilai Asli';
+      btn.classList.remove('toggled');
+      header.innerText = 'Nilai Ujian (Setelah Diberi Bobot)';
+    } else {
+      btn.innerText = 'Lihat Nilai Bobot';
+      btn.classList.add('toggled');
+      header.innerText = 'Nilai Ujian (Asli/Sebelum Bobot)';
+    }
+    
+    renderNilaiIjazahTabel('ujian');
+  }
+
+  function toggleRaporView() {
+    showWeightedRapor = !showWeightedRapor;
+    const btn = document.getElementById('btn-toggle-rapor-view');
+    const header = document.querySelector('#tab-rapor-content .table-content-header');
+    
+    if (showWeightedRapor) {
+      btn.innerText = 'Lihat Nilai Asli';
+      btn.classList.remove('toggled');
+      header.innerText = 'Nilai Rapor (Setelah Diberi Bobot)';
+    } else {
+      btn.innerText = 'Lihat Nilai Bobot';
+      btn.classList.add('toggled');
+      header.innerText = 'Nilai Rapor (Asli/Sebelum Bobot)';
+    }
+    
+    renderNilaiIjazahTabel('rapor');
+  }
+
+  function setMapelOrderDirty(isDirty) {
+    isMapelOrderDirty = isDirty;
+    updateMapelFloatingActions();
+  }
+
+  function onMapelUrutanSaved(response) {
+    setLoading(false);
+    if (response.status === 'sukses') {
+      globalMapelList.forEach(m => {
+        m.originalUrutan = m.urutan;
+      });
+      setMapelOrderDirty(false); 
+      showMessage('mapel-message', 'Urutan mapel berhasil disimpan!', false);
+    } else {
+      showMessage('mapel-message', response.message, true);
+    }
+  }
+
+  function checkMapelDirtyState() {
+    if (!globalMapelList) return;
+
+    let orderIsDirty = false;
+    let tipeIsDirty = false;
+
+    const currentTipeState = new Map();
+    document.querySelectorAll('#mapel-table-container .mapel-tipe-cek').forEach(cb => {
+      const id = cb.dataset.id;
+      const tipe = cb.dataset.tipe;
+      if (!currentTipeState.has(id)) {
+        currentTipeState.set(id, { isUS: false, isUP: false });
+      }
+      if (tipe === 'us') currentTipeState.get(id).isUS = cb.checked;
+      if (tipe === 'up') currentTipeState.get(id).isUP = cb.checked;
+    });
+
+    for (const mapel of globalMapelList) {
+      if (mapel.urutan != mapel.originalUrutan) {
+        orderIsDirty = true;
+      }
+      
+      const currentTipes = currentTipeState.get(mapel.id);
+      if (currentTipes) {
+        if (currentTipes.isUS != mapel.originalIsUS || currentTipes.isUP != mapel.originalIsUP) {
+          tipeIsDirty = true;
+        }
+      }
+    }
+    
+    setMapelOrderDirty(orderIsDirty);
+    setMapelTipeDirty(tipeIsDirty);
+  }
+
+  function updateMapelFloatingActions() {
+    const container = document.getElementById('mapel-floating-actions');
+    const tableContainer = document.getElementById('mapel-table-container');
+    if (!container || !tableContainer) return;
+    
+    const btnUrutan = document.getElementById('btn-simpan-urutan-mapel');
+    const btnTipe = document.getElementById('btn-simpan-tipe-ujian');
+    
+    btnUrutan.disabled = !isMapelOrderDirty;
+    btnTipe.disabled = !isMapelTipeDirty;
+    
+    if (isMapelOrderDirty || isMapelTipeDirty) {
+      container.classList.add('show-actions');
+      tableContainer.classList.add('table-container-with-actions');
+    } else {
+      container.classList.remove('show-actions');
+      tableContainer.classList.remove('table-container-with-actions');
+    }
+  }
+
+  function cancelMapelChanges() {
+    if (!globalMapelList) return;
+
+    // 1. Kembalikan data dari backup "original"
+    globalMapelList.forEach(m => {
+      m.urutan = m.originalUrutan;
+      m.isUS = m.originalIsUS;
+      m.isUP = m.originalIsUP;
+    });
+    
+    // 2. Sortir ulang berdasarkan urutan asli
+    globalMapelList.sort((a,b) => a.urutan - b.urutan);
+    
+    // 3. Render ulang tabel
+    onMapelLoaded({ status: "sukses", mapel: globalMapelList, isReRender: true });
+    
+    // 4. Reset status dirty (ini akan menyembunyikan panel)
+    setMapelOrderDirty(false);
+    setMapelTipeDirty(false);
+    
+    // 5. Beri notifikasi
+    showMessage('mapel-message', 'Perubahan dibatalkan.', false);
+  }
+
+  function checkSiswaDirtyState() {
+    if (!globalSiswaList) return;
+
+    let orderIsDirty = false;
+    for (const siswa of globalSiswaList) {
+      if (siswa.urutan != siswa.originalUrutan) {
+        orderIsDirty = true;
+        break;
+      }
+    }
+    
+    setSiswaOrderDirty(orderIsDirty);
+  }
+
+  function updateSiswaFloatingActions() {
+    const container = document.getElementById('siswa-floating-actions');
+    const tableContainer = document.getElementById('siswa-table-container');
+    if (!container || !tableContainer) return;
+    
+    const btnUrutan = document.getElementById('btn-simpan-urutan-siswa');
+    
+    btnUrutan.disabled = !isSiswaOrderDirty;
+    
+    if (isSiswaOrderDirty) {
+      container.classList.add('show-actions');
+      tableContainer.classList.add('table-container-with-actions');
+    } else {
+      container.classList.remove('show-actions');
+      tableContainer.classList.remove('table-container-with-actions');
+    }
+  }
+
+  function cancelSiswaChanges() {
+    if (!globalSiswaList) return;
+
+    globalSiswaList.forEach(s => {
+      s.urutan = s.originalUrutan;
+    });
+    
+    setSiswaOrderDirty(false);
+    
+    applySiswaFiltersAndRender();
+    
+    showMessage('siswa-message', 'Urutan siswa dikembalikan.', false);
   }
 
 </script>
